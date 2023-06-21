@@ -3,30 +3,24 @@ import { processProfiles } from './profiles'
 import { addSearchDialog } from './search'
 import {
     waitForElement,
-    getFollowingMap,
-    getUnfollowList,
     scrollDownFollowingPage,
     prettyConsole,
     delay,
-    updateUnfollowing,
-    updateFollowing,
 } from './utils'
 import { atom } from 'nanostores'
-import { $following, $unfollowing } from './stores'
+import { $following, $unfollowing, removeUnfollowing } from './stores'
 
-export const $followingMap = atom(new Map<string, FollowingUser>())
-export const $unfollowList = atom(getUnfollowList())
 export const $totalUnfollowed = atom(0)
 export const $collectedFollowing = atom(false)
 export const $isRunning = atom(false)
 
 // Subscriptions
 $following.listen((following) => {
-    updateFollowing(following)
+    localStorage.setItem('followingCount', following.size.toString())
 })
 
 $unfollowing.listen((unfollow) => {
-    updateUnfollowing(unfollow)
+    console.log('unfollowing listener fired. updating button...', unfollow.size)
     updateUnfollowButton()
 })
 
@@ -36,28 +30,26 @@ export type FollowingUser = {
     description?: string
 }
 
-export type FollowingUserMap = Map<string, FollowingUser>
-
 export const PROFILES_SIBLINGS = '[data-testid="cellInnerDiv"]'
 export const FOLLOWS_YOU = '[data-testid="userFollowIndicator"]'
 /**
  * Scrolls down the page collecting a list of all profiles
  */
-export async function getFollowing(): Promise<FollowingUserMap | undefined> {
+export async function collectFollowing(): Promise<
+    Map<string, FollowingUser> | undefined
+> {
     try {
-        let followingMap = getFollowingMap()
-        if ($collectedFollowing && followingMap.size > 0) {
-            return followingMap
+        if ($collectedFollowing && $following.get().size > 0) {
+            return $following.get()
         }
         const isDone = await scrollDownFollowingPage()
         if (isDone) {
-            console.log('followingMap', followingMap)
+            console.log('followingMap', $following)
             console.log('done scrolling')
             $collectedFollowing.set(true)
-            followingMap = getFollowingMap()
-            return followingMap
+            return $following.get()
         } else {
-            return await getFollowing()
+            return await collectFollowing()
         }
     } catch (error) {
         console.error(error)
@@ -90,14 +82,54 @@ profileObserver.observe(document.body, {
     subtree: true,
 })
 
-let shouldCancel = false
-let isRunning = false
+// Create a new store for the button state
+export const $buttonState = atom<'idle' | 'running' | 'done'>('idle')
+
+// Subscribe to changes in the button state
+const unsubscribe = $buttonState.subscribe((state) => {
+    const suButton = document.getElementById(
+        'superUnfollow-button'
+    ) as HTMLButtonElement | null
+    if (suButton) {
+        switch (state) {
+            case 'idle':
+                suButton.innerText = `SuperUnfollow ${$unfollowing.get().size}`
+                suButton.disabled = false
+                break
+            case 'running':
+                suButton.innerText = 'Running...'
+                suButton.disabled = true
+                break
+            case 'done':
+                suButton.innerText = 'Done'
+                suButton.disabled = true
+                break
+        }
+    }
+})
+
+// Add an event listener to the button
+const button = document.getElementById('superUnfollow-button')
+button?.addEventListener('click', async () => {
+    if ($buttonState.get() === 'idle') {
+        $buttonState.set('running')
+        await superUnfollow()
+        $buttonState.set('done')
+    }
+})
+
+// Unsubscribe from changes when you're done
+unsubscribe()
+
 export async function superUnfollow(): Promise<void> {
     prettyConsole('starting superUnfollow')
 
-    if (!isRunning) {
-        window.scrollTo(0, 0)
-        isRunning = true
+    if (!$isRunning.get()) {
+        window.scrollTo({
+            behavior: 'smooth',
+            top: 0,
+        })
+        $isRunning.set(true)
     }
 
     await delay(3000)
@@ -121,11 +153,6 @@ export async function superUnfollow(): Promise<void> {
     }
 
     for (let i = 0; i < profilesToUnfollow.length; i++) {
-        if (shouldCancel) {
-            console.log('superUnfollow cancelled')
-            return
-        }
-
         const profile = profilesToUnfollow[i]
         await unfollow(profile)
 
@@ -167,7 +194,7 @@ const unfollow = async (profile: HTMLElement) => {
     await delay(1000)
     confirmUnfollow.click()
     // remove profile from unfollowList
-    $unfollowing.get().delete(handle)
+    removeUnfollowing(handle)
 
     $totalUnfollowed.set($totalUnfollowed.get() + 1)
 

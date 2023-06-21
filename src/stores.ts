@@ -30,3 +30,13 @@ export const addUnfollowing = (handle: string) => {
 export const removeUnfollowing = (handle: string) => {
     return $unfollowing.set(new Set([...$unfollowing.get().add(handle)]))
 }
+
+export const addFollowing = (handle: string, user: FollowingUser) => {
+    return $following.set(new Map([...$following.get().set(handle, user)]))
+}
+
+export const removeFollowing = (handle: string) => {
+    const following = $following.get()
+    following.delete(handle)
+    return $following.set(new Map([...Array.from(following)]))
+}

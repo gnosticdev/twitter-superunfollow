@@ -1,13 +1,8 @@
-import { FollowingUser } from './main'
-
 export const delay = (ms: number) => {
     return new Promise((resolve) => {
         setTimeout(resolve, ms)
     })
 }
-
-// create SuperUnfollow object with following/unfollowing methods to get/set/add/delete
-
 /**
  * Scrolls down the following page
  * @param {number} delayMS - number of milliseconds to wait before scrolling down
@@ -41,53 +36,53 @@ export async function scrollDownFollowingPage(delayMS = 3000) {
 /** Updates the following map in local storage
  *  @param {Map<string, FollowingUser>} followingMap - map of usernames to FollowingUser objects
  * */
-export const updateFollowing = (followingMap: Map<string, FollowingUser>) => {
-    localStorage.setItem(
-        'followingMap',
-        JSON.stringify(Array.from(followingMap.entries()))
-    )
-}
+// export const updateFollowing = (followingMap: Map<string, FollowingUser>) => {
+//     localStorage.setItem(
+//         'followingMap',
+//         JSON.stringify(Array.from(followingMap.entries()))
+//     )
+// }
 
-/**
- * Updates the unfollow list in local storage
- * @param {Set<string>} unfollowList - set of usernames to unfollow
- */
-export const updateUnfollowing = (unfollowList: Set<string>) => {
-    localStorage.setItem(
-        'unfollowList',
-        JSON.stringify(Array.from(unfollowList))
-    )
-}
+// /**
+//  * Updates the unfollow list in local storage
+//  * @param {Set<string>} unfollowList - set of usernames to unfollow
+//  */
+// export const updateUnfollowing = (unfollowList: Set<string>) => {
+//     localStorage.setItem(
+//         'unfollowList',
+//         JSON.stringify(Array.from(unfollowList))
+//     )
+// }
 
 /**
  * Gets the following map from local storage
  * @returns {Promise<Map<string, FollowingUser> | null>} followingMap - map of usernames to FollowingUser objects
  */
-export const getFollowingMap = () => {
-    // retrieve from local storage as string, then parse to get the map
-    const followingMapString = localStorage.getItem('followingMap')
-    if (!followingMapString) {
-        return new Map<string, FollowingUser>()
-    }
-    const followingMap = new Map<string, FollowingUser>(
-        JSON.parse(followingMapString)
-    )
-    return followingMap
-}
+// export const getFollowingMap = () => {
+//     // retrieve from local storage as string, then parse to get the map
+//     const followingMapString = localStorage.getItem('followingMap')
+//     if (!followingMapString) {
+//         return new Map<string, FollowingUser>()
+//     }
+//     const followingMap = new Map<string, FollowingUser>(
+//         JSON.parse(followingMapString)
+//     )
+//     return followingMap
+// }
 
-/**
- * Gets the unfollow list from local storage
- * @returns {Promise<Set<string> | null>} unfollowList - set of usernames to unfollow
- */
-export const getUnfollowList = () => {
-    // retrieve from local storage as string, then parse to get the map
-    const unfollowListString = localStorage.getItem('unfollowList')
-    if (!unfollowListString) {
-        return new Set<string>()
-    }
-    const unfollowList = new Set<string>(JSON.parse(unfollowListString))
-    return unfollowList
-}
+// /**
+//  * Gets the unfollow list from local storage
+//  * @returns {Promise<Set<string> | null>} unfollowList - set of usernames to unfollow
+//  */
+// export const getUnfollowList = () => {
+//     // retrieve from local storage as string, then parse to get the map
+//     const unfollowListString = localStorage.getItem('unfollowList')
+//     if (!unfollowListString) {
+//         return new Set<string>()
+//     }
+//     const unfollowList = new Set<string>(JSON.parse(unfollowListString))
+//     return unfollowList
+// }
 
 // setTimeout function
 let timeout: number | undefined
@@ -111,27 +106,10 @@ export function prettyConsole(
     message: string,
     object: Element | Record<string, any> | null = null
 ) {
-    const error = new Error()
-    const lineNumber = error.stack?.split('\n')[2].split(':')[2]
-    const functionName = error.stack?.split('\n')[2].split(' ')[5]
     const messageStyle =
         'color: hsl(350, 79%, 74%); background-color: hsl(219, 100%, 39%); font-weight: bold; font-size: 1; padding: 5px;'
-    const callerStyle =
-        'color: hsl(70, 16.20%, 71.00%); font-size: 10px; padding: 5px;'
-    if (object) {
-        console.log(
-            `%c ${message} %c ${functionName}():${lineNumber}`,
-            messageStyle,
-            callerStyle
-        )
-        console.log(object)
-    } else {
-        console.log(
-            `%c ${message} %c ${functionName}():${lineNumber}`,
-            messageStyle,
-            callerStyle
-        )
-    }
+    console.log(`%c ${message}`, messageStyle)
+    object && console.log(object)
 }
 
 export function waitForElement(

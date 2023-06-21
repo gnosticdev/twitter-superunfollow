@@ -1,6 +1,6 @@
 import { addSuperUnfollowButton, handleChange } from './add-elements'
-import { FollowingUser, getFollowing } from './main'
-import { getFollowingMap, getUnfollowList, prettyConsole } from './utils'
+import { $following, $unfollowing } from './stores'
+import { prettyConsole } from './utils'
 
 export async function addSearchDialog() {
     console.log('adding search dialog')
@@ -85,31 +85,21 @@ const handleSearch = async () => {
         'su-search-results'
     ) as HTMLDivElement
 
+    // set from background script
     const following = localStorage.getItem('followingCount')
     // add spinning loader while searching
     resultDiv.innerHTML = `<div class="su-loader"><span class="su-spinner"></span>Scanning ${following} profiles. Search term: \n ${inputValue}</div>`
-
-    // followingMap will be returned if present, or auto scroll will be invoked to get it.
-    let followingMap = await getFollowing()
-    if (!followingMap) {
-        followingMap = await getFollowingMap()
-    }
-
     // display the results
-    const searchResults = searchFollowingList(inputValue, followingMap)
+    const searchResults = searchFollowingList(inputValue)
     resultDiv.innerHTML = `<h3>Search results for: <span>${inputValue}</span></h3>`
     const resultsContainer = displaySearchResults(searchResults)
     resultDiv.appendChild(resultsContainer)
 }
 
 /** @param {string} searchTerm */
-export function searchFollowingList(
-    searchTerm: string,
-    followingMap: Map<string, FollowingUser>
-) {
+export function searchFollowingList(searchTerm: string) {
     let results = new Set<string>()
-    const following = followingMap
-    following.forEach((entry) => {
+    $following.get().forEach((entry) => {
         const { username, handle, description } = entry
         const wordRegex = new RegExp(`\\b${searchTerm}\\b`, 'i')
         const allRegex = new RegExp(searchTerm, 'i')
@@ -157,14 +147,13 @@ export function displaySearchResults(searchResults: Set<string>) {
     resultsContainer.appendChild(selectAllContainer)
 
     // get the unfollow list from storage or returns a new list
-    const unfollowList = getUnfollowList()
 
     searchResults.forEach((result) => {
         const checkbox = document.createElement('input')
         checkbox.type = 'checkbox'
         checkbox.id = `su-search-${result}`
         checkbox.value = result
-        checkbox.checked = unfollowList.has(result)
+        checkbox.checked = $unfollowing.get().has(result)
         checkbox.addEventListener('change', handleChange)
         const label = document.createElement('label')
         label.textContent = result

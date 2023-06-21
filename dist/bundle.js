@@ -58,25 +58,9 @@
     return unfollowList;
   };
   function prettyConsole(message, object = null) {
-    const error = new Error();
-    const lineNumber = error.stack?.split("\n")[2].split(":")[2];
-    const functionName = error.stack?.split("\n")[2].split(" ")[5];
     const messageStyle = "color: hsl(350, 79%, 74%); background-color: hsl(219, 100%, 39%); font-weight: bold; font-size: 1; padding: 5px;";
-    const callerStyle = "color: hsl(70, 16.20%, 71.00%); font-size: 10px; padding: 5px;";
-    if (object) {
-      console.log(
-        `%c ${message} %c ${functionName}():${lineNumber}`,
-        messageStyle,
-        callerStyle
-      );
-      console.log(object);
-    } else {
-      console.log(
-        `%c ${message} %c ${functionName}():${lineNumber}`,
-        messageStyle,
-        callerStyle
-      );
-    }
+    console.log(`%c ${message}`, messageStyle);
+    object && console.log(object);
   }
   function waitForElement(selector, timeout = 4e3) {
     return new Promise(function(resolve, reject) {
@@ -173,240 +157,6 @@
     } catch (error) {
       console.error(error);
     }
-  }
-
-  // src/add-elements.ts
-  function addSuperUnfollowButton(dialog) {
-    prettyConsole("adding superUnfollow button");
-    const container = document.createElement("div");
-    container.classList.add("superUnfollow", "su-button-container");
-    container.id = "superUnfollow-button-container";
-    const startUnfollowButton = document.createElement("button");
-    const unfollowList = getUnfollowList();
-    if (unfollowList.size > 0) {
-      startUnfollowButton.classList.add("active");
-      startUnfollowButton.innerText = `SuperUnfollow ${unfollowList.size} Users`;
-    } else {
-      startUnfollowButton.classList.remove("active");
-      startUnfollowButton.innerText = "No Users Selected";
-    }
-    startUnfollowButton.classList.add("su-button");
-    startUnfollowButton.addEventListener("click", superUnfollow);
-    container.appendChild(startUnfollowButton);
-    dialog.appendChild(container);
-  }
-  var updateUnfollowButton = () => {
-    const superUnfollowBtn = document.querySelector(
-      "#superUnfollow-button-container button"
-    );
-    const { size } = $unfollowList.get();
-    if (size > 0) {
-      superUnfollowBtn.classList.add("active");
-      superUnfollowBtn.innerText = `SuperUnfollow ${size} Users`;
-    } else {
-      superUnfollowBtn.classList.remove("active");
-      superUnfollowBtn.innerText = "No Users Selected";
-    }
-  };
-  async function addCheckbox(profile) {
-    const unfollowButton = profile.querySelector('[data-testid *= "unfollow"]');
-    if (!unfollowButton) {
-      throw "no unfollow button found";
-    }
-    const { handle } = await getProfileDetails(profile);
-    if (!handle) {
-      throw "no handle found";
-    }
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.addEventListener("change", handleChange);
-    const unfollowList = getUnfollowList();
-    checkbox.checked = unfollowList.has(handle);
-    const container = document.createElement("div");
-    container.classList.add("superUnfollow", "su-checkbox-container");
-    container.appendChild(checkbox);
-    unfollowButton.parentElement?.before(container);
-    profile.setAttribute("data-unfollow", checkbox.checked.toString());
-    profile.setAttribute("data-handle", handle);
-    checkbox.value = handle;
-  }
-  var handleChange = (event) => {
-    const target = event.target;
-    if (!target) {
-      throw "no target found";
-    }
-    const handle = target.value;
-    if (!handle) {
-      throw "no handle found for profile";
-    }
-    const unfollowList = getUnfollowList();
-    if (target.checked && !unfollowList.has(handle)) {
-      console.log(`adding ${handle} to unfollowList`);
-      unfollowList.add(handle);
-    } else {
-      console.log(`removing ${handle} from unfollowList`);
-      unfollowList.delete(handle);
-    }
-    updateUnfollowing(unfollowList);
-    const profile = document.querySelector(`[data-handle="${handle}"]`);
-    if (!profile) {
-      console.log(`profile for ${handle} not in view`);
-    } else {
-      const cb = profile.querySelector(
-        'input[type="checkbox"]'
-      );
-      if (!cb) {
-        throw "no checkbox found";
-      }
-      cb.checked = target.checked;
-      profile.setAttribute("data-unfollow", target.checked.toString());
-    }
-    prettyConsole(`unfollowList updated: ${unfollowList.size} profiles`);
-  };
-
-  // src/search.ts
-  async function addSearchDialog() {
-    console.log("adding search dialog");
-    const dialog = document.createElement("dialog");
-    dialog.classList.add("superUnfollow", "su-search-dialog");
-    const dialogContainer = document.createElement("div");
-    dialogContainer.classList.add("superUnfollow", "su-search-dialog-container");
-    dialogContainer.role = "dialog";
-    dialog.appendChild(dialogContainer);
-    const modalButton = document.createElement("button");
-    modalButton.id = "su-search-modal-button";
-    modalButton.textContent = "SuperUnfollow";
-    modalButton.classList.add("superUnfollow", "su-button", "su-modal", "small");
-    addSuperUnfollowButton(dialog);
-    modalButton.addEventListener("click", () => {
-      dialog.showModal();
-    });
-    const heading = document.createElement("p");
-    heading.textContent = "Search usernames, handles and bios";
-    heading.classList.add("superUnfollow", "su-heading");
-    const headingsContainer = document.createElement("div");
-    headingsContainer.classList.add("superUnfollow", "su-headings-container");
-    headingsContainer.append(heading);
-    const input = document.createElement("input");
-    input.type = "text";
-    input.id = "su-search-input";
-    const closeButton = document.createElement("button");
-    const closeSVG = '<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M12 10.586l4.95-4.95a1 1 0 1 1 1.414 1.414L13.414 12l4.95 4.95a1 1 0 0 1-1.414 1.414L12 13.414l-4.95 4.95a1 1 0 0 1-1.414-1.414L10.586 12 5.636 7.05a1 1 0 0 1 1.414-1.414L12 10.586z"></path></svg>';
-    closeButton.innerHTML = closeSVG;
-    closeButton.classList.add("superUnfollow", "su-close-button");
-    closeButton.addEventListener("click", () => {
-      dialog.close();
-    });
-    const searchButton = document.createElement("button");
-    searchButton.textContent = "Search";
-    searchButton.classList.add("su-search-button");
-    const inputContainer = document.createElement("div");
-    inputContainer.classList.add("su-search-input-container");
-    inputContainer.id = "su-search-input-container";
-    inputContainer.append(input, searchButton);
-    const resultsContainer = document.createElement("div");
-    resultsContainer.id = "su-search-results";
-    resultsContainer.classList.add("superUnfollow", "su-search-results");
-    dialogContainer.append(
-      closeButton,
-      headingsContainer,
-      inputContainer,
-      resultsContainer
-    );
-    document.body.appendChild(dialog);
-    document.body.appendChild(modalButton);
-    prettyConsole("search dialog created");
-    searchButton.addEventListener("click", handleSearch);
-    return dialog;
-  }
-  var handleSearch = async () => {
-    const input = document.getElementById("su-search-input");
-    const inputValue = input.value === "" ? ".*" : input.value;
-    console.log(`searching for ${inputValue}`);
-    const resultDiv = document.getElementById(
-      "su-search-results"
-    );
-    const following = localStorage.getItem("followingCount");
-    resultDiv.innerHTML = `<div class="su-loader"><span class="su-spinner"></span>Scanning ${following} profiles. Search term: 
- ${inputValue}</div>`;
-    let followingMap = await getFollowing();
-    if (!followingMap) {
-      followingMap = await getFollowingMap();
-    }
-    const searchResults = searchFollowingList(inputValue, followingMap);
-    resultDiv.innerHTML = `<h3>Search results for: <span>${inputValue}</span></h3>`;
-    const resultsContainer = displaySearchResults(searchResults);
-    resultDiv.appendChild(resultsContainer);
-  };
-  function searchFollowingList(searchTerm, followingMap) {
-    let results = /* @__PURE__ */ new Set();
-    const following = followingMap;
-    following.forEach((entry) => {
-      const { username, handle, description } = entry;
-      const wordRegex = new RegExp(`\\b${searchTerm}\\b`, "i");
-      const allRegex = new RegExp(searchTerm, "i");
-      if (allRegex.test(username) || allRegex.test(handle) || description && wordRegex.test(description)) {
-        results.add(handle);
-      }
-    });
-    return results;
-  }
-  function displaySearchResults(searchResults) {
-    const resultsContainer = document.createElement("div");
-    resultsContainer.classList.add(
-      "superUnfollow",
-      "su-search-results-container"
-    );
-    if (searchResults.size === 0) {
-      resultsContainer.innerHTML = `<p class="su-error">No results found</p>`;
-      return resultsContainer;
-    }
-    const selectAll = document.createElement("input");
-    selectAll.type = "checkbox";
-    selectAll.id = "su-search-select-all";
-    selectAll.addEventListener("change", handleSelectAll);
-    const selectAllLabel = document.createElement("label");
-    selectAllLabel.textContent = "Select All";
-    selectAllLabel.htmlFor = "su-search-select-all";
-    const selectAllContainer = document.createElement("div");
-    selectAllContainer.classList.add(
-      "superUnfollow",
-      "su-search-result",
-      "su-select-all"
-    );
-    selectAllLabel.appendChild(selectAll);
-    selectAllContainer.appendChild(selectAllLabel);
-    resultsContainer.appendChild(selectAllContainer);
-    const unfollowList = getUnfollowList();
-    searchResults.forEach((result) => {
-      const checkbox = document.createElement("input");
-      checkbox.type = "checkbox";
-      checkbox.id = `su-search-${result}`;
-      checkbox.value = result;
-      checkbox.checked = unfollowList.has(result);
-      checkbox.addEventListener("change", handleChange);
-      const label = document.createElement("label");
-      label.textContent = result;
-      label.htmlFor = `su-search-${result}`;
-      const container = document.createElement("div");
-      container.classList.add("superUnfollow", "su-search-result");
-      label.appendChild(checkbox);
-      container.appendChild(label);
-      resultsContainer.appendChild(container);
-    });
-    return resultsContainer;
-  }
-  function handleSelectAll() {
-    const selectAll = document.getElementById(
-      "su-search-select-all"
-    );
-    const checkboxes = document.querySelectorAll(
-      '.su-search-result input[type="checkbox"]:not(#su-search-select-all)'
-    );
-    checkboxes.forEach((checkbox) => {
-      checkbox.checked = selectAll.checked;
-      checkbox.dispatchEvent(new Event("change"));
-    });
   }
 
   // node_modules/.pnpm/nanostores@0.9.2/node_modules/nanostores/clean-stores/index.js
@@ -655,10 +405,246 @@
       }
     }
   );
+  var addUnfollowing = (handle) => {
+    return $unfollowing.set(/* @__PURE__ */ new Set([...$unfollowing.get().add(handle)]));
+  };
+  var removeUnfollowing = (handle) => {
+    return $unfollowing.set(/* @__PURE__ */ new Set([...$unfollowing.get().add(handle)]));
+  };
+
+  // src/add-elements.ts
+  function addSuperUnfollowButton(dialog) {
+    prettyConsole("adding superUnfollow button");
+    const container = document.createElement("div");
+    container.classList.add("superUnfollow", "su-button-container");
+    container.id = "superUnfollow-button-container";
+    const startUnfollowButton = document.createElement("button");
+    const unfollowing = $unfollowing.get();
+    if (unfollowing.size > 0) {
+      startUnfollowButton.classList.add("active");
+      startUnfollowButton.innerText = `SuperUnfollow ${unfollowing.size} Users`;
+    } else {
+      startUnfollowButton.classList.remove("active");
+      startUnfollowButton.innerText = "No Users Selected";
+    }
+    startUnfollowButton.classList.add("su-button");
+    startUnfollowButton.addEventListener("click", superUnfollow);
+    container.appendChild(startUnfollowButton);
+    dialog.appendChild(container);
+  }
+  var updateUnfollowButton = () => {
+    const superUnfollowBtn = document.getElementById(
+      "superUnfollow-button-container button"
+    );
+    const { size } = $unfollowing.get();
+    if (size > 0) {
+      superUnfollowBtn.classList.add("active");
+      superUnfollowBtn.innerText = `SuperUnfollow ${size} Users`;
+    } else {
+      superUnfollowBtn.classList.remove("active");
+      superUnfollowBtn.innerText = "No Users Selected";
+    }
+  };
+  async function addCheckbox(profile) {
+    const unfollowButton = profile.querySelector('[data-testid *= "unfollow"]');
+    if (!unfollowButton) {
+      throw "no unfollow button found";
+    }
+    const { handle } = await getProfileDetails(profile);
+    if (!handle) {
+      throw "no handle found";
+    }
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.addEventListener("change", handleChange);
+    const unfollowing = $unfollowing.get();
+    checkbox.checked = unfollowing.has(handle);
+    const container = document.createElement("div");
+    container.classList.add("superUnfollow", "su-checkbox-container");
+    container.appendChild(checkbox);
+    unfollowButton.parentElement?.before(container);
+    profile.setAttribute("data-unfollow", checkbox.checked.toString());
+    profile.setAttribute("data-handle", handle);
+    checkbox.value = handle;
+  }
+  var handleChange = (event) => {
+    const target = event.target;
+    if (!target) {
+      throw "no target found";
+    }
+    const handle = target.value;
+    if (!handle) {
+      throw "no handle found for profile";
+    }
+    if (target.checked && !$unfollowing.get().has(handle)) {
+      console.log(`adding ${handle} to unfollowList`);
+      addUnfollowing(handle);
+    } else {
+      console.log(`removing ${handle} from unfollowList`);
+      removeUnfollowing(handle);
+    }
+    const profile = document.querySelector(`[data-handle="${handle}"]`);
+    if (!profile) {
+      console.log(`profile for ${handle} not in view`);
+    } else {
+      const cb = profile.querySelector(
+        'input[type="checkbox"]'
+      );
+      if (!cb) {
+        throw "no checkbox found";
+      }
+      cb.checked = target.checked;
+      profile.setAttribute("data-unfollow", target.checked.toString());
+    }
+    prettyConsole(`unfollowList updated: ${$unfollowing.get()} profiles`);
+  };
+
+  // src/search.ts
+  async function addSearchDialog() {
+    console.log("adding search dialog");
+    const dialog = document.createElement("dialog");
+    dialog.classList.add("superUnfollow", "su-search-dialog");
+    const dialogContainer = document.createElement("div");
+    dialogContainer.classList.add("superUnfollow", "su-search-dialog-container");
+    dialogContainer.role = "dialog";
+    dialog.appendChild(dialogContainer);
+    const modalButton = document.createElement("button");
+    modalButton.id = "su-search-modal-button";
+    modalButton.textContent = "SuperUnfollow";
+    modalButton.classList.add("superUnfollow", "su-button", "su-modal", "small");
+    addSuperUnfollowButton(dialog);
+    modalButton.addEventListener("click", () => {
+      dialog.showModal();
+    });
+    const heading = document.createElement("p");
+    heading.textContent = "Search usernames, handles and bios";
+    heading.classList.add("superUnfollow", "su-heading");
+    const headingsContainer = document.createElement("div");
+    headingsContainer.classList.add("superUnfollow", "su-headings-container");
+    headingsContainer.append(heading);
+    const input = document.createElement("input");
+    input.type = "text";
+    input.id = "su-search-input";
+    const closeButton = document.createElement("button");
+    const closeSVG = '<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M12 10.586l4.95-4.95a1 1 0 1 1 1.414 1.414L13.414 12l4.95 4.95a1 1 0 0 1-1.414 1.414L12 13.414l-4.95 4.95a1 1 0 0 1-1.414-1.414L10.586 12 5.636 7.05a1 1 0 0 1 1.414-1.414L12 10.586z"></path></svg>';
+    closeButton.innerHTML = closeSVG;
+    closeButton.classList.add("superUnfollow", "su-close-button");
+    closeButton.addEventListener("click", () => {
+      dialog.close();
+    });
+    const searchButton = document.createElement("button");
+    searchButton.textContent = "Search";
+    searchButton.classList.add("su-search-button");
+    const inputContainer = document.createElement("div");
+    inputContainer.classList.add("su-search-input-container");
+    inputContainer.id = "su-search-input-container";
+    inputContainer.append(input, searchButton);
+    const resultsContainer = document.createElement("div");
+    resultsContainer.id = "su-search-results";
+    resultsContainer.classList.add("superUnfollow", "su-search-results");
+    dialogContainer.append(
+      closeButton,
+      headingsContainer,
+      inputContainer,
+      resultsContainer
+    );
+    document.body.appendChild(dialog);
+    document.body.appendChild(modalButton);
+    prettyConsole("search dialog created");
+    searchButton.addEventListener("click", handleSearch);
+    return dialog;
+  }
+  var handleSearch = async () => {
+    const input = document.getElementById("su-search-input");
+    const inputValue = input.value === "" ? ".*" : input.value;
+    console.log(`searching for ${inputValue}`);
+    const resultDiv = document.getElementById(
+      "su-search-results"
+    );
+    const following = localStorage.getItem("followingCount");
+    resultDiv.innerHTML = `<div class="su-loader"><span class="su-spinner"></span>Scanning ${following} profiles. Search term: 
+ ${inputValue}</div>`;
+    let followingMap = await getFollowing();
+    if (!followingMap) {
+      followingMap = await getFollowingMap();
+    }
+    const searchResults = searchFollowingList(inputValue, followingMap);
+    resultDiv.innerHTML = `<h3>Search results for: <span>${inputValue}</span></h3>`;
+    const resultsContainer = displaySearchResults(searchResults);
+    resultDiv.appendChild(resultsContainer);
+  };
+  function searchFollowingList(searchTerm, followingMap) {
+    let results = /* @__PURE__ */ new Set();
+    const following = followingMap;
+    following.forEach((entry) => {
+      const { username, handle, description } = entry;
+      const wordRegex = new RegExp(`\\b${searchTerm}\\b`, "i");
+      const allRegex = new RegExp(searchTerm, "i");
+      if (allRegex.test(username) || allRegex.test(handle) || description && wordRegex.test(description)) {
+        results.add(handle);
+      }
+    });
+    return results;
+  }
+  function displaySearchResults(searchResults) {
+    const resultsContainer = document.createElement("div");
+    resultsContainer.classList.add(
+      "superUnfollow",
+      "su-search-results-container"
+    );
+    if (searchResults.size === 0) {
+      resultsContainer.innerHTML = `<p class="su-error">No results found</p>`;
+      return resultsContainer;
+    }
+    const selectAll = document.createElement("input");
+    selectAll.type = "checkbox";
+    selectAll.id = "su-search-select-all";
+    selectAll.addEventListener("change", handleSelectAll);
+    const selectAllLabel = document.createElement("label");
+    selectAllLabel.textContent = "Select All";
+    selectAllLabel.htmlFor = "su-search-select-all";
+    const selectAllContainer = document.createElement("div");
+    selectAllContainer.classList.add(
+      "superUnfollow",
+      "su-search-result",
+      "su-select-all"
+    );
+    selectAllLabel.appendChild(selectAll);
+    selectAllContainer.appendChild(selectAllLabel);
+    resultsContainer.appendChild(selectAllContainer);
+    const unfollowList = getUnfollowList();
+    searchResults.forEach((result) => {
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.id = `su-search-${result}`;
+      checkbox.value = result;
+      checkbox.checked = unfollowList.has(result);
+      checkbox.addEventListener("change", handleChange);
+      const label = document.createElement("label");
+      label.textContent = result;
+      label.htmlFor = `su-search-${result}`;
+      const container = document.createElement("div");
+      container.classList.add("superUnfollow", "su-search-result");
+      label.appendChild(checkbox);
+      container.appendChild(label);
+      resultsContainer.appendChild(container);
+    });
+    return resultsContainer;
+  }
+  function handleSelectAll() {
+    const selectAll = document.getElementById(
+      "su-search-select-all"
+    );
+    const checkboxes = document.querySelectorAll(
+      '.su-search-result input[type="checkbox"]:not(#su-search-select-all)'
+    );
+    checkboxes.forEach((checkbox) => {
+      checkbox.checked = selectAll.checked;
+      checkbox.dispatchEvent(new Event("change"));
+    });
+  }
 
   // src/main.ts
-  var $followingMap = atom(/* @__PURE__ */ new Map());
-  var $unfollowList = atom(getUnfollowList());
   var $totalUnfollowed = atom(0);
   var $collectedFollowing = atom(false);
   var $isRunning = atom(false);
