@@ -1,5 +1,5 @@
-import { handleChange } from './add-elements'
-import { FollowingUser, getFollowingAutoScroll } from './main'
+import { addSuperUnfollowButton, handleChange } from './add-elements'
+import { FollowingUser, getFollowing } from './main'
 import { getFollowingMap, getUnfollowList, prettyConsole } from './utils'
 
 export async function addSearchDialog() {
@@ -14,9 +14,10 @@ export async function addSearchDialog() {
 
     // Create the show dialog button and attach it to the top right of the screen
     const modalButton = document.createElement('button')
-    modalButton.id = 'su-search-button'
+    modalButton.id = 'su-search-modal-button'
     modalButton.textContent = 'SuperUnfollow'
     modalButton.classList.add('superUnfollow', 'su-button', 'su-modal', 'small')
+    addSuperUnfollowButton(dialog)
     modalButton.addEventListener('click', () => {
         dialog.showModal()
     })
@@ -24,12 +25,9 @@ export async function addSearchDialog() {
     const heading = document.createElement('p')
     heading.textContent = 'Search usernames, handles and bios'
     heading.classList.add('superUnfollow', 'su-heading')
-    const subheading = document.createElement('p')
-    subheading.textContent = 'searches all usernames, handles and bios'
-    subheading.classList.add('superUnfollow', 'su-subheading')
     const headingsContainer = document.createElement('div')
     headingsContainer.classList.add('superUnfollow', 'su-headings-container')
-    headingsContainer.append(heading, subheading)
+    headingsContainer.append(heading)
 
     // Create the input and submit search elements
     const input = document.createElement('input')
@@ -72,37 +70,36 @@ export async function addSearchDialog() {
     prettyConsole('search dialog created')
 
     // when user clicks 'search' - any partial match of username or handle are returned, or any full word match of description. The search results are appended to the dialog or replace the previous results.
-    searchButton.addEventListener('click', async () => {
-        const input = document.getElementById(
-            'su-search-input'
-        ) as HTMLInputElement
-        const inputValue = input.value === '' ? '.*' : input.value
+    searchButton.addEventListener('click', handleSearch)
 
-        console.log(`searching for ${inputValue}`)
+    return dialog
+}
 
-        const resultDiv = document.getElementById(
-            'su-search-results'
-        ) as HTMLDivElement
+const handleSearch = async () => {
+    const input = document.getElementById('su-search-input') as HTMLInputElement
+    const inputValue = input.value === '' ? '.*' : input.value
 
-        const following = localStorage.getItem('followingCount')
-        // add spinning loader while searching
-        resultDiv.innerHTML = `<div class="su-loader"><span class="su-spinner"></span>Scanning ${following} profiles. Search term: \n ${inputValue}</div>`
+    console.log(`searching for ${inputValue}`)
 
-        // followingMap will be returned if present, or auto scroll will be invoked to get it.
-        let followingMap = await getFollowingAutoScroll()
-        if (!followingMap) {
-            followingMap = await getFollowingMap()
-        }
+    const resultDiv = document.getElementById(
+        'su-search-results'
+    ) as HTMLDivElement
 
-        // display the results
-        const searchResults = searchFollowingList(inputValue, followingMap)
-        resultDiv.innerHTML = `
-        <h3>Search results for: <span>${inputValue}</span></h3>
-        <p>Click on a profile to add to the unfollow list</p>`
-        const resultsContainer = displaySearchResults(searchResults)
-        resultDiv.appendChild(resultsContainer)
-        dialogContainer.appendChild(resultDiv)
-    })
+    const following = localStorage.getItem('followingCount')
+    // add spinning loader while searching
+    resultDiv.innerHTML = `<div class="su-loader"><span class="su-spinner"></span>Scanning ${following} profiles. Search term: \n ${inputValue}</div>`
+
+    // followingMap will be returned if present, or auto scroll will be invoked to get it.
+    let followingMap = await getFollowing()
+    if (!followingMap) {
+        followingMap = await getFollowingMap()
+    }
+
+    // display the results
+    const searchResults = searchFollowingList(inputValue, followingMap)
+    resultDiv.innerHTML = `<h3>Search results for: <span>${inputValue}</span></h3>`
+    const resultsContainer = displaySearchResults(searchResults)
+    resultDiv.appendChild(resultsContainer)
 }
 
 /** @param {string} searchTerm */

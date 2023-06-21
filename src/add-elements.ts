@@ -1,27 +1,40 @@
-import { superUnfollow } from './main'
+import { $unfollowList, superUnfollow } from './main'
 import { getProfileDetails } from './profiles'
-import { updateUnfollowing, getUnfollowList } from './utils'
-import { prettyConsole } from './utils'
+import { updateUnfollowing, getUnfollowList, prettyConsole } from './utils'
 
-export function addSuperUnfollowButton() {
+export function addSuperUnfollowButton(dialog: HTMLDialogElement) {
     prettyConsole('adding superUnfollow button')
     const container = document.createElement('div')
     container.classList.add('superUnfollow', 'su-button-container')
-    container.id = 'superUnfollow'
+    container.id = 'superUnfollow-button-container'
     const startUnfollowButton = document.createElement('button')
     const unfollowList = getUnfollowList()
     if (unfollowList.size > 0) {
-        startUnfollowButton.classList.add('su-button--active')
+        startUnfollowButton.classList.add('active')
         startUnfollowButton.innerText = `SuperUnfollow ${unfollowList.size} Users`
     } else {
-        startUnfollowButton.classList.remove('su-button--active')
+        startUnfollowButton.classList.remove('active')
         startUnfollowButton.innerText = 'No Users Selected'
     }
 
     startUnfollowButton.classList.add('su-button')
     startUnfollowButton.addEventListener('click', superUnfollow)
     container.appendChild(startUnfollowButton)
-    document.body.appendChild(container)
+    dialog.appendChild(container)
+}
+
+export const updateUnfollowButton = () => {
+    const superUnfollowBtn = document.querySelector(
+        '#superUnfollow-button-container button'
+    ) as HTMLButtonElement
+    const { size } = $unfollowList.get()
+    if (size > 0) {
+        superUnfollowBtn.classList.add('active')
+        superUnfollowBtn.innerText = `SuperUnfollow ${size} Users`
+    } else {
+        superUnfollowBtn.classList.remove('active')
+        superUnfollowBtn.innerText = 'No Users Selected'
+    }
 }
 
 /**
@@ -59,6 +72,8 @@ export const handleChange = (event: Event) => {
         throw 'no target found'
     }
 
+    // check if the checkbox was checked from the search dialog or the following page
+
     const handle = target.value
     if (!handle) {
         throw 'no handle found for profile'
@@ -67,14 +82,11 @@ export const handleChange = (event: Event) => {
     if (target.checked && !unfollowList.has(handle)) {
         console.log(`adding ${handle} to unfollowList`)
         unfollowList.add(handle)
-
-        if (!document.getElementById('superUnfollow')) {
-            addSuperUnfollowButton()
-        }
     } else {
         console.log(`removing ${handle} from unfollowList`)
         unfollowList.delete(handle)
     }
+    updateUnfollowing(unfollowList)
 
     const profile = document.querySelector(`[data-handle="${handle}"]`)
     // if no profile is found, it's probably because the user scrolled down and the profile was removed from the DOM
@@ -92,7 +104,5 @@ export const handleChange = (event: Event) => {
         profile.setAttribute('data-unfollow', target.checked.toString())
     }
 
-    updateUnfollowing(unfollowList)
-
-    prettyConsole('unfollowList updated:', Array.from(unfollowList.keys()))
+    prettyConsole(`unfollowList updated: ${unfollowList.size} profiles`)
 }

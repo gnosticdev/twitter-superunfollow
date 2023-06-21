@@ -1,14 +1,34 @@
-import { addSuperUnfollowButton } from './add-elements'
-import { processProfiles, getProfileDetails } from './profiles'
+import { addSuperUnfollowButton, updateUnfollowButton } from './add-elements'
+import { processProfiles } from './profiles'
 import { addSearchDialog } from './search'
 import {
     waitForElement,
     getFollowingMap,
     getUnfollowList,
-    inifiniteScrollDown,
+    scrollDownFollowingPage,
     prettyConsole,
     delay,
+    updateUnfollowing,
+    updateFollowing,
 } from './utils'
+import { atom } from 'nanostores'
+import { $following, $unfollowing } from './stores'
+
+export const $followingMap = atom(new Map<string, FollowingUser>())
+export const $unfollowList = atom(getUnfollowList())
+export const $totalUnfollowed = atom(0)
+export const $collectedFollowing = atom(false)
+export const $isRunning = atom(false)
+
+// Subscriptions
+$following.listen((following) => {
+    updateFollowing(following)
+})
+
+$unfollowing.listen((unfollow) => {
+    updateUnfollowing(unfollow)
+    updateUnfollowButton()
+})
 
 export type FollowingUser = {
     handle: string
@@ -16,41 +36,35 @@ export type FollowingUser = {
     description?: string
 }
 
-export const __SU__ = {
-    collectedFollowing: true,
-    followingMap: new Map<string, FollowingUser>(),
-    unfollowList: new Set<string>(),
-    totalUnfollowed: 0,
-}
+export type FollowingUserMap = Map<string, FollowingUser>
 
 export const PROFILES_SIBLINGS = '[data-testid="cellInnerDiv"]'
+export const FOLLOWS_YOU = '[data-testid="userFollowIndicator"]'
 /**
  * Scrolls down the page collecting a list of all profiles
  */
-export async function getFollowingAutoScroll(): Promise<
-    Map<string, FollowingUser> | undefined
-> {
+export async function getFollowing(): Promise<FollowingUserMap | undefined> {
     try {
         let followingMap = getFollowingMap()
-        if (__SU__.collectedFollowing && followingMap.size > 0) {
+        if ($collectedFollowing && followingMap.size > 0) {
             return followingMap
         }
-        const isDone = await inifiniteScrollDown()
+        const isDone = await scrollDownFollowingPage()
         if (isDone) {
             console.log('followingMap', followingMap)
             console.log('done scrolling')
-            __SU__.collectedFollowing = true
+            $collectedFollowing.set(true)
             followingMap = getFollowingMap()
             return followingMap
         } else {
-            return await getFollowingAutoScroll()
+            return await getFollowing()
         }
     } catch (error) {
         console.error(error)
     }
 }
 
-const observer = new MutationObserver((mutations) => {
+const profileObserver = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
         if (mutation.addedNodes.length > 0) {
             mutation.addedNodes.forEach(async (node) => {
@@ -60,6 +74,9 @@ const observer = new MutationObserver((mutations) => {
                     ) as HTMLElement | null
                     if (node.matches(PROFILES_SIBLINGS) && profile) {
                         await processProfiles(profile)
+                        if ($isRunning.get()) {
+                            await superUnfollow()
+                        }
                     }
                 }
             })
@@ -68,73 +85,95 @@ const observer = new MutationObserver((mutations) => {
 })
 
 // add mutation observer and run watcher for new nodes
-observer.observe(document.body, {
+profileObserver.observe(document.body, {
     childList: true,
     subtree: true,
 })
 
-export function superUnfollow() {
+let shouldCancel = false
+let isRunning = false
+export async function superUnfollow(): Promise<void> {
     prettyConsole('starting superUnfollow')
-    window.scrollTo(0, 0)
-    const anchor = document.getElementById('superUnfollow-anchor')
-    if (!anchor) {
-        return
+
+    if (!isRunning) {
+        window.scrollTo(0, 0)
+        isRunning = true
     }
-    const profiles = document.querySelectorAll(
+
+    await delay(3000)
+
+    const profilesToUnfollow = document.querySelectorAll(
         '[data-unfollow="true"]'
     ) as NodeListOf<HTMLElement> | null
 
-    if (!profiles) {
-        return
+    if (!profilesToUnfollow || profilesToUnfollow.length === 0) {
+        const isDone = await scrollDownFollowingPage(3000)
+
+        debugger
+
+        if (isDone) {
+            console.log('done scrolling')
+            return
+        } else {
+            console.log('scrolling again')
+            return await superUnfollow()
+        }
     }
 
-    let unfollowList = getUnfollowList()
-
-    profiles.forEach(async (profile) => {
-        // click the unfollow button
-        const unfollowButton = profile.querySelector(
-            '[data-testid *= "unfollow"]'
-        ) as HTMLButtonElement
-        if (unfollowButton) {
-            unfollowButton.click()
-            // blue and gray out unfollowed profiles
-            profile.style.filter = 'blur(1px) grayscale(100%) brightness(0.5)'
+    for (let i = 0; i < profilesToUnfollow.length; i++) {
+        if (shouldCancel) {
+            console.log('superUnfollow cancelled')
+            return
         }
-        const { handle } = await getProfileDetails(profile)
-        if (!handle) throw 'no handle for profile'
-        // unfollow confirmation button
 
-        unfollowList = await unfollow(handle)
-    })
-    // if there are still profiles in the unfollowList, scroll one page down and repeat
-    if (unfollowList.size > 0) {
-        inifiniteScrollDown().then((isBottom) => {
-            if (isBottom) {
-                console.log('done unfollowing')
-                return
-            }
-            superUnfollow()
-        })
+        const profile = profilesToUnfollow[i]
+        await unfollow(profile)
+
+        if ($unfollowing.get().size === 0) {
+            console.log('no profiles to unfollow')
+            return
+        }
+
+        return await superUnfollow()
     }
 }
 
-const unfollow = async (handle: string) => {
-    await delay(500)
-    const confirmUnfollow = await waitForElement(
-        '[data-testid="confirmationSheetConfirm"]'
-    )
+const unfollow = async (profile: HTMLElement) => {
+    const { handle } = profile.dataset
+    // click the unfollow button
+    const unfollowButton = profile.querySelector(
+        '[aria-label ^= "Following"][role="button"]'
+    ) as HTMLElement | null
 
-    const unfollowList = getUnfollowList()
+    debugger
 
-    if (confirmUnfollow) {
-        await delay(500)
-        confirmUnfollow.click()
-        // remove profile from unfollowList
-        unfollowList.delete(handle)
-        __SU__.totalUnfollowed++
+    if (!unfollowButton || !handle) {
+        throw new Error(
+            !handle ? 'no handle found' : 'no unfollow button for ' + handle
+        )
     }
 
-    return unfollowList
+    unfollowButton.click()
+    await delay(1000)
+    // blue and gray out unfollowed profiles
+    profile.style.filter = 'blur(1px) grayscale(100%) brightness(0.5)'
+    const confirmUnfollow = await waitForElement(
+        '[role="button"] [data-testid="confirmationSheetConfirm"]'
+    )
+
+    if (!confirmUnfollow) {
+        throw new Error('no confirm unfollow button found')
+    }
+    await delay(1000)
+    confirmUnfollow.click()
+    // remove profile from unfollowList
+    $unfollowing.get().delete(handle)
+
+    $totalUnfollowed.set($totalUnfollowed.get() + 1)
+
+    debugger
+
+    return true
 }
 
 // Wait for message from TamperMonkey, abort after received
@@ -142,16 +181,17 @@ window.addEventListener(
     'startRunning',
     async function () {
         try {
+            prettyConsole('starting superUnfollow')
             const count =
                 document.getElementById('su-following-count')?.dataset
                     .followingCount
             if (!count) {
                 throw 'no following count found'
             }
-            addSearchDialog()
-            const unfollowList = getUnfollowList()
-            if (unfollowList.size > 0) {
-                addSuperUnfollowButton()
+            const dialog = await addSearchDialog()
+
+            if ($unfollowing.get().size > 0) {
+                addSuperUnfollowButton(dialog)
             }
         } catch (err) {
             console.error(err)
@@ -162,5 +202,3 @@ window.addEventListener(
 
 // Send message to Tampermonkey, which will send back a message and trigger the listener above
 window.postMessage('startRunning', '*')
-
-export {}

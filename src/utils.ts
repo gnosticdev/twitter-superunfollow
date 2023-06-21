@@ -1,12 +1,32 @@
 import { FollowingUser } from './main'
 
-// scroll down the page every 1 second until the bottom is reached
-export async function inifiniteScrollDown(delayMS = 3000) {
-    let lastHeight = document.body.scrollHeight
-    window.scrollTo(0, lastHeight)
+export const delay = (ms: number) => {
+    return new Promise((resolve) => {
+        setTimeout(resolve, ms)
+    })
+}
+
+// create SuperUnfollow object with following/unfollowing methods to get/set/add/delete
+
+/**
+ * Scrolls down the following page
+ * @param {number} delayMS - number of milliseconds to wait before scrolling down
+ * @returns {boolean} - returns true if the end of the following section has been reached, false if not
+ */
+export async function scrollDownFollowingPage(delayMS = 3000) {
+    // container holding all of the following profiles
+    const followingSection = document.querySelector(
+        'section > div[aria-label="Timeline: Following"]'
+    ) as HTMLElement
+    const lastHeight = followingSection.scrollHeight
+    window.scrollTo({
+        top: followingSection.scrollHeight,
+        behavior: 'smooth',
+    })
+
     await delay(delayMS) // wait for new content to load
 
-    let newHeight = document.body.scrollHeight
+    let newHeight = followingSection.scrollHeight
     console.log(
         `%c scrolling down: lastHeight: ${lastHeight}, newHeight: ${newHeight}`,
         `color: var(--su-green);`
@@ -82,6 +102,11 @@ export const debounce = (func: Function, wait: number) => {
     }
 }
 
+/**
+ * Logs a message with the callee function name and line number, and an optional object -- all with styling.
+ * @param {string} message - the main message to log
+ * @param {Eleemnt | Record<string, any> | null} object - optional object to log
+ */
 export function prettyConsole(
     message: string,
     object: Element | Record<string, any> | null = null
@@ -89,36 +114,29 @@ export function prettyConsole(
     const error = new Error()
     const lineNumber = error.stack?.split('\n')[2].split(':')[2]
     const functionName = error.stack?.split('\n')[2].split(' ')[5]
-    const style =
+    const messageStyle =
         'color: hsl(350, 79%, 74%); background-color: hsl(219, 100%, 39%); font-weight: bold; font-size: 1; padding: 5px;'
+    const callerStyle =
+        'color: hsl(70, 16.20%, 71.00%); font-size: 10px; padding: 5px;'
     if (object) {
         console.log(
             `%c ${message} %c ${functionName}():${lineNumber}`,
-            style,
-            'color: hsl(70, 16.20%, 71.00%); font-size: 10px; padding: 5px;'
+            messageStyle,
+            callerStyle
         )
         console.log(object)
     } else {
         console.log(
             `%c ${message} %c ${functionName}():${lineNumber}`,
-            style,
-            'color: hsl(70, 16.20%, 71.00%); font-size: 10px; padding: 5px;'
+            messageStyle,
+            callerStyle
         )
     }
 }
 
-export function isJsonString(str: string) {
-    try {
-        JSON.parse(str)
-    } catch (e) {
-        return false
-    }
-    return true
-}
-
 export function waitForElement(
     selector: string,
-    timout = 4000
+    timeout = 4000
 ): Promise<HTMLElement | null> {
     return new Promise(function (resolve, reject) {
         const element = document.querySelector(selector) as HTMLElement
@@ -129,7 +147,6 @@ export function waitForElement(
         const observer = new MutationObserver(function (records) {
             records.forEach(function (mutation) {
                 const nodes = Array.from(mutation.addedNodes)
-                console.log('mutation nodes', 'yellow', nodes)
                 nodes.forEach(function (node) {
                     if (node instanceof HTMLElement) {
                         const innerElement = node.querySelector(
@@ -156,11 +173,5 @@ export function waitForElement(
             childList: true,
             subtree: true,
         })
-    })
-}
-
-export function delay(ms: number) {
-    return new Promise((resolve) => {
-        setTimeout(resolve, ms)
     })
 }

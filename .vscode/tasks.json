@@ -2,12 +2,26 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "type": "typescript",
-            "tsconfig": "tsconfig.json",
-            "option": "watch",
-            "problemMatcher": ["$tsc-watch"],
-            "group": "build",
-            "label": "tsc: watch"
+            "label": "build and watch",
+            "type": "shell",
+            "command": "tsc --noEmit && npx esbuild --bundle --target=\"es2020\" --watch src/main.ts --outfile=\"dist/bundle.js\" --sourcemap",
+            "isBackground": true,
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": {
+                "owner": "typescript",
+                "source": "ts",
+                "applyTo": "closedDocuments",
+                "fileLocation": ["absolute"],
+                "pattern": "$tsc",
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": ".*",
+                    "endsPattern": ".*"
+                }
+            }
         }
     ]
 }
