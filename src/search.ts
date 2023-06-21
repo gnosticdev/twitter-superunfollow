@@ -91,7 +91,9 @@ const handleSearch = async () => {
     resultDiv.innerHTML = `<div class="su-loader"><span class="su-spinner"></span>Scanning ${following} profiles. Search term: \n ${inputValue}</div>`
     // display the results
     const searchResults = searchFollowingList(inputValue)
-    resultDiv.innerHTML = `<h3>Search results for: <span>${inputValue}</span></h3>`
+    resultDiv.innerHTML = `<h3>Search results for: <span>${
+        inputValue === '.*' ? 'all profiles' : inputValue
+    }</span></h3>`
     const resultsContainer = displaySearchResults(searchResults)
     resultDiv.appendChild(resultsContainer)
 }
@@ -146,8 +148,7 @@ export function displaySearchResults(searchResults: Set<string>) {
     selectAllContainer.appendChild(selectAllLabel)
     resultsContainer.appendChild(selectAllContainer)
 
-    // get the unfollow list from storage or returns a new list
-
+    // create the checkboxes for each result
     searchResults.forEach((result) => {
         const checkbox = document.createElement('input')
         checkbox.type = 'checkbox'

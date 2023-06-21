@@ -33,57 +33,6 @@ export async function scrollDownFollowingPage(delayMS = 3000) {
     }
 }
 
-/** Updates the following map in local storage
- *  @param {Map<string, FollowingUser>} followingMap - map of usernames to FollowingUser objects
- * */
-// export const updateFollowing = (followingMap: Map<string, FollowingUser>) => {
-//     localStorage.setItem(
-//         'followingMap',
-//         JSON.stringify(Array.from(followingMap.entries()))
-//     )
-// }
-
-// /**
-//  * Updates the unfollow list in local storage
-//  * @param {Set<string>} unfollowList - set of usernames to unfollow
-//  */
-// export const updateUnfollowing = (unfollowList: Set<string>) => {
-//     localStorage.setItem(
-//         'unfollowList',
-//         JSON.stringify(Array.from(unfollowList))
-//     )
-// }
-
-/**
- * Gets the following map from local storage
- * @returns {Promise<Map<string, FollowingUser> | null>} followingMap - map of usernames to FollowingUser objects
- */
-// export const getFollowingMap = () => {
-//     // retrieve from local storage as string, then parse to get the map
-//     const followingMapString = localStorage.getItem('followingMap')
-//     if (!followingMapString) {
-//         return new Map<string, FollowingUser>()
-//     }
-//     const followingMap = new Map<string, FollowingUser>(
-//         JSON.parse(followingMapString)
-//     )
-//     return followingMap
-// }
-
-// /**
-//  * Gets the unfollow list from local storage
-//  * @returns {Promise<Set<string> | null>} unfollowList - set of usernames to unfollow
-//  */
-// export const getUnfollowList = () => {
-//     // retrieve from local storage as string, then parse to get the map
-//     const unfollowListString = localStorage.getItem('unfollowList')
-//     if (!unfollowListString) {
-//         return new Set<string>()
-//     }
-//     const unfollowList = new Set<string>(JSON.parse(unfollowListString))
-//     return unfollowList
-// }
-
 // setTimeout function
 let timeout: number | undefined
 export const debounce = (func: Function, wait: number) => {

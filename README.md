@@ -5,4 +5,6 @@ Script to be used in Chrome Extension or Arc Boost that automatically scrolls th
 Uses localstorage (nanostores) to save the following/unfollowing information so minimal auto scrolling is needed.
 
 TODO:
-Need to use eval() to get user following count, so currently uses Tampermonkey to get this in the background in a sandboxed mode. Will add to background script before deployment.
+
+-   Need to use eval() to get user following count, so currently uses Tampermonkey to get this in the background in a sandboxed mode. Will add to background script before deployment.
+-
