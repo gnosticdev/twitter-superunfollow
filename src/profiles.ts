@@ -1,5 +1,6 @@
 import { addCheckbox } from './add-elements'
-import { updateFollowing, delay, getFollowingMap } from './utils'
+import { addFollowing } from './stores'
+import { delay } from './utils'
 
 export async function processProfiles(profile: HTMLElement) {
     try {
@@ -63,18 +64,15 @@ export async function getProfileDetails(profile: HTMLElement) {
 
 export async function saveFollowing(profiles: HTMLElement | HTMLElement[]) {
     try {
-        const followingMap = getFollowingMap()
         if (Array.isArray(profiles)) {
             profiles.forEach(async (profile) => {
                 const entry = await getProfileDetails(profile)
-                followingMap.set(entry.handle, entry)
+                addFollowing(entry.handle, entry)
             })
         } else {
             const entry = await getProfileDetails(profiles)
-            followingMap.set(entry.handle, entry)
+            addFollowing(entry.handle, entry)
         }
-        // update in local storage
-        updateFollowing(followingMap)
     } catch (error) {
         console.error(error)
     }
