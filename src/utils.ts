@@ -33,19 +33,6 @@ export async function scrollDownFollowingPage(delayMS = 3000) {
     }
 }
 
-// setTimeout function
-let timeout: number | undefined
-export const debounce = (func: Function, wait: number) => {
-    return function executedFunction(...args: string[]) {
-        const later = () => {
-            clearTimeout(timeout)
-            func(...args)
-        }
-        clearTimeout(timeout)
-        timeout = setTimeout(later, wait)
-    }
-}
-
 /**
  * Logs a message with the callee function name and line number, and an optional object -- all with styling.
  * @param {string} message - the main message to log

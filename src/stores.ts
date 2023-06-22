@@ -1,5 +1,6 @@
 import { persistentAtom } from '@nanostores/persistent'
-import { FollowingUser } from './main'
+import { atom } from 'nanostores'
+import { $profilesProcessing } from './main'
 
 export const $unfollowing = persistentAtom('unfollowing', new Set<string>(), {
     encode: (value) => {
@@ -28,7 +29,9 @@ export const addUnfollowing = (handle: string) => {
 }
 
 export const removeUnfollowing = (handle: string) => {
-    return $unfollowing.set(new Set([...$unfollowing.get().add(handle)]))
+    const unfollowing = $unfollowing.get()
+    unfollowing.delete(handle)
+    return $unfollowing.set(new Set([...unfollowing]))
 }
 
 export const addFollowing = (handle: string, user: FollowingUser) => {
@@ -39,4 +42,85 @@ export const removeFollowing = (handle: string) => {
     const following = $following.get()
     following.delete(handle)
     return $following.set(new Map([...Array.from(following)]))
+}
+
+// Create a new store for the button state
+export const $buttonState = atom<'idle' | 'running' | 'done'>('idle')
+export const $stopFlag = atom(false)
+
+//
+export async function handleButtonState() {
+    switch ($buttonState.get()) {
+        case 'idle':
+            $buttonState.set('running')
+            break
+        case 'running':
+            $buttonState.set('done')
+            break
+        case 'done':
+            $buttonState.set('idle')
+            break
+
+        default:
+            break
+    }
+}
+
+// Subscribe to changes in the button state
+$buttonState.subscribe((state) => {
+    const suButton = document.getElementById(
+        'superUnfollow-button'
+    ) as HTMLButtonElement | null
+    if (suButton) {
+        switch (state) {
+            case 'idle':
+                setButtonText()
+                suButton.disabled = false
+                break
+            case 'running':
+                suButton.innerText = 'Running...'
+                suButton.disabled = true
+                $profilesProcessing.set(true)
+                break
+            case 'done':
+                suButton.innerText = 'Done'
+                suButton.disabled = true
+                $stopFlag.set(true)
+                break
+        }
+    }
+})
+
+/**
+ * Updates the unfollow button with the number of users selected
+ */
+export const setButtonText = () => {
+    const superUnfollowBtn = document.getElementById(
+        'superUnfollow-button'
+    ) as HTMLButtonElement
+    const { size } = $unfollowing.get()
+    if (size > 0) {
+        superUnfollowBtn.classList.add('active')
+        superUnfollowBtn.innerText = `SuperUnfollow ${size} Users`
+    } else {
+        superUnfollowBtn.classList.remove('active')
+        superUnfollowBtn.innerText = 'No Users Selected'
+    }
+}
+
+export const waitForProfilesProcessing = async () => {
+    console.log('waiting for profiles to finish processing')
+    return new Promise((resolve) => {
+        if (!$profilesProcessing.get()) {
+            console.log('profiles not processing')
+            resolve(true)
+        }
+        const unsubscribe = $profilesProcessing.listen((isProcessing) => {
+            if (!isProcessing) {
+                unsubscribe()
+                resolve(true)
+                console.log('profiles finished processing')
+            }
+        })
+    })
 }

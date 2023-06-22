@@ -4,7 +4,7 @@
         {
             "label": "build and watch",
             "type": "shell",
-            "command": "tsc --noEmit && npx esbuild --bundle --target=\"es2020\" --watch src/main.ts --outfile=\"dist/bundle.js\" --sourcemap",
+            "command": "tsc --noEmit && node esbuild.mjs --watch",
             "isBackground": true,
             "group": {
                 "kind": "build",

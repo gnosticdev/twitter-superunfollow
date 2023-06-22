@@ -1,21 +1,13 @@
 import { addCheckbox } from './add-elements'
 import { addFollowing } from './stores'
-import { delay } from './utils'
 
 export async function processProfiles(profile: HTMLElement) {
     try {
-        profile = await waitForData(profile)
+        profile = await waitForProfileData(profile)
 
         if (!profile.hasAttribute('data-unfollow')) {
             await saveFollowing(profile)
             await addCheckbox(profile)
-        }
-        if (!document.getElementById('superUnfollow-anchor')) {
-            const anchor = document.createElement('div')
-            anchor.id = 'superUnfollow-anchor'
-            document
-                .querySelector('[aria-label="Timeline: Following"]')
-                ?.firstElementChild?.before(anchor)
         }
     } catch (error: unknown) {
         if (error instanceof Error) {
@@ -24,22 +16,41 @@ export async function processProfiles(profile: HTMLElement) {
     }
 }
 
-async function waitForData(
+async function waitForProfileData(
     profile: HTMLElement,
-    maxRetries = 10
+    timeout = 10_000
 ): Promise<HTMLElement> {
     let links = profile.getElementsByTagName('a')
 
-    if (
-        (links.length < 3 || !links[2]?.textContent?.includes('@')) &&
-        maxRetries > 0
-    ) {
-        await delay(250)
-        return await waitForData(profile, maxRetries - 1)
-    }
-
-    if (maxRetries === 0) {
-        throw new Error('Maximum retries reached, required elements not found')
+    if (links.length < 3 || !links[2]?.textContent?.includes('@')) {
+        console.log('waiting for profile data', profile)
+        const linksObserver = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.addedNodes.length > 0) {
+                    mutation.addedNodes.forEach(async (node) => {
+                        if (node instanceof HTMLElement) {
+                            links = node.getElementsByTagName('a')
+                            if (
+                                links.length > 2 &&
+                                links[2]?.textContent?.includes('@')
+                            ) {
+                                linksObserver.disconnect()
+                                return node
+                            }
+                        }
+                    })
+                }
+            })
+            setTimeout(() => {
+                console.log('profile data timed out', profile)
+                linksObserver.disconnect()
+                return profile
+            }, timeout)
+        })
+        linksObserver.observe(profile, {
+            childList: true,
+            subtree: true,
+        })
     }
 
     return profile
@@ -57,7 +68,9 @@ export async function getProfileDetails(profile: HTMLElement) {
         )
         ?.textContent?.trim()
     if (!username || !handle) {
-        throw 'missing username, handle, or description'
+        throw `missing ${
+            username ? 'handle for ' + username : 'username for ' + handle
+        } for profile:`
     }
     return { username, handle, description }
 }

@@ -1,50 +1,51 @@
-import { addSuperUnfollowButton, updateUnfollowButton } from './add-elements'
+import { addStartButton } from './add-elements'
 import { processProfiles } from './profiles'
-import { addSearchDialog } from './search'
-import {
-    waitForElement,
-    scrollDownFollowingPage,
-    prettyConsole,
-    delay,
-} from './utils'
+import { addSearchDialog } from './dialog'
+import { scrollDownFollowingPage } from './utils'
 import { atom } from 'nanostores'
-import { $following, $unfollowing, removeUnfollowing } from './stores'
+import { $following, $unfollowing, setButtonText } from './stores'
 
+// Stores (not persisted)
 export const $totalUnfollowed = atom(0)
 export const $collectedFollowing = atom(false)
-export const $isRunning = atom(false)
+export const $profilesProcessing = atom(false)
+export const $suIsRunning = atom(false)
+export const $collectFollowingStopFlag = atom(false)
 
 // Subscriptions
-$following.listen((following) => {
-    localStorage.setItem('followingCount', following.size.toString())
-})
-
 $unfollowing.listen((unfollow) => {
-    console.log('unfollowing listener fired. updating button...', unfollow.size)
-    updateUnfollowButton()
+    console.log(`now unfollowing ${unfollow.size.toString()} profiles`)
+    setButtonText()
 })
-
-export type FollowingUser = {
-    handle: string
-    username: string
-    description?: string
-}
 
 export const PROFILES_SIBLINGS = '[data-testid="cellInnerDiv"]'
-export const FOLLOWS_YOU = '[data-testid="userFollowIndicator"]'
+// TODO: add a test for this
+// export const FOLLOWS_YOU = '[data-testid="userFollowIndicator"]'
 /**
  * Scrolls down the page collecting a list of all profiles
  */
+
+export async function init() {
+    const dialog = await addSearchDialog()
+    addStartButton(dialog)
+    setButtonText()
+}
+
 export async function collectFollowing(): Promise<
     Map<string, FollowingUser> | undefined
 > {
     try {
+        if ($collectFollowingStopFlag.get()) {
+            console.log('stopping collect following')
+            $collectFollowingStopFlag.set(false)
+            return
+        }
         if ($collectedFollowing && $following.get().size > 0) {
             return $following.get()
         }
         const isDone = await scrollDownFollowingPage()
         if (isDone) {
-            console.log('followingMap', $following)
+            console.log('following:', $following)
             console.log('done scrolling')
             $collectedFollowing.set(true)
             return $following.get()
@@ -65,10 +66,9 @@ const profileObserver = new MutationObserver((mutations) => {
                         '[data-testid="UserCell"]'
                     ) as HTMLElement | null
                     if (node.matches(PROFILES_SIBLINGS) && profile) {
+                        $profilesProcessing.set(true)
                         await processProfiles(profile)
-                        if ($isRunning.get()) {
-                            await superUnfollow()
-                        }
+                        $profilesProcessing.set(false)
                     }
                 }
             })
@@ -82,144 +82,21 @@ profileObserver.observe(document.body, {
     subtree: true,
 })
 
-// Create a new store for the button state
-export const $buttonState = atom<'idle' | 'running' | 'done'>('idle')
-
-// Subscribe to changes in the button state
-const unsubscribe = $buttonState.subscribe((state) => {
-    const suButton = document.getElementById(
-        'superUnfollow-button'
-    ) as HTMLButtonElement | null
-    if (suButton) {
-        switch (state) {
-            case 'idle':
-                suButton.innerText = `SuperUnfollow ${$unfollowing.get().size}`
-                suButton.disabled = false
-                break
-            case 'running':
-                suButton.innerText = 'Running...'
-                suButton.disabled = true
-                break
-            case 'done':
-                suButton.innerText = 'Done'
-                suButton.disabled = true
-                break
-        }
-    }
-})
-
-// Add an event listener to the button
-const button = document.getElementById('superUnfollow-button')
-button?.addEventListener('click', async () => {
-    if ($buttonState.get() === 'idle') {
-        $buttonState.set('running')
-        await superUnfollow()
-        $buttonState.set('done')
-    }
-})
-
-// Unsubscribe from changes when you're done
-unsubscribe()
-
-export async function superUnfollow(): Promise<void> {
-    prettyConsole('starting superUnfollow')
-
-    if (!$isRunning.get()) {
-        window.scrollTo({
-            behavior: 'smooth',
-            top: 0,
-        })
-        $isRunning.set(true)
-    }
-
-    await delay(3000)
-
-    const profilesToUnfollow = document.querySelectorAll(
-        '[data-unfollow="true"]'
-    ) as NodeListOf<HTMLElement> | null
-
-    if (!profilesToUnfollow || profilesToUnfollow.length === 0) {
-        const isDone = await scrollDownFollowingPage(3000)
-
-        debugger
-
-        if (isDone) {
-            console.log('done scrolling')
-            return
-        } else {
-            console.log('scrolling again')
-            return await superUnfollow()
-        }
-    }
-
-    for (let i = 0; i < profilesToUnfollow.length; i++) {
-        const profile = profilesToUnfollow[i]
-        await unfollow(profile)
-
-        if ($unfollowing.get().size === 0) {
-            console.log('no profiles to unfollow')
-            return
-        }
-
-        return await superUnfollow()
-    }
-}
-
-const unfollow = async (profile: HTMLElement) => {
-    const { handle } = profile.dataset
-    // click the unfollow button
-    const unfollowButton = profile.querySelector(
-        '[aria-label ^= "Following"][role="button"]'
-    ) as HTMLElement | null
-
-    debugger
-
-    if (!unfollowButton || !handle) {
-        throw new Error(
-            !handle ? 'no handle found' : 'no unfollow button for ' + handle
-        )
-    }
-
-    unfollowButton.click()
-    await delay(1000)
-    // blue and gray out unfollowed profiles
-    profile.style.filter = 'blur(1px) grayscale(100%) brightness(0.5)'
-    const confirmUnfollow = await waitForElement(
-        '[role="button"] [data-testid="confirmationSheetConfirm"]'
-    )
-
-    if (!confirmUnfollow) {
-        throw new Error('no confirm unfollow button found')
-    }
-    await delay(1000)
-    confirmUnfollow.click()
-    // remove profile from unfollowList
-    removeUnfollowing(handle)
-
-    $totalUnfollowed.set($totalUnfollowed.get() + 1)
-
-    debugger
-
-    return true
-}
-
 // Wait for message from TamperMonkey, abort after received
 window.addEventListener(
     'startRunning',
     async function () {
         try {
-            prettyConsole('starting superUnfollow')
+            console.log('starting SuperUnfollow')
             const count =
                 document.getElementById('su-following-count')?.dataset
                     .followingCount
             if (!count) {
                 throw 'no following count found'
             }
-            const dialog = await addSearchDialog()
 
-            if ($unfollowing.get().size > 0) {
-                addSuperUnfollowButton(dialog)
-            }
+            // start the content script
+            await init()
         } catch (err) {
             console.error(err)
         }
