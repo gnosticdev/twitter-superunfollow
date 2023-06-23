@@ -1,62 +1,30 @@
-import { addStartButton } from './add-elements'
 import { processProfiles } from './profiles'
 import { addSearchDialog } from './dialog'
-import { scrollDownFollowingPage } from './utils'
 import { atom } from 'nanostores'
-import { $following, $unfollowing, setButtonText } from './stores'
+import { displayUnfollowed } from './unfollow'
+import { $collectedFollowingState } from './stores/collection'
+import { $superUnfollowButtonState } from './stores/unfollowing'
+import { setButtonText } from './utils'
 
 // Stores (not persisted)
-export const $totalUnfollowed = atom(0)
-export const $collectedFollowing = atom(false)
 export const $profilesProcessing = atom(false)
-export const $suIsRunning = atom(false)
-export const $collectFollowingStopFlag = atom(false)
+export const $totalUnfollowed = atom<Set<string>>(new Set())
 
-// Subscriptions
-$unfollowing.listen((unfollow) => {
-    console.log(`now unfollowing ${unfollow.size.toString()} profiles`)
-    setButtonText()
+$totalUnfollowed.listen((unfollowed) => {
+    console.log(`unfollowed ${unfollowed.size.toString()} profiles`)
+    displayUnfollowed(unfollowed)
 })
 
 export const PROFILES_SIBLINGS = '[data-testid="cellInnerDiv"]'
 // TODO: add a test for this
 // export const FOLLOWS_YOU = '[data-testid="userFollowIndicator"]'
-/**
- * Scrolls down the page collecting a list of all profiles
- */
 
 export async function init() {
-    const dialog = await addSearchDialog()
-    addStartButton(dialog)
+    await addSearchDialog()
     setButtonText()
 }
 
-export async function collectFollowing(): Promise<
-    Map<string, FollowingUser> | undefined
-> {
-    try {
-        if ($collectFollowingStopFlag.get()) {
-            console.log('stopping collect following')
-            $collectFollowingStopFlag.set(false)
-            return
-        }
-        if ($collectedFollowing && $following.get().size > 0) {
-            return $following.get()
-        }
-        const isDone = await scrollDownFollowingPage()
-        if (isDone) {
-            console.log('following:', $following)
-            console.log('done scrolling')
-            $collectedFollowing.set(true)
-            return $following.get()
-        } else {
-            return await collectFollowing()
-        }
-    } catch (error) {
-        console.error(error)
-    }
-}
-
+// Adds profiles from the following page as they are added to the DOM (infinite scroll)
 const profileObserver = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
         if (mutation.addedNodes.length > 0) {
@@ -82,7 +50,7 @@ profileObserver.observe(document.body, {
     subtree: true,
 })
 
-// Wait for message from TamperMonkey, abort after received
+// Wait for message from Background script, abort after received
 window.addEventListener(
     'startRunning',
     async function () {
@@ -106,3 +74,17 @@ window.addEventListener(
 
 // Send message to Tampermonkey, which will send back a message and trigger the listener above
 window.postMessage('startRunning', '*')
+
+// close dialog if open when navigating away
+window.addEventListener('beforeunload', () => {
+    console.log('unloading')
+    $collectedFollowingState.set('stopped')
+    $superUnfollowButtonState.set('stopped')
+
+    const dialog = document.getElementById(
+        'su-dialog'
+    ) as HTMLDialogElement | null
+    if (dialog?.open) {
+        dialog.close()
+    }
+})

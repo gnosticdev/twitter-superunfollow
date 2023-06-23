@@ -1,13 +1,15 @@
 :root {
-    --su-green: hsl(156, 77%, 68%);
-    --su-purple-opaque: hsla(245, 53%, 53%, 0.75);
-    --su-purple-hover: hsla(245, 53%, 53%, 0.9);
-    --su-purple-solid: hsla(245, 53%, 53%, 1);
-    --su-purple-light: hsla(245, 53%, 63%, 1);
-    --su-purple-lighter: hsla(245, 53%, 73%, 1);
-    --su-purple-lightest: hsla(245, 53%, 83%, 1);
-    --su-dark-bg-opaque: hsla(245, 24%, 14%, 0.75);
-    --su-dark-bg: hsla(245, 27%, 13%, 1);
+    --su-green: rgb(111, 236, 186);
+    --su-indigo-light: rgb(108, 98, 224);
+    --su-indigo-light-hover: rgb(83, 70, 219);
+    --su-indigo-lighter: rgb(148, 140, 232);
+    --su-indigo-lightest: rgb(188, 183, 241);
+    --su-white: hsl(245, 67%, 98%);
+    --su-indigo: rgb(83, 70, 219);
+    --su-indigo-hover: rgb(56, 42, 213);
+    --su-red: rgb(221, 71, 154);
+    --su-dark-bg-opaque: rgba(29, 27, 44, 0.75);
+    --su-dark-bg: rgb(26, 24, 42);
 }
 
 .superUnfollow {
@@ -24,59 +26,92 @@
         right: 0;
         width: 100%;
         padding-block: 1rem;
-        background-color: hsla(245, 24%, 14%, 0.75);
+        background-color: var(--su-dark-bg);
         display: flex;
         justify-content: space-around;
-
-
+        align-items: center;
     }
 
     & .su-button,
     &.su-button {
-        background-color: var(--su-purple-opaque);
+        background-color: var(--su-indigo);
         color: var(--su-green);
-        border-radius: 2rem 0;
+        border-radius: 0.5rem;
         border: none;
         padding: 1rem 2rem;
         font-size: 1.1rem;
         font-weight: bold;
         cursor: pointer;
 
-        &:not(.active){
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-
         &.large {
-            min-width: 250px
-        }
+            min-width: 250px;
+            border-radius: 1rem;
 
-        &:hover {
-            background-color: var(--su-purple-hover);
-        }
-
-        &.su-modal {
-            position: fixed;
-            top: 10px;
-            right: 10px;
+            &:not(.active) {
+                opacity: 0.7;
+                cursor: not-allowed;
+            }
         }
 
         &.small {
             padding: 0.5rem 0.75rem;
             font-size: 0.75rem;
+        }
+
+        &.outline {
+            border: 2px solid currentColor;
+            font-size: 0.8rem;
+            color: var(--su-indigo-light);
+            background-color: transparent;
+
+            &:hover {
+                color: var(--su-indigo-light-hover);
+                background-color: transparent;
+                border-color: currentColor;
+            }
+
+            &.running {
+                color: var(--su-red);
+                border-color: currentColor;
+                z-index: 99_999;
+            }
+
+            &.alt {
+                color: var(--su-indigo);
+                border-color: currentColor;
+
+                &:hover {
+                    color: var(--su-indigo-hover);
+                    background-color: transparent;
+                    border-color: currentColor;
+                }
+            }
+        }
+
+        &:hover {
+            background-color: var(--su-indigo-hover);
+            transition: background-color 0.4s ease-in-out;
+        }
+
+        &.su-modal {
             border-radius: 0.5rem 0 0.5rem;
+            position: fixed;
+            top: 10px;
+            right: 10px;
         }
     }
 
     &.su-search-dialog {
         background-color: var(--su-dark-bg);
         border-radius: 0.5rem;
-        padding: 2rem;
+        padding-inline: 3rem;
+        padding-block-start: 2rem;
+        padding-block-end: 1rem;
         max-height: 80vh;
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        box-shadow: 0 0 50px 4px var(--su-purple-light);
+        box-shadow: 0 0 50px 4px var(--su-indigo-light);
 
         &::backdrop {
             background-color: hsla(245, 24%, 14%, 0.7);
@@ -89,26 +124,41 @@
 
             & input[type='text'] {
                 background: var(--su-dark-bg-opaque);
-                border: 2px solid var(--su-purple-opaque);
+                border: 2px solid var(--su-indigo);
                 outline: none;
                 padding: 0.5rem;
                 color: white;
-                border-radius: 0.5rem 0;
+                border-radius: 0.5rem;
             }
 
             & .su-search-button {
                 padding: 0.5rem;
-                border-radius: 0.5rem 0;
-                background: var(--su-purple-opaque);
+                border-radius: 0.5rem;
+                background: var(--su-indigo);
                 color: var(--su-green);
-                border: 2px solid var(--su-purple-opaque);
+                border: 2px solid var(--su-indigo);
                 font-weight: 500;
                 cursor: pointer;
                 margin-left: 0.5rem;
 
                 &:hover {
-                    background-color: var(--su-purple-hover);
+                    background-color: var(--su-indigo-hover);
                 }
+            }
+
+            & .su-search-input-container {
+                display: flex;
+                gap: 0.25rem;
+                justify-content: center;
+            }
+
+            & .su-modal-buttons-container {
+                border-radius: 0.5rem;
+                margin-block-start: 1rem;
+                display: flex;
+                justify-content: space-between;
+                gap: 0.5rem;
+                align-items: center;
             }
 
             & .su-close-button {
@@ -117,11 +167,11 @@
                 right: 2px;
                 background: none;
                 border: none;
-                color: var(--su-purple-solid);
+                color: var(--su-indigo);
                 cursor: pointer;
 
                 &:hover {
-                    color: var(--su-purple-hover);
+                    color: var(--su-indigo-hover);
                 }
             }
 
@@ -134,15 +184,15 @@
                 width: 100%;
 
                 & .su-heading {
-                    color: var(--su-purple-lighter);
+                    color: var(--su-white);
                     font-size: 1.1rem;
                     font-weight: 500;
                     text-align: center;
                     margin-block: 0;
                 }
-                
+
                 & .su-subheading {
-                    color: var(--su-purple-lightest);
+                    color: var(--su-indigo-lightest);
                     font-size: 0.9rem;
                     font-weight: 300;
                     text-align: center;
@@ -150,7 +200,7 @@
                 }
             }
 
-            & .su-search-results {
+            & .su-results {
                 display: flex;
                 flex-direction: column;
                 gap: 1rem;
@@ -165,7 +215,7 @@
                     margin-bottom: 0.5rem;
 
                     & span {
-                        color: var(--su-purple-lighter);
+                        color: var(--su-indigo-lighter);
                     }
                 }
 
@@ -173,10 +223,10 @@
                     font-size: 0.75rem;
                     font-weight: 300;
                     text-transform: uppercase;
-                    color: var(--su-purple-lightest);
+                    color: var(--su-indigo-lightest);
                 }
 
-                & .su-search-results-container {
+                & .su-results-container {
                     display: flex;
                     flex-direction: column;
                     align-items: flex-start;
@@ -204,7 +254,7 @@
 
         & .su-select-all {
             & label {
-                color: var(--su-purple-lighter) !important;
+                color: var(--su-indigo-lighter) !important;
             }
         }
 
@@ -213,7 +263,7 @@
             justify-content: center;
             align-items: center;
             gap: 0.5rem;
-            color: var(--su-purple-light);
+            color: var(--su-indigo-light);
             font-size: 1.25rem;
             font-weight: 500;
             padding: 0.5rem;
@@ -222,14 +272,29 @@
                 width: 0.75rem;
                 height: 0.75rem;
                 border-radius: 50%;
-                border: 0.25rem solid var(--su-purple-light);
-                border-top-color: var(--su-purple-solid);
+                border: 0.25rem solid var(--su-indigo-light);
+                border-top-color: var(--su-indigo);
                 animation: spin 1s infinite linear;
             }
         }
 
         & .su-error {
-            hsl(350.44deg 53.05% 58.24%)
+            color: hsla(350deg, 53%, 58%);
+        }
+
+        & .su-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            font-size: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 99_998;
         }
     }
 }

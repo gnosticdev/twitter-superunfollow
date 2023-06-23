@@ -1,4 +1,4 @@
-import { handleChange } from './add-elements'
+import { handleChange } from './checkboxes'
 import { $following, $unfollowing } from './stores'
 
 /**
@@ -11,11 +11,7 @@ export async function handleSearch() {
     const inputValue = input.value === '' ? '.*' : input.value
 
     console.log(`searching for ${inputValue}`)
-
-    const resultDiv = document.getElementById(
-        'su-search-results'
-    ) as HTMLDivElement
-
+    const resultDiv = getResultsDiv()
     // set from background script
     const following = localStorage.getItem('followingCount')
     // add spinning loader while searching
@@ -49,13 +45,17 @@ export function searchFollowingList(searchTerm: string) {
     return results
 }
 
+export async function viewUnfollowingList() {
+    const resultDiv = document.getElementById('su-results') as HTMLDivElement
+    resultDiv.innerHTML = `<h3>Unfollowing List</h3>`
+    const resultsContainer = displaySearchResults($unfollowing.get())
+    resultDiv.appendChild(resultsContainer)
+}
+
 // display search results as a checkbox list with the option to select all
 export function displaySearchResults(searchResults: Set<string>) {
     const resultsContainer = document.createElement('div')
-    resultsContainer.classList.add(
-        'superUnfollow',
-        'su-search-results-container'
-    )
+    resultsContainer.classList.add('superUnfollow', 'su-results-container')
     if (searchResults.size === 0) {
         resultsContainer.innerHTML = `<p class="su-error">No results found</p>`
         return resultsContainer
@@ -116,4 +116,8 @@ function handleSelectAll() {
         checkbox.checked = selectAll.checked
         checkbox.dispatchEvent(new Event('change'))
     })
+}
+
+export const getResultsDiv = () => {
+    return document.getElementById('su-results') as HTMLDivElement
 }

@@ -1,20 +1,14 @@
-import { $totalUnfollowed } from './main'
-import {
-    $stopFlag,
-    $buttonState,
-    $unfollowing,
-    removeUnfollowing,
-    waitForProfilesProcessing,
-} from './stores'
+import { $profilesProcessing, $totalUnfollowed } from './main'
+import { $unfollowing, removeUnfollowing } from './stores'
+import { $superUnfollowButtonState } from './stores/unfollowing'
 import { delay, scrollDownFollowingPage, waitForElement } from './utils'
 
 /**
  * Unfollows all profiles on the page, then scrolls down and repeats until the unfollowing list is empty
  */
 export async function superUnfollow(): Promise<void> {
-    if ($stopFlag.get()) {
-        $stopFlag.set(false)
-        $buttonState.set('idle')
+    if ($superUnfollowButtonState.get() === 'stopped') {
+        console.log('stopping super unfollow')
         return
     }
 
@@ -46,9 +40,8 @@ export async function superUnfollow(): Promise<void> {
     }
 
     for (let i = 0; i < profilesToUnfollow.length; i++) {
-        if ($stopFlag.get()) {
-            $stopFlag.set(false)
-            $buttonState.set('idle')
+        if ($superUnfollowButtonState.get() === 'stopped') {
+            console.log('stopping super unfollow')
             return
         }
         const profile = profilesToUnfollow[i]
@@ -94,9 +87,54 @@ const unfollow = async (profile: HTMLElement) => {
     // remove profile from unfollowing store
     removeUnfollowing(handle)
 
-    $totalUnfollowed.set($totalUnfollowed.get() + 1)
+    $totalUnfollowed.set($totalUnfollowed.get().add(handle))
 
     debugger
 
     return true
+}
+
+// display the unfollowed handles in the results section of the dialog while superUnfollow is running
+export const displayUnfollowed = (unfollowed: Readonly<Set<string>>) => {
+    const resultsDiv = document.getElementById('su-results')
+    if (!resultsDiv) {
+        throw new Error('no results div found')
+    }
+    const unfollowedContainer = document.createElement('div')
+    unfollowedContainer.id = 'su-unfollowed-container'
+    unfollowedContainer.style.cssText = `
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+    `
+    const unfollowedHeader = document.createElement('h2')
+    resultsDiv.innerHTML = `<div class="su-loader"><span class="su-spinner"></span>Running SuperUnfollow...\n ${
+        $totalUnfollowed.get().size
+    } profiles remaining</div>`
+    unfollowed.forEach((handle) => {
+        const unfollowedHandle = document.createElement('p')
+        unfollowedHandle.textContent = handle
+        unfollowedContainer.appendChild(unfollowedHandle)
+    })
+    resultsDiv.appendChild(unfollowedHeader)
+    resultsDiv.appendChild(unfollowedContainer)
+}
+
+export const waitForProfilesProcessing = async () => {
+    console.log('waiting for profiles to finish processing')
+    return new Promise((resolve) => {
+        if (!$profilesProcessing.get()) {
+            console.log('profiles not processing')
+            resolve(true)
+        }
+        const unsubscribe = $profilesProcessing.listen((isProcessing) => {
+            if (!isProcessing) {
+                unsubscribe()
+                resolve(true)
+                console.log('profiles finished processing')
+            }
+        })
+    })
 }

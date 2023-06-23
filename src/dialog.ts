@@ -1,21 +1,18 @@
-import { collectFollowing } from './main'
-import { handleSearch } from './search'
+import { handleSearch, viewUnfollowingList } from './search'
+import { handleCollectBtn } from './stores/collection'
+import { handleSuperUnfollowBtn } from './stores/unfollowing'
 
 export async function addSearchDialog() {
-    console.log('adding search dialog')
     // Create the dialog and the input and submit elements
     const dialog = document.createElement('dialog')
     dialog.classList.add('superUnfollow', 'su-search-dialog')
+    dialog.id = 'su-dialog'
+    dialog.role = 'dialog'
+
+    // create container to hold all elements in dialog
     const dialogContainer = document.createElement('div')
     dialogContainer.classList.add('superUnfollow', 'su-search-dialog-container')
-    dialogContainer.role = 'dialog'
     dialog.appendChild(dialogContainer)
-
-    // Create the show dialog button and attach it to the top right of the screen
-    const modalButton = createModalButton(dialog)
-    const collectFollowingBtn = createCollectBtn()
-    // add the collect following button at the top of the dialog
-    dialogContainer.appendChild(collectFollowingBtn)
 
     const heading = document.createElement('p')
     heading.textContent = 'Search usernames, handles and bios'
@@ -53,23 +50,43 @@ export async function addSearchDialog() {
 
     // add a results div that gets cleared when the search button is clicked
     const resultsContainer = document.createElement('div')
-    resultsContainer.id = 'su-search-results'
-    resultsContainer.classList.add('superUnfollow', 'su-search-results')
+    resultsContainer.id = 'su-results'
+    resultsContainer.classList.add('superUnfollow', 'su-results')
+
+    // Create the show dialog button and attach it to the top right of the screen
+    const modalButton = createModalButton(dialog)
+    const collectBtn = createModalBtns()
+    const buttons = createButtons()
 
     // append elements to dialog
     dialogContainer.append(
         closeButton,
         headingsContainer,
         inputContainer,
-        resultsContainer
+        collectBtn,
+        resultsContainer,
+        buttons
     )
     // Add the dialog and show modal button  to the end of the page
     document.body.appendChild(dialog)
     document.body.appendChild(modalButton)
 
-    console.log('added search dialog')
-
     return dialog
+}
+
+export function createButtons() {
+    const container = document.createElement('div')
+    container.classList.add('superUnfollow', 'su-button-container')
+    container.id = 'superUnfollow-button-container'
+
+    const superUnfollowBtn = document.createElement('button')
+    superUnfollowBtn.classList.add('su-button', 'large')
+    // starting the super unfollow process
+    superUnfollowBtn.addEventListener('click', handleSuperUnfollowBtn)
+    superUnfollowBtn.id = 'superUnfollow-button'
+    container.append(superUnfollowBtn)
+
+    return container
 }
 
 export const createModalButton = (dialog: HTMLDialogElement) => {
@@ -91,12 +108,23 @@ export const createModalButton = (dialog: HTMLDialogElement) => {
     return modalButton
 }
 
-export function createCollectBtn() {
-    const button = document.createElement('button')
-    button.classList.add('su-button', 'small', 'active')
-    button.id = 'su-collect-following-button'
-    button.textContent = 'Get All Following'
-    button.addEventListener('click', collectFollowing)
+export function createModalBtns() {
+    const collectBtn = document.createElement('button')
+    collectBtn.classList.add('su-button', 'small', 'active', 'outline', 'alt')
+    collectBtn.id = 'su-collect-following-button'
+    collectBtn.textContent = 'Collect Following'
+    collectBtn.addEventListener('click', handleCollectBtn)
 
-    return button
+    const viewUnfollowing = document.createElement('button')
+    viewUnfollowing.classList.add('su-button', 'small', 'active', 'outline')
+    viewUnfollowing.id = 'su-view-unfollowing-button'
+    viewUnfollowing.textContent = 'View Unfollowing'
+    viewUnfollowing.addEventListener('click', viewUnfollowingList)
+
+    const container = document.createElement('div')
+    container.classList.add('su-modal-buttons-container')
+    container.id = 'su-modal-buttons-container'
+    container.append(collectBtn, viewUnfollowing)
+
+    return container
 }

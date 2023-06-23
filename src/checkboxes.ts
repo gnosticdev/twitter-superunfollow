@@ -1,26 +1,5 @@
 import { getProfileDetails } from './profiles'
-import {
-    $unfollowing,
-    addUnfollowing,
-    handleButtonState,
-    removeUnfollowing,
-} from './stores'
-import { prettyConsole } from './utils'
-
-export function addStartButton(dialog: HTMLDialogElement) {
-    prettyConsole('adding superUnfollow button')
-    const container = document.createElement('div')
-    container.classList.add('superUnfollow', 'su-button-container')
-    container.id = 'superUnfollow-button-container'
-
-    const superUnfollowBtn = document.createElement('button')
-    superUnfollowBtn.classList.add('su-button', 'large')
-    // starting the super unfollow process
-    superUnfollowBtn.addEventListener('click', handleButtonState)
-    superUnfollowBtn.id = 'superUnfollow-button'
-    container.append(superUnfollowBtn)
-    dialog.appendChild(container)
-}
+import { $unfollowing, addUnfollowing, removeUnfollowing } from './stores'
 
 /**
  * add checkboxes to each profile on the following page. If the checkbox is checked, the profile will be unfollowed when the unfollow button is clicked
@@ -35,12 +14,12 @@ export async function addCheckbox(profile: HTMLElement) {
     if (!handle) {
         throw 'no handle found'
     }
+    // create the checkbox
     const checkbox = document.createElement('input')
     checkbox.type = 'checkbox'
     checkbox.addEventListener('change', handleChange)
-    const unfollowing = $unfollowing.get()
-    checkbox.checked = unfollowing.has(handle)
-    // put the checkbox contttainer before the unfollow button
+    checkbox.checked = $unfollowing.get().has(handle)
+    // put the checkbox container before the unfollow button
     const container = document.createElement('div')
     container.classList.add('superUnfollow', 'su-checkbox-container')
     container.appendChild(checkbox)

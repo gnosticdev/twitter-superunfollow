@@ -1,4 +1,4 @@
-import { addCheckbox } from './add-elements'
+import { addCheckbox } from './checkboxes'
 import { addFollowing } from './stores'
 
 export async function processProfiles(profile: HTMLElement) {
@@ -29,7 +29,7 @@ async function waitForProfileData(
                 if (mutation.addedNodes.length > 0) {
                     mutation.addedNodes.forEach(async (node) => {
                         if (node instanceof HTMLElement) {
-                            links = node.getElementsByTagName('a')
+                            // links = node.getElementsByTagName('a')
                             if (
                                 links.length > 2 &&
                                 links[2]?.textContent?.includes('@')
@@ -60,17 +60,19 @@ async function waitForProfileData(
 export async function getProfileDetails(profile: HTMLElement) {
     const links = profile.getElementsByTagName('a')
 
-    const username = links[1].textContent?.trim()
+    let username = links[1].textContent?.trim()
     const handle = links[2].textContent?.trim()
     const description = profile
         .querySelector(
             '[data-testid="cellInnerDiv"] [role="button"] [dir="auto"]:nth-of-type(2)'
         )
         ?.textContent?.trim()
-    if (!username || !handle) {
-        throw `missing ${
-            username ? 'handle for ' + username : 'username for ' + handle
-        } for profile:`
+    if (!handle) {
+        throw new Error(`missing handle for profile`)
+    }
+    if (!username) {
+        console.log(`missing username for ${handle}`)
+        username = '<missing>'
     }
     return { username, handle, description }
 }

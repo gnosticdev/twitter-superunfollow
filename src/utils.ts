@@ -1,3 +1,5 @@
+import { $unfollowing } from './stores'
+
 export const delay = (ms: number) => {
     return new Promise((resolve) => {
         setTimeout(resolve, ms)
@@ -30,6 +32,23 @@ export async function scrollDownFollowingPage(delayMS = 3000) {
         return true // Reached the end of the document
     } else {
         return false // Not yet at the end of the document
+    }
+}
+
+/**
+ * Updates the unfollow button with the number of users selected
+ */
+export const setButtonText = () => {
+    const button = document.getElementById(
+        'superUnfollow-button'
+    ) as HTMLButtonElement
+    const { size } = $unfollowing.get()
+    if (size > 0) {
+        button.classList.add('active')
+        button.innerText = `SuperUnfollow ${size} Users`
+    } else {
+        button.classList.remove('active')
+        button.innerText = 'No Users Selected'
     }
 }
 
