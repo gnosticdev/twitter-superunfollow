@@ -1,7 +1,6 @@
 import { atom } from 'nanostores'
-import { addRunningOverlay } from '../collect-following'
 import { setButtonText } from '../utils'
-import { superUnfollow } from '../unfollow'
+import { startSuperUnfollow } from '../unfollow'
 
 // Create a new store for the button state
 export const $superUnfollowButtonState = atom<'stopped' | 'running'>('stopped')
@@ -22,7 +21,7 @@ export async function handleSuperUnfollowBtn() {
 }
 
 // Subscribe to changes in the button state
-$superUnfollowButtonState.subscribe(async (state) => {
+$superUnfollowButtonState.listen(async (state) => {
     console.log('superunfollow button state changed:', state)
     const suButton = document.getElementById(
         'superUnfollow-button'
@@ -36,8 +35,9 @@ $superUnfollowButtonState.subscribe(async (state) => {
             case 'running':
                 suButton.innerText = 'Click to Abort'
                 suButton.classList.add('running')
-                addRunningOverlay()
-                await superUnfollow()
+                // addRunningOverlay()
+                await startSuperUnfollow()
+                // removeOverlay()
                 break
         }
     }

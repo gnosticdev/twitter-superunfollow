@@ -6,11 +6,14 @@ import { $unfollowing, addUnfollowing, removeUnfollowing } from './stores'
  * also needs to process profiles that were checked, then removed while scrolling, then added back
  */
 export async function addCheckbox(profile: HTMLElement) {
-    const unfollowButton = profile.querySelector('[data-testid *= "unfollow"]')
+    const unfollowButton = profile.querySelector(
+        '[role="button"][data-testid $= "-unfollow"]'
+    )
     if (!unfollowButton) {
         throw 'no unfollow button found'
     }
-    const { handle } = await getProfileDetails(profile)
+    const profileDetails = await getProfileDetails(profile)
+    const { handle } = profileDetails
     if (!handle) {
         throw 'no handle found'
     }
@@ -24,9 +27,12 @@ export async function addCheckbox(profile: HTMLElement) {
     container.classList.add('superUnfollow', 'su-checkbox-container')
     container.appendChild(checkbox)
     unfollowButton.parentElement?.before(container)
+
     profile.setAttribute('data-unfollow', checkbox.checked.toString())
     profile.setAttribute('data-handle', handle)
     checkbox.value = handle
+
+    return profileDetails
 }
 
 // handles selecting a single checkbox either in the search dialog or on the following page

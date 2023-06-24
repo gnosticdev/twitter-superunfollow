@@ -114,7 +114,7 @@
         box-shadow: 0 0 50px 4px var(--su-indigo-light);
 
         &::backdrop {
-            background-color: hsla(245, 24%, 14%, 0.7);
+            background-color: rgba(29, 27, 44, 0.7);
         }
 
         & .su-search-dialog-container {
@@ -282,7 +282,7 @@
             color: hsla(350deg, 53%, 58%);
         }
 
-        & .su-overlay {
+        & .su-overlay::has(dialog :is(.running)) {
             position: fixed;
             top: 0;
             left: 0;

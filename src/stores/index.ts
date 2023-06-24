@@ -1,5 +1,7 @@
 import { persistentAtom } from '@nanostores/persistent'
 import { setButtonText } from '../utils'
+import { action, atom } from 'nanostores'
+import { ProfileDetails } from '../profiles'
 
 export const $unfollowing = persistentAtom('unfollowing', new Set<string>(), {
     encode: (value) => {
@@ -18,7 +20,7 @@ $unfollowing.listen((unfollow) => {
 
 export const $following = persistentAtom(
     'following',
-    new Map<string, FollowingUser>(),
+    new Map<string, FollowingProfile>(),
     {
         encode: (value) => {
             return JSON.stringify(Array.from(value.entries()))
@@ -44,8 +46,12 @@ export const removeUnfollowing = (handle: string) => {
     return $unfollowing.set(new Set([...unfollowing]))
 }
 
-export const addFollowing = (handle: string, user: FollowingUser) => {
-    return $following.set(new Map([...$following.get().set(handle, user)]))
+export const addFollowing = (handle: string, user: ProfileDetails) => {
+    // get the index from the length of the map
+    const index = $following.get().size
+    // add the index to the user
+    const profile = { ...user, index }
+    return $following.set(new Map([...$following.get().set(handle, profile)]))
 }
 
 export const removeFollowing = (handle: string) => {
@@ -53,3 +59,13 @@ export const removeFollowing = (handle: string) => {
     following.delete(handle)
     return $following.set(new Map([...Array.from(following)]))
 }
+
+export const $setFollowingIndex = atom<Map<string, number>>(new Map())
+
+export const addFollowingIndexes = action(
+    $setFollowingIndex,
+    'following',
+    (store, handle: string) => {
+        store.set(new Map([...store.get().set(handle, store.get().size)]))
+    }
+)

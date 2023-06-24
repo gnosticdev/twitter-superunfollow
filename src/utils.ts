@@ -1,3 +1,4 @@
+import { PROFILES_SECTION, PROFILES_SIBLINGS } from './main'
 import { $unfollowing } from './stores'
 
 export const delay = (ms: number) => {
@@ -13,26 +14,40 @@ export const delay = (ms: number) => {
 export async function scrollDownFollowingPage(delayMS = 3000) {
     // container holding all of the following profiles
     const followingSection = document.querySelector(
-        'section > div[aria-label="Timeline: Following"]'
+        PROFILES_SECTION
     ) as HTMLElement
-    const lastHeight = followingSection.scrollHeight
+    const lastHeight = getLastChildHeight()
+    const { scrollHeight: oldScrollHeight } = followingSection
+    // scroll down the page
     window.scrollTo({
-        top: followingSection.scrollHeight,
+        top: lastHeight,
         behavior: 'smooth',
     })
 
     await delay(delayMS) // wait for new content to load
 
-    let newHeight = followingSection.scrollHeight
+    const newScrollHeight = followingSection.scrollHeight
     console.log(
-        `%c scrolling down: lastHeight: ${lastHeight}, newHeight: ${newHeight}`,
-        `color: var(--su-green);`
+        `%c scrolling down: lastHeight: ${lastHeight}, newHeight: ${newScrollHeight}`,
+        'color: dodgerblue;'
     )
-    if (newHeight === lastHeight) {
+    if (newScrollHeight === oldScrollHeight) {
         return true // Reached the end of the document
     } else {
         return false // Not yet at the end of the document
     }
+}
+
+export const getLastChildHeight = () => {
+    const lastChild = document.querySelector(
+        PROFILES_SIBLINGS + ':last-child'
+    ) as HTMLDivElement
+    const translateYString = lastChild.style.transform
+    const translateYRegex = /translateY\((\d+(\.\d+)?)px\)/
+    const match = translateYRegex.exec(translateYString)
+    const translateY = match ? parseFloat(match[1]) : 0
+
+    return translateY
 }
 
 /**
@@ -52,24 +67,10 @@ export const setButtonText = () => {
     }
 }
 
-/**
- * Logs a message with the callee function name and line number, and an optional object -- all with styling.
- * @param {string} message - the main message to log
- * @param {Eleemnt | Record<string, any> | null} object - optional object to log
- */
-export function prettyConsole(
-    message: string,
-    object: Element | Record<string, any> | null = null
-) {
-    const messageStyle =
-        'color: hsl(350, 79%, 74%); background-color: hsl(219, 100%, 39%); font-weight: bold; font-size: 1; padding: 5px;'
-    console.log(`%c ${message}`, messageStyle)
-    object && console.log(object)
-}
-
 export function waitForElement(
     selector: string,
-    timeout = 4000
+    timeout = 5000,
+    label = selector
 ): Promise<HTMLElement | null> {
     return new Promise(function (resolve, reject) {
         const element = document.querySelector(selector) as HTMLElement
@@ -78,6 +79,7 @@ export function waitForElement(
             return
         }
         const observer = new MutationObserver(function (records) {
+            prettyConsole('waiting for ' + label)
             records.forEach(function (mutation) {
                 const nodes = Array.from(mutation.addedNodes)
                 nodes.forEach(function (node) {
@@ -107,4 +109,19 @@ export function waitForElement(
             subtree: true,
         })
     })
+}
+
+/**
+ * Logs a message with the callee function name and line number, and an optional object -- all with styling.
+ * @param {string} message - the main message to log
+ * @param {Eleemnt | Record<string, any> | null} object - optional object to log
+ */
+export function prettyConsole(
+    message: string,
+    object: Element | Record<string, any> | null = null
+) {
+    const messageStyle =
+        'color: hsl(350, 79%, 74%); background-color: hsl(219, 100%, 39%); font-weight: bold; font-size: 1; padding: 5px;'
+    console.log(`%c ${message}`, messageStyle)
+    object && console.log(object)
 }

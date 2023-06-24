@@ -1,105 +1,123 @@
-import { $profilesProcessing, $totalUnfollowed } from './main'
+import { $unfollowedProfiles } from './main'
+import { getResultsDiv } from './search'
 import { $unfollowing, removeUnfollowing } from './stores'
 import { $superUnfollowButtonState } from './stores/unfollowing'
-import { delay, scrollDownFollowingPage, waitForElement } from './utils'
+import {
+    delay,
+    prettyConsole,
+    scrollDownFollowingPage,
+    waitForElement,
+} from './utils'
 
 /**
- * Unfollows all profiles on the page, then scrolls down and repeats until the unfollowing list is empty
+ * Unfollows the first section of profiles loaded on the page (if any)
+ * Then scrolls down the page and unfollows the rest
  */
-export async function superUnfollow(): Promise<void> {
+export async function startSuperUnfollow() {
+    // get all profiles already loaded on the page
+    const profiles = document.querySelectorAll(
+        '[data-unfollow="true"]'
+    ) as NodeListOf<HTMLElement>
+    profiles.forEach(async (profile) => {
+        await superUnfollow(profile)
+        await delay(1000)
+    })
+    // scroll down the page and the watcher will pick up the rest
+    await scrollUnfollow()
+}
+
+const scrollUnfollow = async () => {
+    if ($superUnfollowButtonState.get() === 'stopped') {
+        console.log('stopping super unfollow')
+        return
+    }
+    // superUnfollow handled by MutationObserver in main.ts
+    try {
+        await scrollDownFollowingPage(2000)
+        await delay(1000)
+        await scrollUnfollow()
+    } catch (error) {
+        console.error(error)
+        return
+    }
+}
+
+/**
+ * Unfollows a profile as selected by the user.
+ * @param {HTMLElement} profile - profile to unfollow
+ * @returns {Promise<void>}
+ */
+export async function superUnfollow(profile: HTMLElement): Promise<void> {
     if ($superUnfollowButtonState.get() === 'stopped') {
         console.log('stopping super unfollow')
         return
     }
 
-    // Wait for profiles to finish processing
-    await waitForProfilesProcessing()
+    try {
+        const { handle } = profile.dataset
+        if (handle && $unfollowing.get().has(handle)) {
+            const unfollowed = await unfollow(profile)
+            if (!unfollowed) {
+                $superUnfollowButtonState.set('stopped')
+                throw new Error('unfollow failed')
+            }
 
-    const profilesToUnfollow = document.querySelectorAll(
-        '[data-unfollow="true"]'
-    ) as NodeListOf<HTMLElement> | null
-
-    if (!profilesToUnfollow) {
-        throw new Error('no profiles to have the data-unfollow attribute set')
-    }
-
-    debugger
-
-    // No profiles to unfollow in this section -> scroll down and try again
-    if (profilesToUnfollow?.length === 0) {
-        console.log('no profiles to unfollow in this section')
-        const isBottom = await scrollDownFollowingPage(3000)
-
-        if (isBottom) {
-            console.log('done scrolling')
-            return
-        } else {
-            console.log('scrolling again')
-            return await superUnfollow()
+            if ($unfollowing.get().size === 0) {
+                prettyConsole('no more profiles to unfollow')
+                $superUnfollowButtonState.set('stopped')
+                return
+            }
         }
-    }
-
-    for (let i = 0; i < profilesToUnfollow.length; i++) {
-        if ($superUnfollowButtonState.get() === 'stopped') {
-            console.log('stopping super unfollow')
-            return
-        }
-        const profile = profilesToUnfollow[i]
-        await unfollow(profile)
-
-        if ($unfollowing.get().size === 0) {
-            console.log('no profiles to unfollow')
-            return
-        }
-        debugger
-        return await superUnfollow()
+    } catch (error) {
+        console.error(error)
+        return
     }
 }
 
 const unfollow = async (profile: HTMLElement) => {
-    const { handle } = profile.dataset
-    // click the unfollow button
-    const unfollowButton = profile.querySelector(
-        '[aria-label ^= "Following"][role="button"]'
-    ) as HTMLElement | null
+    try {
+        const { handle } = profile.dataset
+        // click the unfollow button
+        const unfollowButton = profile.querySelector(
+            '[aria-label ^= "Following"][role="button"]'
+        ) as HTMLElement | null
 
-    debugger
+        if (!unfollowButton || !handle) {
+            throw new Error(
+                !handle ? 'no handle found' : 'no unfollow button for ' + handle
+            )
+        }
 
-    if (!unfollowButton || !handle) {
-        throw new Error(
-            !handle ? 'no handle found' : 'no unfollow button for ' + handle
+        unfollowButton.click()
+        await delay(1500)
+        // blue and gray out unfollowed profiles
+        profile.style.filter = 'blur(1px) grayscale(100%) brightness(0.5)'
+        const confirmUnfollow = await waitForElement(
+            '[role="button"][data-testid="confirmationSheetConfirm"]'
         )
+
+        if (!confirmUnfollow) {
+            throw new Error('no confirm unfollow button found')
+        }
+        confirmUnfollow.click()
+        await delay(1500)
+        // remove profile from unfollowing store
+        removeUnfollowing(handle)
+
+        $unfollowedProfiles.set($unfollowedProfiles.get().add(handle))
+
+        debugger
+
+        return true
+    } catch (error) {
+        console.error(error)
+        return false
     }
-
-    unfollowButton.click()
-    await delay(1000)
-    // blue and gray out unfollowed profiles
-    profile.style.filter = 'blur(1px) grayscale(100%) brightness(0.5)'
-    const confirmUnfollow = await waitForElement(
-        '[role="button"] [data-testid="confirmationSheetConfirm"]'
-    )
-
-    if (!confirmUnfollow) {
-        throw new Error('no confirm unfollow button found')
-    }
-    await delay(1000)
-    confirmUnfollow.click()
-    // remove profile from unfollowing store
-    removeUnfollowing(handle)
-
-    $totalUnfollowed.set($totalUnfollowed.get().add(handle))
-
-    debugger
-
-    return true
 }
 
 // display the unfollowed handles in the results section of the dialog while superUnfollow is running
 export const displayUnfollowed = (unfollowed: Readonly<Set<string>>) => {
-    const resultsDiv = document.getElementById('su-results')
-    if (!resultsDiv) {
-        throw new Error('no results div found')
-    }
+    const resultsDiv = getResultsDiv()
     const unfollowedContainer = document.createElement('div')
     unfollowedContainer.id = 'su-unfollowed-container'
     unfollowedContainer.style.cssText = `
@@ -109,32 +127,15 @@ export const displayUnfollowed = (unfollowed: Readonly<Set<string>>) => {
         justify-content: center;
         width: 100%;
     `
-    const unfollowedHeader = document.createElement('h2')
-    resultsDiv.innerHTML = `<div class="su-loader"><span class="su-spinner"></span>Running SuperUnfollow...\n ${
-        $totalUnfollowed.get().size
-    } profiles remaining</div>`
+    resultsDiv.innerHTML = `<h3 class="su-loader"><span class="su-spinner"></span>Running SuperUnfollow...</h3><p> ${
+        $unfollowedProfiles.get().size
+    } profiles remaining</p>`
+
     unfollowed.forEach((handle) => {
         const unfollowedHandle = document.createElement('p')
         unfollowedHandle.textContent = handle
         unfollowedContainer.appendChild(unfollowedHandle)
     })
-    resultsDiv.appendChild(unfollowedHeader)
     resultsDiv.appendChild(unfollowedContainer)
-}
-
-export const waitForProfilesProcessing = async () => {
-    console.log('waiting for profiles to finish processing')
-    return new Promise((resolve) => {
-        if (!$profilesProcessing.get()) {
-            console.log('profiles not processing')
-            resolve(true)
-        }
-        const unsubscribe = $profilesProcessing.listen((isProcessing) => {
-            if (!isProcessing) {
-                unsubscribe()
-                resolve(true)
-                console.log('profiles finished processing')
-            }
-        })
-    })
+    console.log('appending unfollowed list to results div', unfollowed)
 }

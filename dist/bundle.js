@@ -1,5 +1,60 @@
 "use strict";
 (() => {
+  // node_modules/.pnpm/nanostores@0.9.2/node_modules/nanostores/task/index.js
+  var tasks = 0;
+  var resolves = [];
+  function startTask() {
+    tasks += 1;
+    return () => {
+      tasks -= 1;
+      if (tasks === 0) {
+        let prevResolves = resolves;
+        resolves = [];
+        for (let i of prevResolves)
+          i();
+      }
+    };
+  }
+
+  // node_modules/.pnpm/nanostores@0.9.2/node_modules/nanostores/action/index.js
+  var lastAction = Symbol();
+  var actionId = Symbol();
+  var uid = 0;
+  var doAction = (store, actionName, cb, args) => {
+    let id = ++uid;
+    let tracker = { ...store };
+    tracker.set = (...setArgs) => {
+      store[lastAction] = actionName;
+      store[actionId] = id;
+      store.set(...setArgs);
+      delete store[lastAction];
+      delete store[actionId];
+    };
+    if (store.setKey) {
+      tracker.setKey = (...setArgs) => {
+        store[lastAction] = actionName;
+        store[actionId] = id;
+        store.setKey(...setArgs);
+        delete store[lastAction];
+        delete store[actionId];
+      };
+    }
+    let result = cb(tracker, ...args);
+    if (result instanceof Promise) {
+      let [err, end] = typeof store.action !== "undefined" ? store.action(id, actionName, args) : [];
+      let endTask = startTask();
+      return result.catch((error) => {
+        err && err(error);
+        throw error;
+      }).finally(() => {
+        endTask();
+        end && end();
+      });
+    }
+    return result;
+  };
+  var action = (store, actionName, cb) => (...args) => doAction(store, actionName, cb, args);
+
   // node_modules/.pnpm/nanostores@0.9.2/node_modules/nanostores/clean-stores/index.js
   var clean = Symbol("clean");
 
@@ -233,25 +288,36 @@
   };
   async function scrollDownFollowingPage(delayMS = 3e3) {
     const followingSection = document.querySelector(
-      'section > div[aria-label="Timeline: Following"]'
+      PROFILES_SECTION
     );
-    const lastHeight = followingSection.scrollHeight;
+    const lastHeight = getLastChildHeight();
+    const { scrollHeight: oldScrollHeight } = followingSection;
     window.scrollTo({
-      top: followingSection.scrollHeight,
+      top: lastHeight,
       behavior: "smooth"
     });
     await delay(delayMS);
-    let newHeight = followingSection.scrollHeight;
+    const newScrollHeight = followingSection.scrollHeight;
     console.log(
-      `%c scrolling down: lastHeight: ${lastHeight}, newHeight: ${newHeight}`,
-      `color: var(--su-green);`
+      `%c scrolling down: lastHeight: ${lastHeight}, newHeight: ${newScrollHeight}`,
+      "color: dodgerblue;"
     );
-    if (newHeight === lastHeight) {
+    if (newScrollHeight === oldScrollHeight) {
       return true;
     } else {
       return false;
     }
   }
+  var getLastChildHeight = () => {
+    const lastChild = document.querySelector(
+      PROFILES_SIBLINGS + ":last-child"
+    );
+    const translateYString = lastChild.style.transform;
+    const translateYRegex = /translateY\((\d+(\.\d+)?)px\)/;
+    const match = translateYRegex.exec(translateYString);
+    const translateY = match ? parseFloat(match[1]) : 0;
+    return translateY;
+  };
   var setButtonText = () => {
     const button = document.getElementById(
       "superUnfollow-button"
@@ -265,7 +331,7 @@
       button.innerText = "No Users Selected";
     }
   };
-  function waitForElement(selector, timeout = 4e3) {
+  function waitForElement(selector, timeout = 5e3, label = selector) {
     return new Promise(function(resolve, reject) {
       const element = document.querySelector(selector);
       if (element) {
@@ -273,6 +339,7 @@
         return;
       }
       const observer = new MutationObserver(function(records) {
+        prettyConsole("waiting for " + label);
         records.forEach(function(mutation) {
           const nodes = Array.from(mutation.addedNodes);
           nodes.forEach(function(node) {
@@ -300,6 +367,11 @@
         subtree: true
       });
     });
+  }
+  function prettyConsole(message, object = null) {
+    const messageStyle = "color: hsl(350, 79%, 74%); background-color: hsl(219, 100%, 39%); font-weight: bold; font-size: 1; padding: 5px;";
+    console.log(`%c ${message}`, messageStyle);
+    object && console.log(object);
   }
 
   // src/stores/index.ts
@@ -340,16 +412,29 @@
     return $unfollowing.set(/* @__PURE__ */ new Set([...unfollowing]));
   };
   var addFollowing = (handle, user) => {
-    return $following.set(new Map([...$following.get().set(handle, user)]));
+    const index = $following.get().size;
+    const profile = { ...user, index };
+    return $following.set(new Map([...$following.get().set(handle, profile)]));
   };
+  var $setFollowingIndex = atom(/* @__PURE__ */ new Map());
+  var addFollowingIndexes = action(
+    $setFollowingIndex,
+    "following",
+    (store, handle) => {
+      store.set(new Map([...store.get().set(handle, store.get().size)]));
+    }
+  );
 
   // src/checkboxes.ts
   async function addCheckbox(profile) {
-    const unfollowButton = profile.querySelector('[data-testid *= "unfollow"]');
+    const unfollowButton = profile.querySelector(
+      '[role="button"][data-testid $= "-unfollow"]'
+    );
     if (!unfollowButton) {
       throw "no unfollow button found";
     }
-    const { handle } = await getProfileDetails(profile);
+    const profileDetails = await getProfileDetails(profile);
+    const { handle } = profileDetails;
     if (!handle) {
       throw "no handle found";
     }
@@ -364,6 +449,7 @@
     profile.setAttribute("data-unfollow", checkbox.checked.toString());
     profile.setAttribute("data-handle", handle);
     checkbox.value = handle;
+    return profileDetails;
   }
   var handleChange = (event) => {
     const target = event.target;
@@ -397,46 +483,24 @@
   };
 
   // src/profiles.ts
-  async function processProfiles(profile) {
+  async function processProfile(profile) {
     try {
-      profile = await waitForProfileData(profile);
+      profile = await waitForProfileData(profile, 5e3);
       if (!profile.hasAttribute("data-unfollow")) {
-        await saveFollowing(profile);
-        await addCheckbox(profile);
+        const profileDetails = await addCheckbox(profile);
+        addFollowing(profileDetails.handle, profileDetails);
+        return profile;
       }
     } catch (error) {
-      if (error instanceof Error) {
-        console.error(error.message);
-      }
+      console.error(error);
     }
   }
   async function waitForProfileData(profile, timeout = 1e4) {
     let links = profile.getElementsByTagName("a");
     if (links.length < 3 || !links[2]?.textContent?.includes("@")) {
-      console.log("waiting for profile data", profile);
-      const linksObserver = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-          if (mutation.addedNodes.length > 0) {
-            mutation.addedNodes.forEach(async (node) => {
-              if (node instanceof HTMLElement) {
-                if (links.length > 2 && links[2]?.textContent?.includes("@")) {
-                  linksObserver.disconnect();
-                  return node;
-                }
-              }
-            });
-          }
-        });
-        setTimeout(() => {
-          console.log("profile data timed out", profile);
-          linksObserver.disconnect();
-          return profile;
-        }, timeout);
-      });
-      linksObserver.observe(profile, {
-        childList: true,
-        subtree: true
-      });
+      console.log("waiting for profile data", timeout);
+      await delay(100);
+      return await waitForProfileData(profile, timeout - 100);
     }
     return profile;
   }
@@ -456,34 +520,24 @@
     }
     return { username, handle, description };
   }
-  async function saveFollowing(profiles) {
-    try {
-      if (Array.isArray(profiles)) {
-        profiles.forEach(async (profile) => {
-          const entry = await getProfileDetails(profile);
-          addFollowing(entry.handle, entry);
-        });
-      } else {
-        const entry = await getProfileDetails(profiles);
-        addFollowing(entry.handle, entry);
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  }
 
   // src/search.ts
+  var $searchResults = atom(/* @__PURE__ */ new Set());
+  var $viewResults = atom("none");
+  var $searchInput = atom("");
+  $searchResults.listen((results) => console.log("search results:", results));
   async function handleSearch() {
     const input = document.getElementById("su-search-input");
     const inputValue = input.value === "" ? ".*" : input.value;
+    $searchInput.set(inputValue);
     console.log(`searching for ${inputValue}`);
     const resultDiv = getResultsDiv();
     const following = localStorage.getItem("followingCount");
     resultDiv.innerHTML = `<div class="su-loader"><span class="su-spinner"></span>Scanning ${following} profiles. Search term: 
  ${inputValue}</div>`;
-    const searchResults = searchFollowingList(inputValue);
+    $searchResults.set(searchFollowingList(inputValue));
     resultDiv.innerHTML = `<h3>Search results for: <span>${inputValue === ".*" ? "all profiles" : inputValue}</span></h3>`;
-    const resultsContainer = displaySearchResults(searchResults);
+    const resultsContainer = displayResults($searchResults.get());
     resultDiv.appendChild(resultsContainer);
   }
   function searchFollowingList(searchTerm) {
@@ -498,15 +552,38 @@
     });
     return results;
   }
-  async function viewUnfollowingList() {
-    const resultDiv = document.getElementById("su-results");
-    resultDiv.innerHTML = `<h3>Unfollowing List</h3>`;
-    const resultsContainer = displaySearchResults($unfollowing.get());
-    resultDiv.appendChild(resultsContainer);
+  function handleViewButton() {
+    const resultsDiv = getResultsDiv();
+    console.log(
+      "viewResults: ",
+      $viewResults.get(),
+      "searchResults size: ",
+      $searchResults.get().size
+    );
+    const viewButton = document.getElementById("su-view-button");
+    if (!viewButton)
+      return;
+    const viewResults = $viewResults.get();
+    if (viewResults === "none") {
+      viewButton.textContent = "Hide Unfollowing";
+      $viewResults.set("unfollowing");
+      resultsDiv.innerHTML = "<h3>Unfollowing List</h3>";
+      resultsDiv.append(displayResults($unfollowing.get()));
+    } else if (viewResults === "unfollowing" && $searchResults.get().size > 0) {
+      viewButton.textContent = "View Unfollowing";
+      $viewResults.set("search");
+      resultsDiv.innerHTML = `<h3>Search results for: <span>${$searchInput.get() === ".*" ? "all profiles" : $searchInput.get()}</span></h3>`;
+      resultsDiv.append(displayResults($searchResults.get()));
+    } else {
+      viewButton.textContent = "View Unfollowing";
+      $viewResults.set("none");
+      resultsDiv.innerHTML = "";
+    }
   }
-  function displaySearchResults(searchResults) {
+  function displayResults(searchResults) {
     const resultsContainer = document.createElement("div");
     resultsContainer.classList.add("superUnfollow", "su-results-container");
+    resultsContainer.id = "su-results-container";
     if (searchResults.size === 0) {
       resultsContainer.innerHTML = `<p class="su-error">No results found</p>`;
       return resultsContainer;
@@ -565,151 +642,6 @@
     return document.getElementById("su-results");
   };
 
-  // src/unfollow.ts
-  async function superUnfollow() {
-    if ($superUnfollowButtonState.get() === "stopped") {
-      console.log("stopping super unfollow");
-      return;
-    }
-    await waitForProfilesProcessing();
-    const profilesToUnfollow = document.querySelectorAll(
-      '[data-unfollow="true"]'
-    );
-    if (!profilesToUnfollow) {
-      throw new Error("no profiles to have the data-unfollow attribute set");
-    }
-    debugger;
-    if (profilesToUnfollow?.length === 0) {
-      console.log("no profiles to unfollow in this section");
-      const isBottom = await scrollDownFollowingPage(3e3);
-      if (isBottom) {
-        console.log("done scrolling");
-        return;
-      } else {
-        console.log("scrolling again");
-        return await superUnfollow();
-      }
-    }
-    for (let i = 0; i < profilesToUnfollow.length; i++) {
-      if ($superUnfollowButtonState.get() === "stopped") {
-        console.log("stopping super unfollow");
-        return;
-      }
-      const profile = profilesToUnfollow[i];
-      await unfollow(profile);
-      if ($unfollowing.get().size === 0) {
-        console.log("no profiles to unfollow");
-        return;
-      }
-      debugger;
-      return await superUnfollow();
-    }
-  }
-  var unfollow = async (profile) => {
-    const { handle } = profile.dataset;
-    const unfollowButton = profile.querySelector(
-      '[aria-label ^= "Following"][role="button"]'
-    );
-    debugger;
-    if (!unfollowButton || !handle) {
-      throw new Error(
-        !handle ? "no handle found" : "no unfollow button for " + handle
-      );
-    }
-    unfollowButton.click();
-    await delay(1e3);
-    profile.style.filter = "blur(1px) grayscale(100%) brightness(0.5)";
-    const confirmUnfollow = await waitForElement(
-      '[role="button"] [data-testid="confirmationSheetConfirm"]'
-    );
-    if (!confirmUnfollow) {
-      throw new Error("no confirm unfollow button found");
-    }
-    await delay(1e3);
-    confirmUnfollow.click();
-    removeUnfollowing(handle);
-    $totalUnfollowed.set($totalUnfollowed.get().add(handle));
-    debugger;
-    return true;
-  };
-  var displayUnfollowed = (unfollowed) => {
-    const resultsDiv = document.getElementById("su-results");
-    if (!resultsDiv) {
-      throw new Error("no results div found");
-    }
-    const unfollowedContainer = document.createElement("div");
-    unfollowedContainer.id = "su-unfollowed-container";
-    unfollowedContainer.style.cssText = `
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-    `;
-    const unfollowedHeader = document.createElement("h2");
-    resultsDiv.innerHTML = `<div class="su-loader"><span class="su-spinner"></span>Running SuperUnfollow...
- ${$totalUnfollowed.get().size} profiles remaining</div>`;
-    unfollowed.forEach((handle) => {
-      const unfollowedHandle = document.createElement("p");
-      unfollowedHandle.textContent = handle;
-      unfollowedContainer.appendChild(unfollowedHandle);
-    });
-    resultsDiv.appendChild(unfollowedHeader);
-    resultsDiv.appendChild(unfollowedContainer);
-  };
-  var waitForProfilesProcessing = async () => {
-    console.log("waiting for profiles to finish processing");
-    return new Promise((resolve) => {
-      if (!$profilesProcessing.get()) {
-        console.log("profiles not processing");
-        resolve(true);
-      }
-      const unsubscribe = $profilesProcessing.listen((isProcessing) => {
-        if (!isProcessing) {
-          unsubscribe();
-          resolve(true);
-          console.log("profiles finished processing");
-        }
-      });
-    });
-  };
-
-  // src/stores/unfollowing.ts
-  var $superUnfollowButtonState = atom("stopped");
-  async function handleSuperUnfollowBtn() {
-    console.log("superunfollow button clicked");
-    switch ($superUnfollowButtonState.get()) {
-      case "stopped":
-        $superUnfollowButtonState.set("running");
-        break;
-      case "running":
-        $superUnfollowButtonState.set("stopped");
-        break;
-      default:
-        break;
-    }
-  }
-  $superUnfollowButtonState.subscribe(async (state) => {
-    console.log("superunfollow button state changed:", state);
-    const suButton = document.getElementById(
-      "superUnfollow-button"
-    );
-    if (suButton) {
-      switch (state) {
-        case "stopped":
-          setButtonText();
-          suButton.classList.remove("running");
-          break;
-        case "running":
-          suButton.innerText = "Click to Abort";
-          suButton.classList.add("running");
-          addRunningOverlay();
-          await superUnfollow();
-          break;
-      }
-    }
-  });
-
   // src/collect-following.ts
   async function collectFollowing() {
     try {
@@ -734,39 +666,6 @@
       console.error(error);
     }
   }
-  var addRunningOverlay = () => {
-    addOverlay();
-    document.body.addEventListener(
-      "click",
-      (e) => {
-        if (e.clientY > 0 && e.clientY <= window.innerHeight) {
-          console.log("click occured, stopping process...");
-          if ($superUnfollowButtonState.get() === "running") {
-            $superUnfollowButtonState.set("stopped");
-          }
-          if ($collectedFollowingState.get() === "running") {
-            $collectedFollowingState.set("stopped");
-          }
-          removeOverlay();
-        }
-      },
-      { once: true }
-    );
-  };
-  var addOverlay = () => {
-    console.log("adding overlay");
-    const overlay = document.createElement("div");
-    overlay.id = "su-overlay";
-    overlay.classList.add("su-overlay");
-    document.getElementById("su-dialog")?.appendChild(overlay);
-  };
-  var removeOverlay = () => {
-    console.log("removing overlay");
-    const overlay = document.getElementById("su-overlay");
-    if (overlay) {
-      overlay.remove();
-    }
-  };
 
   // src/stores/collection.ts
   var $collectedFollowingState = atom("stopped");
@@ -800,10 +699,145 @@
         case "running":
           collectBtn.innerText = "Collecting...";
           collectBtn.classList.add("running");
-          addRunningOverlay();
           await collectFollowing();
           break;
         default:
+          break;
+      }
+    }
+  });
+
+  // src/unfollow.ts
+  async function startSuperUnfollow() {
+    const profiles = document.querySelectorAll(
+      '[data-unfollow="true"]'
+    );
+    profiles.forEach(async (profile) => {
+      await superUnfollow(profile);
+      await delay(1e3);
+    });
+    await scrollUnfollow();
+  }
+  var scrollUnfollow = async () => {
+    if ($superUnfollowButtonState.get() === "stopped") {
+      console.log("stopping super unfollow");
+      return;
+    }
+    try {
+      await scrollDownFollowingPage(2e3);
+      await delay(1e3);
+      await scrollUnfollow();
+    } catch (error) {
+      console.error(error);
+      return;
+    }
+  };
+  async function superUnfollow(profile) {
+    if ($superUnfollowButtonState.get() === "stopped") {
+      console.log("stopping super unfollow");
+      return;
+    }
+    try {
+      const { handle } = profile.dataset;
+      if (handle && $unfollowing.get().has(handle)) {
+        const unfollowed = await unfollow(profile);
+        if (!unfollowed) {
+          $superUnfollowButtonState.set("stopped");
+          throw new Error("unfollow failed");
+        }
+        if ($unfollowing.get().size === 0) {
+          prettyConsole("no more profiles to unfollow");
+          $superUnfollowButtonState.set("stopped");
+          return;
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      return;
+    }
+  }
+  var unfollow = async (profile) => {
+    try {
+      const { handle } = profile.dataset;
+      const unfollowButton = profile.querySelector(
+        '[aria-label ^= "Following"][role="button"]'
+      );
+      if (!unfollowButton || !handle) {
+        throw new Error(
+          !handle ? "no handle found" : "no unfollow button for " + handle
+        );
+      }
+      unfollowButton.click();
+      await delay(1500);
+      profile.style.filter = "blur(1px) grayscale(100%) brightness(0.5)";
+      const confirmUnfollow = await waitForElement(
+        '[role="button"][data-testid="confirmationSheetConfirm"]'
+      );
+      if (!confirmUnfollow) {
+        throw new Error("no confirm unfollow button found");
+      }
+      confirmUnfollow.click();
+      await delay(1500);
+      removeUnfollowing(handle);
+      $unfollowedProfiles.set($unfollowedProfiles.get().add(handle));
+      debugger;
+      return true;
+    } catch (error) {
+      console.error(error);
+      return false;
+    }
+  };
+  var displayUnfollowed = (unfollowed) => {
+    const resultsDiv = getResultsDiv();
+    const unfollowedContainer = document.createElement("div");
+    unfollowedContainer.id = "su-unfollowed-container";
+    unfollowedContainer.style.cssText = `
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+    `;
+    resultsDiv.innerHTML = `<h3 class="su-loader"><span class="su-spinner"></span>Running SuperUnfollow...</h3><p> ${$unfollowedProfiles.get().size} profiles remaining</p>`;
+    unfollowed.forEach((handle) => {
+      const unfollowedHandle = document.createElement("p");
+      unfollowedHandle.textContent = handle;
+      unfollowedContainer.appendChild(unfollowedHandle);
+    });
+    resultsDiv.appendChild(unfollowedContainer);
+    console.log("appending unfollowed list to results div", unfollowed);
+  };
+
+  // src/stores/unfollowing.ts
+  var $superUnfollowButtonState = atom("stopped");
+  async function handleSuperUnfollowBtn() {
+    console.log("superunfollow button clicked");
+    switch ($superUnfollowButtonState.get()) {
+      case "stopped":
+        $superUnfollowButtonState.set("running");
+        break;
+      case "running":
+        $superUnfollowButtonState.set("stopped");
+        break;
+      default:
+        break;
+    }
+  }
+  $superUnfollowButtonState.listen(async (state) => {
+    console.log("superunfollow button state changed:", state);
+    const suButton = document.getElementById(
+      "superUnfollow-button"
+    );
+    if (suButton) {
+      switch (state) {
+        case "stopped":
+          setButtonText();
+          suButton.classList.remove("running");
+          break;
+        case "running":
+          suButton.innerText = "Click to Abort";
+          suButton.classList.add("running");
+          await startSuperUnfollow();
           break;
       }
     }
@@ -845,9 +879,9 @@
     const resultsContainer = document.createElement("div");
     resultsContainer.id = "su-results";
     resultsContainer.classList.add("superUnfollow", "su-results");
-    const modalButton = createModalButton(dialog);
-    const collectBtn = createModalBtns();
-    const buttons = createButtons();
+    const modalButton = createShowModalButon(dialog);
+    const collectBtn = createModalButtons();
+    const buttons = createSuperUnfollowBtn();
     dialogContainer.append(
       closeButton,
       headingsContainer,
@@ -860,7 +894,7 @@
     document.body.appendChild(modalButton);
     return dialog;
   }
-  function createButtons() {
+  function createSuperUnfollowBtn() {
     const container = document.createElement("div");
     container.classList.add("superUnfollow", "su-button-container");
     container.id = "superUnfollow-button-container";
@@ -871,7 +905,7 @@
     container.append(superUnfollowBtn);
     return container;
   }
-  var createModalButton = (dialog) => {
+  var createShowModalButon = (dialog) => {
     const modalButton = document.createElement("button");
     modalButton.id = "su-search-modal-button";
     modalButton.textContent = "SuperUnfollow";
@@ -887,7 +921,7 @@
     });
     return modalButton;
   };
-  function createModalBtns() {
+  function createModalButtons() {
     const collectBtn = document.createElement("button");
     collectBtn.classList.add("su-button", "small", "active", "outline", "alt");
     collectBtn.id = "su-collect-following-button";
@@ -895,9 +929,9 @@
     collectBtn.addEventListener("click", handleCollectBtn);
     const viewUnfollowing = document.createElement("button");
     viewUnfollowing.classList.add("su-button", "small", "active", "outline");
-    viewUnfollowing.id = "su-view-unfollowing-button";
+    viewUnfollowing.id = "su-view-button";
     viewUnfollowing.textContent = "View Unfollowing";
-    viewUnfollowing.addEventListener("click", viewUnfollowingList);
+    viewUnfollowing.addEventListener("click", handleViewButton);
     const container = document.createElement("div");
     container.classList.add("su-modal-buttons-container");
     container.id = "su-modal-buttons-container";
@@ -906,39 +940,18 @@
   }
 
   // src/main.ts
-  var $profilesProcessing = atom(false);
-  var $totalUnfollowed = atom(/* @__PURE__ */ new Set());
-  $totalUnfollowed.listen((unfollowed) => {
-    console.log(`unfollowed ${unfollowed.size.toString()} profiles`);
+  var $unfollowedProfiles = atom(/* @__PURE__ */ new Set());
+  var $profileIndex = atom(0);
+  $unfollowedProfiles.listen((unfollowed) => {
     displayUnfollowed(unfollowed);
   });
+  var PROFILES_SECTION = 'section > div[aria-label="Timeline: Following"]';
   var PROFILES_SIBLINGS = '[data-testid="cellInnerDiv"]';
   async function init() {
     await addSearchDialog();
     setButtonText();
+    startObserver();
   }
-  var profileObserver = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      if (mutation.addedNodes.length > 0) {
-        mutation.addedNodes.forEach(async (node) => {
-          if (node instanceof HTMLElement) {
-            const profile = node.querySelector(
-              '[data-testid="UserCell"]'
-            );
-            if (node.matches(PROFILES_SIBLINGS) && profile) {
-              $profilesProcessing.set(true);
-              await processProfiles(profile);
-              $profilesProcessing.set(false);
-            }
-          }
-        });
-      }
-    });
-  });
-  profileObserver.observe(document.body, {
-    childList: true,
-    subtree: true
-  });
   window.addEventListener(
     "startRunning",
     async function() {
@@ -967,5 +980,44 @@
       dialog.close();
     }
   });
+  function startObserver() {
+    const profileObserver = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.addedNodes.length === 0) {
+          continue;
+        }
+        mutation.addedNodes.forEach(async (node) => {
+          if (node instanceof HTMLElement) {
+            const profile = node.querySelector(
+              '[data-testid="UserCell"]'
+            );
+            if (node.matches(PROFILES_SIBLINGS) && profile) {
+              const processedProfile = await processProfile(profile);
+              if ($superUnfollowButtonState.get() === "running" && processedProfile) {
+                await superUnfollow(processedProfile);
+              }
+            }
+          }
+        });
+      }
+    });
+    getFollowingSection().then((section) => {
+      profileObserver.observe(section, {
+        childList: true,
+        subtree: true
+      });
+    });
+  }
+  var getFollowingSection = async () => {
+    const section = await waitForElement(
+      PROFILES_SECTION,
+      8e3,
+      "following section"
+    );
+    if (!section) {
+      throw "following section not found";
+    }
+    return section;
+  };
 })();
 //# sourceMappingURL=file:///Users/divinelight/Coding/twitter-super-unfollow/dist/bundle.js.map

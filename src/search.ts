@@ -1,6 +1,12 @@
+import { atom } from 'nanostores'
 import { handleChange } from './checkboxes'
 import { $following, $unfollowing } from './stores'
 
+export const $searchResults = atom<Set<string>>(new Set())
+export const $viewResults = atom<'search' | 'unfollowing' | 'none'>('none')
+export const $searchInput = atom<string>('')
+
+$searchResults.listen((results) => console.log('search results:', results))
 /**
  * - creates a new div to hold the search results
  * - searches the $following store for the search term
@@ -9,7 +15,7 @@ import { $following, $unfollowing } from './stores'
 export async function handleSearch() {
     const input = document.getElementById('su-search-input') as HTMLInputElement
     const inputValue = input.value === '' ? '.*' : input.value
-
+    $searchInput.set(inputValue)
     console.log(`searching for ${inputValue}`)
     const resultDiv = getResultsDiv()
     // set from background script
@@ -17,11 +23,12 @@ export async function handleSearch() {
     // add spinning loader while searching
     resultDiv.innerHTML = `<div class="su-loader"><span class="su-spinner"></span>Scanning ${following} profiles. Search term: \n ${inputValue}</div>`
     // display the results
-    const searchResults = searchFollowingList(inputValue)
+    $searchResults.set(searchFollowingList(inputValue))
+
     resultDiv.innerHTML = `<h3>Search results for: <span>${
         inputValue === '.*' ? 'all profiles' : inputValue
     }</span></h3>`
-    const resultsContainer = displaySearchResults(searchResults)
+    const resultsContainer = displayResults($searchResults.get())
     resultDiv.appendChild(resultsContainer)
 }
 
@@ -45,17 +52,41 @@ export function searchFollowingList(searchTerm: string) {
     return results
 }
 
-export async function viewUnfollowingList() {
-    const resultDiv = document.getElementById('su-results') as HTMLDivElement
-    resultDiv.innerHTML = `<h3>Unfollowing List</h3>`
-    const resultsContainer = displaySearchResults($unfollowing.get())
-    resultDiv.appendChild(resultsContainer)
+export function handleViewButton() {
+    const resultsDiv = getResultsDiv()
+    console.log(
+        'viewResults: ',
+        $viewResults.get(),
+        'searchResults size: ',
+        $searchResults.get().size
+    )
+    const viewButton = document.getElementById('su-view-button')
+    if (!viewButton) return
+    const viewResults = $viewResults.get()
+    if (viewResults === 'none') {
+        viewButton.textContent = 'Hide Unfollowing'
+        $viewResults.set('unfollowing')
+        resultsDiv.innerHTML = '<h3>Unfollowing List</h3>'
+        resultsDiv.append(displayResults($unfollowing.get()))
+    } else if (viewResults === 'unfollowing' && $searchResults.get().size > 0) {
+        viewButton.textContent = 'View Unfollowing'
+        $viewResults.set('search')
+        resultsDiv.innerHTML = `<h3>Search results for: <span>${
+            $searchInput.get() === '.*' ? 'all profiles' : $searchInput.get()
+        }</span></h3>`
+        resultsDiv.append(displayResults($searchResults.get()))
+    } else {
+        viewButton.textContent = 'View Unfollowing'
+        $viewResults.set('none')
+        resultsDiv.innerHTML = ''
+    }
 }
 
 // display search results as a checkbox list with the option to select all
-export function displaySearchResults(searchResults: Set<string>) {
+export function displayResults(searchResults: Set<string>) {
     const resultsContainer = document.createElement('div')
     resultsContainer.classList.add('superUnfollow', 'su-results-container')
+    resultsContainer.id = 'su-results-container'
     if (searchResults.size === 0) {
         resultsContainer.innerHTML = `<p class="su-error">No results found</p>`
         return resultsContainer

@@ -1,5 +1,5 @@
 import { atom } from 'nanostores'
-import { addRunningOverlay, collectFollowing } from '../collect-following'
+import { collectFollowing } from '../collect-following'
 
 export const $collectedFollowingState = atom<'stopped' | 'running'>('stopped')
 
@@ -34,8 +34,9 @@ $collectedFollowingState.subscribe(async (state) => {
             case 'running':
                 collectBtn.innerText = 'Collecting...'
                 collectBtn.classList.add('running')
-                addRunningOverlay()
+                // addRunningOverlay()
                 await collectFollowing()
+                // removeOverlay()
                 break
             default:
                 break
