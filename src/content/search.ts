@@ -18,10 +18,6 @@ export async function handleSearch() {
     $searchInput.set(inputValue)
     console.log(`searching for ${inputValue}`)
     const resultDiv = getResultsDiv()
-    // set from background script
-    const following = localStorage.getItem('followingCount')
-    // add spinning loader while searching
-    resultDiv.innerHTML = `<div class="su-loader"><span class="su-spinner"></span>Scanning ${following} profiles. Search term: \n ${inputValue}</div>`
     // display the results
     $searchResults.set(searchFollowingList(inputValue))
 
@@ -71,7 +67,9 @@ export function handleViewButton() {
     } else if (viewResults === 'unfollowing' && $searchResults.get().size > 0) {
         viewButton.textContent = 'View Unfollowing'
         $viewResults.set('search')
-        resultsDiv.innerHTML = `<h3>Search results for: <span>${
+        resultsDiv.innerHTML = `<h3><span class="highlight">${
+            $searchResults.get().size
+        } results for: <span>${
             $searchInput.get() === '.*' ? 'all profiles' : $searchInput.get()
         }</span></h3>`
         resultsDiv.append(displayResults($searchResults.get()))
@@ -91,11 +89,9 @@ export function displayResults(searchResults: Set<string>) {
         resultsContainer.innerHTML = `<p class="su-error">No results found</p>`
         return resultsContainer
     }
-
     // create the Select All checkbox
     const selectAllContainer = createSelectAll()
     resultsContainer.appendChild(selectAllContainer)
-
     // create the checkboxes for each result
     searchResults.forEach((result) => {
         const checkbox = document.createElement('input')
@@ -135,7 +131,9 @@ function createSelectAll() {
     return selectAllContainer
 }
 
-// handle the select all checkbox
+/**
+ * Selects all check boxes in the search results
+ */
 function handleSelectAll() {
     const selectAll = document.getElementById(
         'su-search-select-all'

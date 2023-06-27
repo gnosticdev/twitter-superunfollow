@@ -1,4 +1,4 @@
-import { $unfollowedProfiles } from './main'
+import { $unfollowedProfiles, Selectors } from '.'
 import { getResultsDiv } from './search'
 import { $unfollowing, removeUnfollowing } from './stores'
 import { $superUnfollowButtonState } from './stores/unfollowing'
@@ -79,7 +79,7 @@ const unfollow = async (profile: HTMLElement) => {
         const { handle } = profile.dataset
         // click the unfollow button
         const unfollowButton = profile.querySelector(
-            '[aria-label ^= "Following"][role="button"]'
+            Selectors.UF_BUTTON
         ) as HTMLElement | null
 
         if (!unfollowButton || !handle) {
@@ -92,9 +92,7 @@ const unfollow = async (profile: HTMLElement) => {
         await delay(1500)
         // blue and gray out unfollowed profiles
         profile.style.filter = 'blur(1px) grayscale(100%) brightness(0.5)'
-        const confirmUnfollow = await waitForElement(
-            '[role="button"][data-testid="confirmationSheetConfirm"]'
-        )
+        const confirmUnfollow = await waitForElement(Selectors.UF_CONFIRM)
 
         if (!confirmUnfollow) {
             throw new Error('no confirm unfollow button found')

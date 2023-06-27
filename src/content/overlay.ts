@@ -1,4 +1,4 @@
-import { $collectedFollowingState } from './stores/collection'
+import { $collectFollowingState } from './stores/collection'
 import { $superUnfollowButtonState } from './stores/unfollowing'
 
 /**
@@ -15,8 +15,8 @@ export const addRunningOverlay = () => {
                 if ($superUnfollowButtonState.get() === 'running') {
                     $superUnfollowButtonState.set('stopped')
                 }
-                if ($collectedFollowingState.get() === 'running') {
-                    $collectedFollowingState.set('stopped')
+                if ($collectFollowingState.get() === 'running') {
+                    $collectFollowingState.set('stopped')
                 }
                 // gets removed from the listeners
                 // removeOverlay()

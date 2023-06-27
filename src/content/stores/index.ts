@@ -1,7 +1,6 @@
 import { persistentAtom } from '@nanostores/persistent'
 import { setButtonText } from '../utils'
 import { action, atom } from 'nanostores'
-import { ProfileDetails } from '../profiles'
 
 export const $unfollowing = persistentAtom('unfollowing', new Set<string>(), {
     encode: (value) => {
@@ -46,7 +45,7 @@ export const removeUnfollowing = (handle: string) => {
     return $unfollowing.set(new Set([...unfollowing]))
 }
 
-export const addFollowing = (handle: string, user: ProfileDetails) => {
+export const addFollowing = (handle: string, user: ProfileData) => {
     // get the index from the length of the map
     const index = $following.get().size
     // add the index to the user

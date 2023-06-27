@@ -1,3 +1,4 @@
+import { Selectors } from '.'
 import { getProfileDetails } from './profiles'
 import { $unfollowing, addUnfollowing, removeUnfollowing } from './stores'
 
@@ -5,14 +6,12 @@ import { $unfollowing, addUnfollowing, removeUnfollowing } from './stores'
  * add checkboxes to each profile on the following page. If the checkbox is checked, the profile will be unfollowed when the unfollow button is clicked
  * also needs to process profiles that were checked, then removed while scrolling, then added back
  */
-export async function addCheckbox(profile: HTMLElement) {
-    const unfollowButton = profile.querySelector(
-        '[role="button"][data-testid $= "-unfollow"]'
-    )
+export async function addCheckbox(profileInner: ProfileInner) {
+    const unfollowButton = profileInner.querySelector(Selectors.UF_BUTTON)
     if (!unfollowButton) {
         throw 'no unfollow button found'
     }
-    const profileDetails = await getProfileDetails(profile)
+    const profileDetails = await getProfileDetails(profileInner)
     const { handle } = profileDetails
     if (!handle) {
         throw 'no handle found'
@@ -28,8 +27,8 @@ export async function addCheckbox(profile: HTMLElement) {
     container.appendChild(checkbox)
     unfollowButton.parentElement?.before(container)
 
-    profile.setAttribute('data-unfollow', checkbox.checked.toString())
-    profile.setAttribute('data-handle', handle)
+    profileInner.setAttribute('data-unfollow', checkbox.checked.toString())
+    profileInner.setAttribute('data-handle', handle)
     checkbox.value = handle
 
     return profileDetails

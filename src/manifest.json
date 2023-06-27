@@ -1,0 +1,26 @@
+{
+    "name": "Twitter SuperUnfollow",
+    "description": "Unfollow profiles autotmatically, based on keyword.",
+    "version": "0.10",
+    "manifest_version": 3,
+    "content_scripts": [
+        {
+            "matches": ["https://twitter.com/*"],
+            "js": ["content.js"],
+            "css": ["style.css"]
+        }
+    ],
+    "background": {
+        "service_worker": "background.js"
+    },
+
+    "sandbox": {
+        "pages": ["sandbox.html"]
+    },
+    "action": {
+        "default_popup": "popup.html",
+        "default_title": "Twitter SuperUnfollow"
+    },
+    "permissions": ["tabs", "activeTab", "scripting", "storage"],
+    "host_permissions": ["https://*/*"]
+}

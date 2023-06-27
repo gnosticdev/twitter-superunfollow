@@ -1,5 +1,7 @@
-import { PROFILES_SECTION, PROFILES_SIBLINGS } from './main'
+import { Selectors } from '.'
 import { $unfollowing } from './stores'
+import { $collectFollowingState } from './stores/collection'
+import { $superUnfollowButtonState } from './stores/unfollowing'
 
 export const delay = (ms: number) => {
     return new Promise((resolve) => {
@@ -7,20 +9,28 @@ export const delay = (ms: number) => {
     })
 }
 /**
- * Scrolls down the following page
+ * Brings the last child to the top of the page, triggering the loading of the next section of profiles
  * @param {number} delayMS - number of milliseconds to wait before scrolling down
  * @returns {boolean} - returns true if the end of the following section has been reached, false if not
  */
 export async function scrollDownFollowingPage(delayMS = 3000) {
     // container holding all of the following profiles
     const followingSection = document.querySelector(
-        PROFILES_SECTION
+        Selectors.FOLLOWING_CONTAINER
     ) as HTMLElement
-    const lastHeight = getLastChildHeight()
-    const { scrollHeight: oldScrollHeight } = followingSection
+    const lastChildHeight = getLastChildHeight()
+    const scrollHeightBefore = followingSection.scrollHeight
+
+    if (
+        $collectFollowingState.get() === 'stopped' ||
+        $superUnfollowButtonState.get() === 'stopped'
+    ) {
+        console.log('stopping scroll down')
+        return true
+    }
     // scroll down the page
     window.scrollTo({
-        top: lastHeight,
+        top: lastChildHeight,
         behavior: 'smooth',
     })
 
@@ -28,21 +38,35 @@ export async function scrollDownFollowingPage(delayMS = 3000) {
 
     const newScrollHeight = followingSection.scrollHeight
     console.log(
-        `%c scrolling down: lastHeight: ${lastHeight}, newHeight: ${newScrollHeight}`,
+        `%c scrolling down: lastHeight: ${lastChildHeight}, newHeight: ${newScrollHeight}`,
         'color: dodgerblue;'
     )
-    if (newScrollHeight === oldScrollHeight) {
+    if (newScrollHeight === scrollHeightBefore) {
         return true // Reached the end of the document
     } else {
         return false // Not yet at the end of the document
     }
 }
 
+/**
+ * Gets the scroll height of the last profile div on the following page, which is used to determine how far down the page to scroll and trigger the loading of more profiles
+ */
 export const getLastChildHeight = () => {
     const lastChild = document.querySelector(
-        PROFILES_SIBLINGS + ':last-child'
-    ) as HTMLDivElement
-    const translateYString = lastChild.style.transform
+        Selectors.PROFILE_CONTAINER + ':last-child'
+    ) as ProfileContainer
+    const translateY = getScrollHeight(lastChild)
+
+    return translateY
+}
+
+/**
+ * Each profile has a 'transform: translateY()' style applied to it. This function extracts the scroll height from that style and returns it
+ * @param profileContainer  - the profile div from the following page
+ * @returns {number} - the scroll height (distance down the page) of the profile div
+ */
+export const getScrollHeight = (profileContainer: ProfileContainer) => {
+    const translateYString = profileContainer.style.transform
     const translateYRegex = /translateY\((\d+(\.\d+)?)px\)/
     const match = translateYRegex.exec(translateYString)
     const translateY = match ? parseFloat(match[1]) : 0
@@ -60,10 +84,10 @@ export const setButtonText = () => {
     const { size } = $unfollowing.get()
     if (size > 0) {
         button.classList.add('active')
-        button.innerText = `SuperUnfollow ${size} Users`
+        button.innerText = `SuperUnfollow ${size} Accounts`
     } else {
         button.classList.remove('active')
-        button.innerText = 'No Users Selected'
+        button.innerText = 'No Accounts Selected'
     }
 }
 
@@ -79,7 +103,6 @@ export function waitForElement(
             return
         }
         const observer = new MutationObserver(function (records) {
-            prettyConsole('waiting for ' + label)
             records.forEach(function (mutation) {
                 const nodes = Array.from(mutation.addedNodes)
                 nodes.forEach(function (node) {
@@ -87,8 +110,10 @@ export function waitForElement(
                         const innerElement = node.querySelector(
                             selector
                         ) as HTMLElement
+                        // success if the element itself matches the selector, or if an inner element matches the selector
                         if (node.matches(selector) || innerElement) {
-                            console.log(selector + ' -> found')
+                            prettyConsole('Found ' + label, 'green')
+
                             observer.disconnect()
                             resolve(
                                 node.matches(selector) ? node : innerElement
@@ -111,17 +136,23 @@ export function waitForElement(
     })
 }
 
-/**
- * Logs a message with the callee function name and line number, and an optional object -- all with styling.
- * @param {string} message - the main message to log
- * @param {Eleemnt | Record<string, any> | null} object - optional object to log
- */
-export function prettyConsole(
+export const prettyConsole = (
     message: string,
-    object: Element | Record<string, any> | null = null
-) {
-    const messageStyle =
-        'color: hsl(350, 79%, 74%); background-color: hsl(219, 100%, 39%); font-weight: bold; font-size: 1; padding: 5px;'
-    console.log(`%c ${message}`, messageStyle)
-    object && console.log(object)
+    color?: 'blue' | 'red' | 'green',
+    object?: any
+) => {
+    color = color ?? 'blue'
+    message = `%c🏄‍♂️ SuperUnfollow: %c${message}`
+    const messageStyle = {
+        blue: 'color: dodgerblue;',
+        red: 'color: coral;',
+        green: 'color: lightgreen;',
+    }
+
+    const titleStyle =
+        'color: mediumpurple; font-variant-caps: petite-caps; font-size: 1.1rem;'
+    const logArgs = object
+        ? [message, titleStyle, messageStyle[color], object]
+        : [message, titleStyle, messageStyle[color]]
+    console.log(...logArgs)
 }

@@ -33,7 +33,7 @@ $superUnfollowButtonState.listen(async (state) => {
                 suButton.classList.remove('running')
                 break
             case 'running':
-                suButton.innerText = 'Click to Abort'
+                suButton.innerText = 'Click to Stop'
                 suButton.classList.add('running')
                 // addRunningOverlay()
                 await startSuperUnfollow()

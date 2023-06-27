@@ -1,18 +1,30 @@
+@import url('https://fonts.googleapis.com/css2?family=Mulish:wght@400;500;700&display=swap');
+
+
 :root {
     --su-green: rgb(111, 236, 186);
     --su-indigo-light: rgb(108, 98, 224);
     --su-indigo-light-hover: rgb(83, 70, 219);
     --su-indigo-lighter: rgb(148, 140, 232);
+    --su-indigo-lighter-hover: rgb(108, 98, 224);
     --su-indigo-lightest: rgb(188, 183, 241);
+    --su-dull-blue: hsl(219, 31%, 58%);
+    --su-dull-blue-hover: hsl(219, 31%, 48%);
     --su-white: hsl(245, 67%, 98%);
     --su-indigo: rgb(83, 70, 219);
     --su-indigo-hover: rgb(56, 42, 213);
+    --su-inactive: rgba(87, 85, 98, 0.5);
     --su-red: rgb(221, 71, 154);
     --su-dark-bg-opaque: rgba(29, 27, 44, 0.75);
     --su-dark-bg: rgb(26, 24, 42);
+    --su-font: Mullish, sans-serif;
 }
 
 .superUnfollow {
+    & :is(h1, h2, h3, dialog, button, p, span, div, a) {
+        font-family: var(--su-font);
+    }
+
     &.su-checkbox-container {
         display: flex;
         flex-grow: 1;
@@ -46,10 +58,12 @@
         &.large {
             min-width: 250px;
             border-radius: 1rem;
+            font-weight: bold;
 
             &:not(.active) {
                 opacity: 0.7;
                 cursor: not-allowed;
+                background-color: var(--su-inactive);
             }
         }
 
@@ -61,11 +75,11 @@
         &.outline {
             border: 2px solid currentColor;
             font-size: 0.8rem;
-            color: var(--su-indigo-light);
+            color: var(--su-dull-blue);
             background-color: transparent;
 
             &:hover {
-                color: var(--su-indigo-light-hover);
+                color: var(--su-dull-blue-hover);
                 background-color: transparent;
                 border-color: currentColor;
             }
@@ -73,18 +87,22 @@
             &.running {
                 color: var(--su-red);
                 border-color: currentColor;
-                z-index: 99_999;
+                z-index: 99999;
             }
 
             &.alt {
-                color: var(--su-indigo);
+                color: var(--su-indigo-lighter);
                 border-color: currentColor;
 
                 &:hover {
-                    color: var(--su-indigo-hover);
+                    color: var(--su-indigo-lighter-hover);
                     background-color: transparent;
                     border-color: currentColor;
                 }
+            }
+
+            &.needed {
+                color: var(--su-green);
             }
         }
 
@@ -156,9 +174,39 @@
                 border-radius: 0.5rem;
                 margin-block-start: 1rem;
                 display: flex;
-                justify-content: space-between;
+                justify-content: center;
                 gap: 0.5rem;
                 align-items: center;
+            }
+
+            & .su-metrics-container {
+                color: var(--su-white);
+                font-weight: 400;
+                font-size: 1rem;
+                display: flex;
+                flex-direction: column;
+                gap: 0.25rem;
+                align-items: center;
+                justify-content: center;
+
+                & .su-metrics {
+                    font-variant-caps: all-petite-caps;
+                    margin: auto;
+                    font-size: 1.1rem;
+
+                    & .su-highlight {
+                        color: var(--su-indigo-lighter);
+                    }
+                }
+
+                & .su-notice {
+                    color: var(--su-red);
+                    font-size: 0.75rem;
+
+                    &.complete {
+                        color: var(--su-green);
+                    }
+                }
             }
 
             & .su-close-button {
@@ -279,7 +327,7 @@
         }
 
         & .su-error {
-            color: hsla(350deg, 53%, 58%);
+            color: var(--su-red);
         }
 
         & .su-overlay::has(dialog :is(.running)) {
@@ -294,7 +342,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 99_998;
+            z-index: 99998;
         }
     }
 }

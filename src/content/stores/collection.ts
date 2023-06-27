@@ -1,19 +1,26 @@
 import { atom } from 'nanostores'
 import { collectFollowing } from '../collect-following'
+import { $following, $followingCount } from '.'
 
-export const $collectedFollowingState = atom<'stopped' | 'running'>('stopped')
+export const $collectFollowingState = atom<
+    'ready' | 'stopped' | 'running' | 'done'
+>('ready')
 
 export const handleCollectBtn = () => {
     const collectBtn = document.getElementById(
         'su-collect-following-button'
     ) as HTMLButtonElement | null
     if (collectBtn) {
-        switch ($collectedFollowingState.get()) {
-            case 'stopped':
-                $collectedFollowingState.set('running')
+        switch ($collectFollowingState.get()) {
+            case 'ready':
+                $collectFollowingState.set('running')
                 break
             case 'running':
-                $collectedFollowingState.set('stopped')
+                if ($following.get().size === $followingCount.get()) {
+                    $collectFollowingState.set('done')
+                } else {
+                    $collectFollowingState.set('stopped')
+                }
                 break
             default:
                 break
@@ -21,18 +28,19 @@ export const handleCollectBtn = () => {
     }
 }
 
-$collectedFollowingState.subscribe(async (state) => {
+$collectFollowingState.listen(async (state) => {
+    console.log('collect following button state changed:', state)
     const collectBtn = document.getElementById(
         'su-collect-following-button'
     ) as HTMLButtonElement | null
     if (collectBtn) {
         switch (state) {
-            case 'stopped':
+            case 'ready':
                 collectBtn.innerText = 'Collect Following'
                 collectBtn.classList.remove('running')
                 break
             case 'running':
-                collectBtn.innerText = 'Collecting...'
+                collectBtn.innerText = 'Click to Stop.'
                 collectBtn.classList.add('running')
                 // addRunningOverlay()
                 await collectFollowing()

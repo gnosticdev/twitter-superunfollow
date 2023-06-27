@@ -8,7 +8,7 @@
         "tsc": "tsc"
     },
     "keywords": [],
-    "author": "",
+    "author": "ninxadev",
     "license": "ISC",
     "devDependencies": {
         "@types/chrome": "^0.0.237",

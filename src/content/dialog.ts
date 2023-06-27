@@ -1,5 +1,6 @@
 import { handleSearch, handleViewButton } from './search'
-import { handleCollectBtn } from './stores/collection'
+import { $following, $followingCount } from './stores'
+import { $collectFollowingState, handleCollectBtn } from './stores/collection'
 import { handleSuperUnfollowBtn } from './stores/unfollowing'
 
 export async function addSearchDialog() {
@@ -54,22 +55,24 @@ export async function addSearchDialog() {
     resultsContainer.classList.add('superUnfollow', 'su-results')
 
     // Create the show dialog button and attach it to the top right of the screen
-    const modalButton = createShowModalButon(dialog)
-    const collectBtn = createModalButtons()
-    const buttons = createSuperUnfollowBtn()
+    const showModalButton = createShowModalButon(dialog)
+    const modalButtons = createModalButtons()
+    const notice = getMetrics($followingCount.get(), $following.get().size)
+    const startButton = createSuperUnfollowBtn()
 
     // append elements to dialog
     dialogContainer.append(
         closeButton,
         headingsContainer,
         inputContainer,
-        collectBtn,
+        modalButtons,
+        notice,
         resultsContainer,
-        buttons
+        startButton
     )
     // Add the dialog and show modal button  to the end of the page
     document.body.appendChild(dialog)
-    document.body.appendChild(modalButton)
+    document.body.appendChild(showModalButton)
 
     return dialog
 }
@@ -128,3 +131,44 @@ export function createModalButtons() {
 
     return container
 }
+
+export function getMetrics(count: number, size: number) {
+    // section that tells user that they should collect their following list. Shown when $followingCount > $following.get().size
+    const metricsContainer = document.createElement('div')
+    metricsContainer.classList.add('su-metrics-container')
+    metricsContainer.id = 'su-metrics-container'
+    const metrics = document.createElement('p')
+    metrics.classList.add('su-metrics')
+    metrics.id = 'su-metrics'
+    metrics.innerHTML = `Total Following: <span class="su-highlight">${count}</span>&nbsp;&nbsp&nbsp; Total Collected: <span class="su-highlight">${size}</span>`
+    // show user updates on the collection process
+    const notice = document.createElement('div')
+    notice.classList.add('su-notice')
+    // only show notice if collectFollowing has been run on the current session
+    if ($collectFollowingState.get() !== 'ready') {
+        if (count === size) {
+            notice.innerHTML = `All accounts collected.`
+            notice.classList.add('complete')
+            // this should never happen
+        } else if (count < size) {
+            notice.innerHTML = `Collected ${size} accounts.`
+            console.error('Error: $followingCount is less than $following.size')
+        } else if (count > size) {
+            notice.innerHTML = `Need to collect ${count - size} more accounts.`
+        }
+    }
+
+    metricsContainer.append(metrics, notice)
+
+    return metricsContainer
+}
+
+// Subscribe to the $following store and update the metrics when it changes
+$following.subscribe((following) => {
+    const count = $followingCount.get()
+    const size = following.size
+    const metricsContainer = getMetrics(count, size)
+    // remove the current metrics and replace with the updated metrics
+    const currentMetrics = document.getElementById('su-metrics-container')
+    currentMetrics?.replaceWith(metricsContainer)
+})
