@@ -1,6 +1,6 @@
 import { addCheckbox } from './checkboxes'
-import { Selectors } from '.'
-import { addFollowing } from './stores'
+import { Selectors } from '../shared/shared'
+import { addFollowing } from '../storage/persistent'
 import { delay, getScrollHeight } from './utils'
 
 export async function processProfile(profile: ProfileInner) {

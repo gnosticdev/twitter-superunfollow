@@ -1,6 +1,6 @@
 import { atom } from 'nanostores'
-import { setButtonText } from '../utils'
-import { startSuperUnfollow } from '../unfollow'
+import { setButtonText } from '../content/utils'
+import { startSuperUnfollow } from '../content/unfollow'
 
 // Create a new store for the button state
 export const $superUnfollowButtonState = atom<'stopped' | 'running'>('stopped')

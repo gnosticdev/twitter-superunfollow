@@ -1,7 +1,7 @@
-import { Selectors } from '.'
-import { $unfollowing } from './stores'
-import { $collectFollowingState } from './stores/collection'
-import { $superUnfollowButtonState } from './stores/unfollowing'
+import { Selectors } from '../shared/shared'
+import { $unfollowing } from '../storage/persistent'
+import { $collectFollowingState } from '../storage/collection'
+import { $superUnfollowButtonState } from '../storage/unfollowing'
 
 export const delay = (ms: number) => {
     return new Promise((resolve) => {

@@ -1,5 +1,5 @@
-import { $collectFollowingState } from './stores/collection'
-import { $superUnfollowButtonState } from './stores/unfollowing'
+import { $collectFollowingState } from '../storage/collection'
+import { $superUnfollowButtonState } from '../storage/unfollowing'
 
 /**
  * Creates window click listener that aborts the superUnfollow or collect following process

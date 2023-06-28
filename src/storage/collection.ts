@@ -1,6 +1,6 @@
 import { atom } from 'nanostores'
-import { collectFollowing } from '../collect-following'
-import { $following, $followingCount } from '.'
+import { collectFollowing } from '../content/collect-following'
+import { $following, $followingCount } from './persistent'
 
 export const $collectFollowingState = atom<
     'ready' | 'stopped' | 'running' | 'done'

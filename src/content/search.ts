@@ -1,6 +1,6 @@
 import { atom } from 'nanostores'
 import { handleChange } from './checkboxes'
-import { $following, $unfollowing } from './stores'
+import { $following, $unfollowing } from '../storage/persistent'
 
 export const $searchResults = atom<Set<string>>(new Set())
 export const $viewResults = atom<'search' | 'unfollowing' | 'none'>('none')

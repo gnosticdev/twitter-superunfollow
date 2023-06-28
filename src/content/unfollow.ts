@@ -1,7 +1,8 @@
-import { $unfollowedProfiles, Selectors } from '.'
+import { $unfollowedProfiles } from './main'
+import { Selectors } from '../shared/shared'
 import { getResultsDiv } from './search'
-import { $unfollowing, removeUnfollowing } from './stores'
-import { $superUnfollowButtonState } from './stores/unfollowing'
+import { $unfollowing, removeUnfollowing } from '../storage/persistent'
+import { $superUnfollowButtonState } from '../storage/unfollowing'
 import {
     delay,
     prettyConsole,

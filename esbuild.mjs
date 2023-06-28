@@ -1,7 +1,7 @@
 import esbuild from 'esbuild'
 
 const contentContext = await esbuild.context({
-    entryPoints: ['src/content/index.ts'],
+    entryPoints: ['src/content/main.ts'],
     bundle: true,
     outfile: 'dist/content.js',
     target: 'es2020',
@@ -13,7 +13,7 @@ const contentContext = await esbuild.context({
 })
 
 const popupContext = await esbuild.context({
-    entryPoints: ['src/popup.ts'],
+    entryPoints: ['src/popup/popup.ts'],
     bundle: true,
     outfile: 'dist/popup.js',
     target: 'es2020',
@@ -25,7 +25,7 @@ const popupContext = await esbuild.context({
 })
 
 const sandboxContext = await esbuild.context({
-    entryPoints: ['src/sandbox.ts'],
+    entryPoints: ['src/sandbox/sandbox.ts'],
     bundle: true,
     outfile: 'dist/sandbox.js',
     target: 'es2020',
@@ -37,7 +37,7 @@ const sandboxContext = await esbuild.context({
 })
 
 const backgroundContext = await esbuild.context({
-    entryPoints: ['src/background.ts'],
+    entryPoints: ['src/background/background.ts'],
     bundle: true,
     outfile: 'dist/background.js',
     target: 'es2020',
@@ -57,7 +57,11 @@ const cssBuild = await esbuild.context({
 })
 
 const copyContext = await esbuild.context({
-    entryPoints: ['src/manifest.json', 'src/sandbox.html', 'src/popup.html'],
+    entryPoints: [
+        'src/manifest.json',
+        'src/sandbox/sandbox.html',
+        'src/sandbox/popup.html',
+    ],
     bundle: true,
     outdir: 'dist',
     outbase: 'src',

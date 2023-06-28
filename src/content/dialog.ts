@@ -1,7 +1,7 @@
 import { handleSearch, handleViewButton } from './search'
-import { $following, $followingCount } from './stores'
-import { $collectFollowingState, handleCollectBtn } from './stores/collection'
-import { handleSuperUnfollowBtn } from './stores/unfollowing'
+import { $following, $followingCount } from '../storage/persistent'
+import { $collectFollowingState, handleCollectBtn } from '../storage/collection'
+import { handleSuperUnfollowBtn } from '../storage/unfollowing'
 
 export async function addSearchDialog() {
     // Create the dialog and the input and submit elements

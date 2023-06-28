@@ -1,13 +1,18 @@
 {
     "name": "twitter-superunfollow",
     "version": "1.0.0",
-    "description": "",
+    "description": "Unfollow Twitter accounts based on keyword. Automatically.",
     "main": "dist/bundle.js",
     "scripts": {
         "watch": "--watch",
         "tsc": "tsc"
     },
-    "keywords": [],
+    "keywords": [
+        "twitter",
+        "unfollow",
+        "twittter mass unfollow",
+        "chrome extension"
+    ],
     "author": "ninxadev",
     "license": "ISC",
     "devDependencies": {

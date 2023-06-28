@@ -1,45 +1,41 @@
-type FollowingProfile = {
-    index: number
-    handle: string
-    username: string
-    scrollHeight: number
-    description?: string
+/** Types for the new chrome.sidePanel API  */
+// GetPanelOptions
+interface GetPanelOptions {
+    tabId?: number
 }
+// PanelBehavior
+interface PanelBehavior {
+    openPanelOnActionClick?: boolean
+}
+// PanelOptions
+interface PanelOptions {
+    enabled?: boolean
+    path?: string
+    tabId?: number
+}
+// SidePanel
+interface SidePanel {
+    defaultPath?: string
+}
+// add these to the chrome namespace
+// Methods
 
-type ProfileData = Omit<FollowingProfile, 'index'>
+// getOptions
+declare function getOptions(options: GetPanelOptions): Promise<PanelOptions>
 
-interface ProfileContainer extends HTMLElement {
-    readonly dataset: {
-        testid: 'cellInnerDiv'
+// getPanelBehavior
+declare function getPanelBehavior(): Promise<PanelBehavior>
+
+// setOptions
+declare function setOptions(options: PanelOptions): Promise<void>
+
+// setPanelBehavior
+declare function setPanelBehavior(behavior: PanelBehavior): Promise<void>
+declare namespace chrome {
+    namespace sidePanel {
+        function getOptions(options: GetPanelOptions): Promise<PanelOptions>
+        function getPanelBehavior(): Promise<PanelBehavior>
+        function setOptions(options: PanelOptions): Promise<void>
+        function setPanelBehavior(behavior: PanelBehavior): Promise<void>
     }
-}
-
-interface ProfileInner extends HTMLElement {
-    readonly dataset: {
-        testid: 'UserCell'
-    }
-}
-
-interface FollowingContainer extends HTMLElement {
-    readonly ariaLabel: 'Timeline: Following'
-}
-
-type ISender = 'content' | 'background' | 'popup'
-type IReceiver = 'content' | 'background' | 'popup'
-type IMessage<S = ISender, R = IReceiver> = {
-    from: S
-    to: R
-    data?: S extends 'content' ? string : unknown
-    request?: S extends 'content'
-        ? R extends 'background'
-            ? 'start' | 'userData'
-            : 'userData'
-        : unknown
-}
-
-type WindowMessage = {
-    source: {
-        window: WindowProxy
-    }
-    data: any
 }

@@ -1,6 +1,6 @@
 import { atom } from 'nanostores'
-import { $following, $followingCount } from './stores'
-import { $collectFollowingState } from './stores/collection'
+import { $following, $followingCount } from '../storage/persistent'
+import { $collectFollowingState } from '../storage/collection'
 import { delay, scrollDownFollowingPage } from './utils'
 
 /** allows us to scroll to the last entry in the $following list and start collecting from there  */
@@ -54,10 +54,4 @@ export async function collectFollowing(): Promise<
     } catch (error) {
         console.error(error)
     }
-}
-
-export const getLastFollowingEntry = () => {
-    const following = $following.get()
-    const lastEntry = [...following.entries()].pop()
-    return lastEntry
 }

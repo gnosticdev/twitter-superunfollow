@@ -1,6 +1,10 @@
-import { Selectors } from '.'
+import { Selectors } from '../shared/shared'
 import { getProfileDetails } from './profiles'
-import { $unfollowing, addUnfollowing, removeUnfollowing } from './stores'
+import {
+    $unfollowing,
+    addUnfollowing,
+    removeUnfollowing,
+} from '../storage/persistent'
 
 /**
  * add checkboxes to each profile on the following page. If the checkbox is checked, the profile will be unfollowed when the unfollow button is clicked

@@ -1,6 +1,5 @@
 import { persistentAtom } from '@nanostores/persistent'
-import { setButtonText } from '../utils'
-import { action, atom } from 'nanostores'
+import { setButtonText } from '../content/utils'
 
 export const $unfollowing = persistentAtom('unfollowing', new Set<string>(), {
     encode: (value) => {
@@ -58,13 +57,3 @@ export const removeFollowing = (handle: string) => {
     following.delete(handle)
     return $following.set(new Map([...Array.from(following)]))
 }
-
-export const $setFollowingIndex = atom<Map<string, number>>(new Map())
-
-export const addFollowingIndexes = action(
-    $setFollowingIndex,
-    'following',
-    (store, handle: string) => {
-        store.set(new Map([...store.get().set(handle, store.get().size)]))
-    }
-)
