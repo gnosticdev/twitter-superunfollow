@@ -18,8 +18,6 @@ Script to be used in Chrome Extension or Arc Boost:
 
 ### TODO:
 
--   Replace Tampermonkey with background script w/ sandboxed mode.
--   Add scrolling positions from each profile to the $following store.
 -   Start unfollow at the first profile scroll position, so no need to scroll to top and go down entire page.
 
 _Use at your own risk, I make no guarantee that Twitter will not flag your account._
