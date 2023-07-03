@@ -1,21 +1,23 @@
-import { Selectors } from '../shared/shared'
-import { getProfileDetails } from './profiles'
+import { Selectors } from '@/shared/shared'
 import {
     $unfollowing,
     addUnfollowing,
     removeUnfollowing,
-} from '../storage/persistent'
+} from '@/store/persistent'
 
 /**
  * add checkboxes to each profile on the following page. If the checkbox is checked, the profile will be unfollowed when the unfollow button is clicked
  * also needs to process profiles that were checked, then removed while scrolling, then added back
  */
-export async function addCheckbox(profileInner: ProfileInner) {
+export async function addCheckbox(
+    profileInner: ProfileInner,
+    profileDetails: ProfileData
+) {
     const unfollowButton = profileInner.querySelector(Selectors.UF_BUTTON)
     if (!unfollowButton) {
         throw 'no unfollow button found'
     }
-    const profileDetails = await getProfileDetails(profileInner)
+
     const { handle } = profileDetails
     if (!handle) {
         throw 'no handle found'

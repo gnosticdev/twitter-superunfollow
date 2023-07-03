@@ -2,9 +2,9 @@
     "name": "twitter-superunfollow",
     "version": "1.0.0",
     "description": "Unfollow Twitter accounts based on keyword. Automatically.",
-    "main": "dist/bundle.js",
+    "main": "dist/content.js",
     "scripts": {
-        "watch": "--watch",
+        "watch": "tsc && node esbuild.mjs --watch",
         "tsc": "tsc"
     },
     "keywords": [

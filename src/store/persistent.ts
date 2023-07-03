@@ -1,5 +1,7 @@
 import { persistentAtom } from '@nanostores/persistent'
-import { setButtonText } from '../content/utils'
+import { setUnfollowBtn } from '@/store/unfollow-button'
+import { createMetrics } from '@/content/dialog'
+import { atom } from 'nanostores'
 
 export const $unfollowing = persistentAtom('unfollowing', new Set<string>(), {
     encode: (value) => {
@@ -13,7 +15,7 @@ export const $unfollowing = persistentAtom('unfollowing', new Set<string>(), {
 // Subscriptions
 $unfollowing.listen((unfollow) => {
     console.log(`now unfollowing ${unfollow.size.toString()} profiles`)
-    setButtonText()
+    setUnfollowBtn(unfollow.size)
 })
 
 export const $following = persistentAtom(
@@ -29,10 +31,32 @@ export const $following = persistentAtom(
     }
 )
 
+// listen to the $following store and update the metrics when it changes
+$following.listen((following) => {
+    const followingSize = following.size
+    const count = $followingCount.get()
+    const metricsContainer = createMetrics(count, followingSize)
+    // remove the current metrics and replace with the updated metrics
+    const currentMetrics = document.getElementById('su-metrics-container')
+    currentMetrics?.replaceWith(metricsContainer)
+})
+
 export const $followingCount = persistentAtom('followingCount', 0, {
     encode: (value) => value.toString(),
     decode: (value) => parseInt(value),
 })
+
+$followingCount.listen((count) => {
+    console.log(
+        `following count changed from ${$followingCount.get()} to ${count}`
+    )
+    if ($followingCount.get() !== count && count > 0) {
+        debugger
+        needsToCollect.set(true)
+    }
+})
+
+export const needsToCollect = atom<boolean>(false)
 
 export const addUnfollowing = (handle: string) => {
     return $unfollowing.set(new Set([...$unfollowing.get().add(handle)]))
@@ -45,6 +69,9 @@ export const removeUnfollowing = (handle: string) => {
 }
 
 export const addFollowing = (handle: string, user: ProfileData) => {
+    if ($following.get().has(handle)) {
+        return
+    }
     // get the index from the length of the map
     const index = $following.get().size
     // add the index to the user

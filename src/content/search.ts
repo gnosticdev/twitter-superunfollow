@@ -1,6 +1,6 @@
 import { atom } from 'nanostores'
 import { handleChange } from './checkboxes'
-import { $following, $unfollowing } from '../storage/persistent'
+import { $following, $unfollowing } from '@/store/persistent'
 
 export const $searchResults = atom<Set<string>>(new Set())
 export const $viewResults = atom<'search' | 'unfollowing' | 'none'>('none')
@@ -21,9 +21,9 @@ export async function handleSearch() {
     // display the results
     $searchResults.set(searchFollowingList(inputValue))
 
-    resultDiv.innerHTML = `<h3>Search results for: <span>${
+    resultDiv.innerHTML = `<h4>Search results for: <span>${
         inputValue === '.*' ? 'all profiles' : inputValue
-    }</span></h3>`
+    }</span></h4>`
     const resultsContainer = displayResults($searchResults.get())
     resultDiv.appendChild(resultsContainer)
 }
@@ -60,26 +60,32 @@ export function handleViewButton() {
     if (!viewButton) return
     const viewResults = $viewResults.get()
     if (viewResults === 'none') {
-        viewButton.textContent = 'Hide Unfollowing'
+        viewButton.innerHTML = 'Hide ' + closeList
         $viewResults.set('unfollowing')
-        resultsDiv.innerHTML = '<h3>Unfollowing List</h3>'
+        resultsDiv.innerHTML = '<h3 class="su-heading">Unfollowing List</h3>'
         resultsDiv.append(displayResults($unfollowing.get()))
     } else if (viewResults === 'unfollowing' && $searchResults.get().size > 0) {
-        viewButton.textContent = 'View Unfollowing'
+        viewButton.innerHTML = 'Hide  ' + closeList
         $viewResults.set('search')
-        resultsDiv.innerHTML = `<h3><span class="highlight">${
+        resultsDiv.innerHTML = `<h4><span class="highlight">${
             $searchResults.get().size
         } results for: <span>${
             $searchInput.get() === '.*' ? 'all profiles' : $searchInput.get()
-        }</span></h3>`
+        }</span></h4>`
         resultsDiv.append(displayResults($searchResults.get()))
     } else {
-        viewButton.textContent = 'View Unfollowing'
+        viewButton.innerHTML = 'List  ' + rightChevron
         $viewResults.set('none')
         resultsDiv.innerHTML = ''
     }
 }
 
+export const closeList = `<svg viewBox="0 0 24 24" width="12" height="12"><path fill="currentColor" d="M12 10.586l4.95-4.95a1 1 0 1 1 1.414 1.414L13.414 12l4.95 4.95a1 1 0 0 1-1.414 1.414L12 13.414l-4.95 4.95a1 1 0 0 1-1.414-1.414L10.586 12 5.636 7.05a1 1 0 0 1 1.414-1.414L12 10.586z"></path></svg>
+`
+export const rightChevron = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+</svg>
+`
 // display search results as a checkbox list with the option to select all
 export function displayResults(searchResults: Set<string>) {
     const resultsContainer = document.createElement('div')

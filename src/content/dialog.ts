@@ -1,13 +1,20 @@
-import { handleSearch, handleViewButton } from './search'
-import { $following, $followingCount } from '../storage/persistent'
-import { $collectFollowingState, handleCollectBtn } from '../storage/collection'
-import { handleSuperUnfollowBtn } from '../storage/unfollowing'
+import { handleSearch, handleViewButton, rightChevron } from './search'
+import { $following, $followingCount, $unfollowing } from '@/store/persistent'
+import {
+    $collectFollowingState,
+    handleCollectBtn,
+} from '@/store/collect-button'
+import {
+    $superUnfollowButtonState,
+    handleSuperUnfollowBtn,
+    setUnfollowBtn,
+} from '@/store/unfollow-button'
 
 export async function addSearchDialog() {
     // Create the dialog and the input and submit elements
     const dialog = document.createElement('dialog')
-    dialog.classList.add('superUnfollow', 'su-search-dialog')
     dialog.id = 'su-dialog'
+    dialog.classList.add('superUnfollow', 'su-search-dialog')
     dialog.role = 'dialog'
 
     // create container to hold all elements in dialog
@@ -15,27 +22,35 @@ export async function addSearchDialog() {
     dialogContainer.classList.add('superUnfollow', 'su-search-dialog-container')
     dialog.appendChild(dialogContainer)
 
-    const heading = document.createElement('p')
-    heading.textContent = 'Search usernames, handles and bios'
-    heading.classList.add('superUnfollow', 'su-heading')
-    const headingsContainer = document.createElement('div')
-    headingsContainer.classList.add('superUnfollow', 'su-headings-container')
-    headingsContainer.append(heading)
-
-    // Create the input and submit search elements
-    const input = document.createElement('input')
-    input.type = 'text'
-    input.id = 'su-search-input'
-
     const closeButton = document.createElement('button')
-    const closeSVG =
+    closeButton.innerHTML =
         '<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M12 10.586l4.95-4.95a1 1 0 1 1 1.414 1.414L13.414 12l4.95 4.95a1 1 0 0 1-1.414 1.414L12 13.414l-4.95 4.95a1 1 0 0 1-1.414-1.414L10.586 12 5.636 7.05a1 1 0 0 1 1.414-1.414L12 10.586z"></path></svg>'
 
-    closeButton.innerHTML = closeSVG
     closeButton.classList.add('superUnfollow', 'su-close-button')
     closeButton.addEventListener('click', () => {
         dialog.close()
     })
+
+    // close dialog when user clicks outside of it
+    dialog.addEventListener('click', closeDialog.bind(dialog))
+
+    const heading = document.createElement('h2')
+    heading.textContent = 'Search For Accounts To Unfollow'
+    heading.classList.add('superUnfollow', 'su-heading')
+    const subHeading = document.createElement('p')
+    subHeading.classList.add('superUnfollow', 'su-sub-heading')
+    subHeading.textContent =
+        'Enter a keyword to search usernames, handles, and bios of accounts you follow'
+    const headingContainer = document.createElement('div')
+    headingContainer.classList.add(
+        'su-heading-container',
+        'su-search-heading-container'
+    )
+    headingContainer.append(heading, subHeading)
+    // Create the input and submit search elements
+    const input = document.createElement('input')
+    input.type = 'text'
+    input.id = 'su-search-input'
 
     const searchButton = document.createElement('button')
     searchButton.textContent = 'Search'
@@ -45,9 +60,16 @@ export async function addSearchDialog() {
 
     // search input and button container
     const inputContainer = document.createElement('div')
-    inputContainer.classList.add('su-search-input-container')
     inputContainer.id = 'su-search-input-container'
+    inputContainer.classList.add('su-search-input-container')
     inputContainer.append(input, searchButton)
+
+    const headingInputContainer = document.createElement('div')
+    headingInputContainer.classList.add(
+        'superUnfollow',
+        'su-heading-input-container'
+    )
+    headingInputContainer.append(headingContainer, inputContainer)
 
     // add a results div that gets cleared when the search button is clicked
     const resultsContainer = document.createElement('div')
@@ -55,21 +77,26 @@ export async function addSearchDialog() {
     resultsContainer.classList.add('superUnfollow', 'su-results')
 
     // Create the show dialog button and attach it to the top right of the screen
-    const showModalButton = createShowModalButon(dialog)
+    const showModalButton = createShowModalButton(dialog)
+    const metricsContainer = createMetrics(
+        $followingCount.get(),
+        $following.get().size
+    )
+
+    const notice = createNotice()
+
     const modalButtons = createModalButtons()
-    const notice = getMetrics($followingCount.get(), $following.get().size)
-    const startButton = createSuperUnfollowBtn()
 
     // append elements to dialog
     dialogContainer.append(
+        headingInputContainer,
         closeButton,
-        headingsContainer,
-        inputContainer,
-        modalButtons,
+        metricsContainer,
         notice,
-        resultsContainer,
-        startButton
+        modalButtons,
+        resultsContainer
     )
+
     // Add the dialog and show modal button  to the end of the page
     document.body.appendChild(dialog)
     document.body.appendChild(showModalButton)
@@ -77,24 +104,39 @@ export async function addSearchDialog() {
     return dialog
 }
 
-export function createSuperUnfollowBtn() {
-    const container = document.createElement('div')
-    container.classList.add('superUnfollow', 'su-button-container')
-    container.id = 'superUnfollow-button-container'
+const createModalButtons = () => {
+    const modalBtnsContainer = document.createElement('div')
+    modalBtnsContainer.classList.add('su-modal-buttons-container')
 
+    const collectButton = createCollectBtn()
+    const startButton = createSuperUnfollowBtn()
+    const collectUnfollowContainer = document.createElement('div')
+    collectUnfollowContainer.classList.add('su-collect-superunfollow-container')
+    collectUnfollowContainer.append(collectButton, startButton)
+
+    const viewButton = createViewBtn()
+
+    modalBtnsContainer.append(viewButton, collectUnfollowContainer)
+
+    return modalBtnsContainer
+}
+
+export function createSuperUnfollowBtn() {
     const superUnfollowBtn = document.createElement('button')
-    superUnfollowBtn.classList.add('su-button', 'large')
+    superUnfollowBtn.classList.add('su-button', 'super-unfollow')
+    superUnfollowBtn.disabled = true
+    superUnfollowBtn.textContent = 'Unfollow'
+    setUnfollowBtn($unfollowing.get().size, superUnfollowBtn)
     // starting the super unfollow process
     superUnfollowBtn.addEventListener('click', handleSuperUnfollowBtn)
     superUnfollowBtn.id = 'superUnfollow-button'
-    container.append(superUnfollowBtn)
 
-    return container
+    return superUnfollowBtn
 }
 
-export const createShowModalButon = (dialog: HTMLDialogElement) => {
+export const createShowModalButton = (dialog: HTMLDialogElement) => {
     const modalButton = document.createElement('button')
-    modalButton.id = 'su-search-modal-button'
+    modalButton.id = 'su-show-modal-button'
     modalButton.textContent = 'SuperUnfollow'
     modalButton.classList.add(
         'superUnfollow',
@@ -111,64 +153,88 @@ export const createShowModalButon = (dialog: HTMLDialogElement) => {
     return modalButton
 }
 
-export function createModalButtons() {
+export function createCollectBtn() {
     const collectBtn = document.createElement('button')
-    collectBtn.classList.add('su-button', 'small', 'active', 'outline', 'alt')
+    collectBtn.classList.add('su-button', 'small', 'outline', 'alt')
     collectBtn.id = 'su-collect-following-button'
-    collectBtn.textContent = 'Collect Following'
+    collectBtn.textContent = 'Collect'
     collectBtn.addEventListener('click', handleCollectBtn)
 
-    const viewUnfollowing = document.createElement('button')
-    viewUnfollowing.classList.add('su-button', 'small', 'active', 'outline')
-    viewUnfollowing.id = 'su-view-button'
-    viewUnfollowing.textContent = 'View Unfollowing'
-    viewUnfollowing.addEventListener('click', handleViewButton)
-
-    const container = document.createElement('div')
-    container.classList.add('su-modal-buttons-container')
-    container.id = 'su-modal-buttons-container'
-    container.append(collectBtn, viewUnfollowing)
-
-    return container
+    return collectBtn
 }
 
-export function getMetrics(count: number, size: number) {
+export const createViewBtn = () => {
+    const viewUnfollowing = document.createElement('button')
+    viewUnfollowing.classList.add('no-border', 'su-button', 'view-following')
+    viewUnfollowing.id = 'su-view-button'
+    viewUnfollowing.innerHTML = 'List  ' + rightChevron
+    viewUnfollowing.addEventListener('click', handleViewButton)
+
+    return viewUnfollowing
+}
+
+export function createMetrics(count: number, size: number) {
     // section that tells user that they should collect their following list. Shown when $followingCount > $following.get().size
     const metricsContainer = document.createElement('div')
     metricsContainer.classList.add('su-metrics-container')
     metricsContainer.id = 'su-metrics-container'
-    const metrics = document.createElement('p')
+    const metrics = document.createElement('div')
     metrics.classList.add('su-metrics')
     metrics.id = 'su-metrics'
-    metrics.innerHTML = `Total Following: <span class="su-highlight">${count}</span>&nbsp;&nbsp&nbsp; Total Collected: <span class="su-highlight">${size}</span>`
-    // show user updates on the collection process
-    const notice = document.createElement('div')
-    notice.classList.add('su-notice')
+    const followingNumber = document.createElement('span')
+    followingNumber.classList.add('su-highlight')
+    followingNumber.textContent = count.toString()
+    const lastCollected = document.createElement('span')
+    lastCollected.classList.add('su-highlight')
+    lastCollected.textContent = size.toString()
+    metrics.innerHTML = `<div>Following: ${followingNumber.outerHTML}</div><div>Collected: ${lastCollected.outerHTML}</div>`
+
     // only show notice if collectFollowing has been run on the current session
-    if ($collectFollowingState.get() !== 'ready') {
-        if (count === size) {
-            notice.innerHTML = `All accounts collected.`
-            notice.classList.add('complete')
-            // this should never happen
-        } else if (count < size) {
-            notice.innerHTML = `Collected ${size} accounts.`
-            console.error('Error: $followingCount is less than $following.size')
-        } else if (count > size) {
-            notice.innerHTML = `Need to collect ${count - size} more accounts.`
-        }
-    }
-
-    metricsContainer.append(metrics, notice)
-
+    metricsContainer.append(metrics)
     return metricsContainer
 }
 
-// Subscribe to the $following store and update the metrics when it changes
-$following.subscribe((following) => {
-    const count = $followingCount.get()
-    const size = following.size
-    const metricsContainer = getMetrics(count, size)
-    // remove the current metrics and replace with the updated metrics
-    const currentMetrics = document.getElementById('su-metrics-container')
-    currentMetrics?.replaceWith(metricsContainer)
+// Notice updated by collectFollowing button state
+export const createNotice = () => {
+    const notice = document.createElement('div')
+    notice.classList.add('su-notice')
+    notice.id = 'su-notice'
+    notice.textContent = 'Click Collect to get all accounts you follow'
+    return notice
+}
+
+function closeDialog(
+    this: HTMLDialogElement,
+    { currentTarget, clientX, clientY }: MouseEvent
+) {
+    if (
+        $collectFollowingState.get() === 'running' ||
+        $collectFollowingState.get() === 'resumed' ||
+        $superUnfollowButtonState.get() === 'running'
+    )
+        return
+    const { left, right, top, bottom } = (
+        currentTarget as HTMLDialogElement
+    ).getBoundingClientRect()
+
+    if (
+        clientX < left ||
+        clientX > right ||
+        clientY < top ||
+        clientY > bottom
+    ) {
+        this.close()
+    }
+}
+
+// cleanup
+// close dialog if open when navigating away
+window.addEventListener('beforeunload', () => {
+    console.log('unloading')
+    const dialog = document.getElementById(
+        'su-dialog'
+    ) as HTMLDialogElement | null
+    if (dialog?.open) {
+        dialog.close()
+    }
 })

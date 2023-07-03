@@ -8,9 +8,15 @@
         "noUnusedParameters": true,
         "moduleResolution": "node",
         "esModuleInterop": true,
+        "allowJs": true,
         "allowSyntheticDefaultImports": true,
         "lib": ["ESNext", "DOM", "DOM.Iterable"],
-        "noEmit": true
+        "noEmit": true,
+        "baseUrl": ".",
+        "paths": {
+            "@/*": ["./src/*"]
+        }
     },
+    "include": ["src/**/*"],
     "exclude": ["node_modules", "dist"]
 }

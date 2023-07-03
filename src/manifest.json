@@ -11,7 +11,7 @@
         }
     ],
     "background": {
-        "service_worker": "background.js"
+        "service_worker": "service-worker.js"
     },
 
     "sandbox": {
@@ -19,9 +19,21 @@
     },
     "action": {
         "default_title": "Twitter SuperUnfollow",
-        "default_popup": "popup.html"
+        "default_popup": "newTab.html"
     },
     "permissions": ["tabs", "activeTab", "scripting", "storage", "sidePanel"],
 
-    "host_permissions": ["https://*/*"]
+    "host_permissions": ["https://*/*"],
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "content.js.map",
+                "newTab.js.map",
+                "service-worker.js.map",
+                "style.css.map",
+                "sandbox.js.map"
+            ],
+            "matches": ["<all_urls>"]
+        }
+    ]
 }

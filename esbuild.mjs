@@ -5,23 +5,19 @@ const contentContext = await esbuild.context({
     bundle: true,
     outfile: 'dist/content.js',
     target: 'es2020',
+    format: 'iife',
     logLevel: 'debug',
-    sourcemap: 'external',
-    footer: {
-        js: '//# sourceMappingURL=file:///Users/divinelight/Coding/twitter-super-unfollow/dist/content.js.map',
-    },
+    sourcemap: 'linked',
 })
 
-const popupContext = await esbuild.context({
-    entryPoints: ['src/popup/popup.ts'],
+const newTabContext = await esbuild.context({
+    entryPoints: ['src/newTab/newTab.ts'],
     bundle: true,
-    outfile: 'dist/popup.js',
+    outfile: 'dist/newTab.js',
     target: 'es2020',
+    format: 'iife',
     logLevel: 'debug',
-    sourcemap: 'external',
-    footer: {
-        js: '//# sourceMappingURL=file:///Users/divinelight/Coding/twitter-super-unfollow/dist/popup.js.map',
-    },
+    sourcemap: 'linked',
 })
 
 const sandboxContext = await esbuild.context({
@@ -29,20 +25,19 @@ const sandboxContext = await esbuild.context({
     bundle: true,
     outfile: 'dist/sandbox.js',
     target: 'es2020',
+    format: 'iife',
     logLevel: 'debug',
-    sourcemap: 'external',
-    footer: {
-        js: '//# sourceMappingURL=file:///Users/divinelight/Coding/twitter-super-unfollow/dist/sandbox.js.map',
-    },
+    sourcemap: 'linked',
 })
 
 const backgroundContext = await esbuild.context({
-    entryPoints: ['src/background/background.ts'],
+    entryPoints: ['src/background/service-worker.ts'],
     bundle: true,
-    outfile: 'dist/background.js',
+    outfile: 'dist/service-worker.js',
     target: 'es2020',
+    format: 'iife',
     logLevel: 'debug',
-    sourcemap: 'inline',
+    sourcemap: 'linked',
 })
 
 const cssBuild = await esbuild.context({
@@ -50,21 +45,18 @@ const cssBuild = await esbuild.context({
     bundle: true,
     outfile: 'dist/style.css',
     target: 'es2020',
-    sourcemap: 'external',
-    footer: {
-        js: '//# sourceMappingURL=file:///Users/divinelight/Coding/twitter-super-unfollow/dist/style.css.map',
-    },
+    sourcemap: 'linked',
 })
 
 const copyContext = await esbuild.context({
     entryPoints: [
         'src/manifest.json',
         'src/sandbox/sandbox.html',
-        'src/sandbox/popup.html',
+        'src/newTab/newTab.html',
     ],
     bundle: true,
     outdir: 'dist',
-    outbase: 'src',
+    entryNames: '[name]',
     loader: {
         '.json': 'copy',
         '.html': 'copy',
@@ -73,7 +65,7 @@ const copyContext = await esbuild.context({
 
 const watchAll = async () => {
     await contentContext.watch()
-    await popupContext.watch()
+    await newTabContext.watch()
     await sandboxContext.watch()
     await backgroundContext.watch()
     await cssBuild.watch()
@@ -82,17 +74,17 @@ const watchAll = async () => {
 
 const rebuildAll = async () => {
     await contentContext.rebuild()
-    await popupContext.rebuild()
+    await newTabContext.rebuild()
     await sandboxContext.rebuild()
     await backgroundContext.rebuild()
     await cssBuild.rebuild()
     await copyContext.rebuild()
 }
 
-const disponAll = async () => {
+const disposeAll = async () => {
     await contentContext.dispose()
     await sandboxContext.dispose()
-    await popupContext.dispose()
+    await newTabContext.dispose()
     await backgroundContext.dispose()
     await cssBuild.dispose()
     await copyContext.dispose()
@@ -103,10 +95,10 @@ try {
         await watchAll()
     } else {
         await rebuildAll()
-        await disponAll()
+        await disposeAll()
     }
 } catch (e) {
     console.error(e)
-    await disponAll()
+    await disposeAll()
     process.exit(1)
 }

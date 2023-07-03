@@ -1,7 +1,7 @@
-import { parseInititalState } from '../shared/shared'
+import { parseInititalState } from '@/shared/shared'
 const SANDBOX_RESULT_ID = 'sandbox-result'
 
-// communicate with the popup
+// 1) recive the userData string from the newTab
 window.addEventListener('message', (event) => {
     const status = document.getElementById(SANDBOX_RESULT_ID)
     if (!status) {
@@ -9,7 +9,7 @@ window.addEventListener('message', (event) => {
     }
 
     status.innerHTML = `received message from popup with data: ${event.data}`
-    // 3) get notified from popup to start eval()
+    // set up the source window to send the userData object back to
     const source = event.source as {
         window: WindowProxy
     }
@@ -18,20 +18,20 @@ window.addEventListener('message', (event) => {
 
     try {
         if (typeof data === 'string' && data.includes('__INITIAL_STATE__')) {
-            var eval2 = eval
-            eval2(data)
-            // should now be available in window.__INITIAL_STATE__
-            const userData = parseInititalState(window.__INITIAL_STATE__)
-            const { friends_count } = userData
+            // 2) use eval safely within sandbox (while avoiding esbuild eval error)
+            const evaluate = eval
+            evaluate(data)
+            // original script content should now be available - including window.__INITIAL_STATE__
+            const twitterUserData = parseInititalState(window.__INITIAL_STATE__)
+            const { friends_count } = twitterUserData
 
             console.log(
                 'sandbox eval() done',
                 'following count:',
-                friends_count,
-                'userData:',
-                userData
+                friends_count
             )
-            source.window.postMessage(userData, '*')
+            // 5) send the userData object back to popup
+            source.window.postMessage(twitterUserData, '*')
         } else {
             throw 'no __INITIAL_STATE__ found'
         }

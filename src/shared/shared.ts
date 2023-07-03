@@ -11,12 +11,13 @@ export const Selectors = {
     UF_CONFIRM: '[role="button"][data-testid="confirmationSheetConfirm"]',
 } as const
 
+export const NEW_TAB_PAGE = 'newTab.html'
+
 export const parseInititalState = (initialStateObj: any) => {
     const userData = JSON.parse(JSON.stringify(initialStateObj))
 
     const key = Object.keys(userData.entities.users.entities)[0]
     const accountData = userData.entities.users.entities[key]
 
-    const followingCount = accountData.friends_count as number
-    return { followingCount, ...accountData } as TwitterUserData
+    return accountData as TwitterUserData
 }
