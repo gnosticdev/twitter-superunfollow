@@ -1,9 +1,12 @@
-import { $following, addFollowing } from '@/store/persistent'
-import { $collectFollowingState, $isCollecting } from '@/store/collect-button'
+import { $following, addFollowing } from '@/content/stores/persistent'
+import {
+    $collectFollowingState,
+    $isCollecting,
+} from '@/content/stores/collect-button'
 import { randomDelay } from './utils/utils'
 import { scrollToLastChild, waitForScrollTo } from './utils/scroll'
 import { atom } from 'nanostores'
-import { Selectors } from '@/shared/shared'
+import { Selectors } from '@/content/utils/utils'
 import { getProfileDetails } from './profiles'
 
 const $firstRun = atom<boolean>(true)
@@ -39,7 +42,6 @@ export async function collectFollowing(): Promise<
                 console.log('done collecting following')
                 console.log('following:', $following.get())
                 $collectFollowingState.set('done')
-                debugger
                 return $following.get()
             } else {
                 return await collectFollowing()

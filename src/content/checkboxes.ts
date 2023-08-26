@@ -1,10 +1,10 @@
-import { Selectors } from '@/shared/shared'
+import { Selectors } from '@/content/utils/utils'
 import {
     $following,
     $unfollowing,
     addUnfollowing,
     removeUnfollowing,
-} from '@/store/persistent'
+} from '@/content/stores/persistent'
 
 /**
  * add checkboxes to each profile on the following page. If the checkbox is checked, the profile will be unfollowed when the unfollow button is clicked

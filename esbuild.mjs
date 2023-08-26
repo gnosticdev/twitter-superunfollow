@@ -10,10 +10,10 @@ const contentContext = await esbuild.context({
     sourcemap: 'linked',
 })
 
-const newTabContext = await esbuild.context({
-    entryPoints: ['src/newTab/newTab.ts'],
+const popupContent = await esbuild.context({
+    entryPoints: ['src/popup/popup.ts'],
     bundle: true,
-    outfile: 'dist/newTab.js',
+    outfile: 'dist/popup.js',
     target: 'es2020',
     format: 'iife',
     logLevel: 'debug',
@@ -52,7 +52,7 @@ const copyContext = await esbuild.context({
     entryPoints: [
         'src/manifest.json',
         'src/sandbox/sandbox.html',
-        'src/newTab/newTab.html',
+        'src/popup/popup.html',
     ],
     bundle: true,
     outdir: 'dist',
@@ -65,7 +65,7 @@ const copyContext = await esbuild.context({
 
 const watchAll = async () => {
     await contentContext.watch()
-    await newTabContext.watch()
+    await popupContent.watch()
     await sandboxContext.watch()
     await backgroundContext.watch()
     await cssBuild.watch()
@@ -74,7 +74,7 @@ const watchAll = async () => {
 
 const rebuildAll = async () => {
     await contentContext.rebuild()
-    await newTabContext.rebuild()
+    await popupContent.rebuild()
     await sandboxContext.rebuild()
     await backgroundContext.rebuild()
     await cssBuild.rebuild()
@@ -84,7 +84,7 @@ const rebuildAll = async () => {
 const disposeAll = async () => {
     await contentContext.dispose()
     await sandboxContext.dispose()
-    await newTabContext.dispose()
+    await popupContent.dispose()
     await backgroundContext.dispose()
     await cssBuild.dispose()
     await copyContext.dispose()

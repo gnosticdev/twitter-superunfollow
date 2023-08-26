@@ -19,7 +19,7 @@
     },
     "action": {
         "default_title": "Twitter SuperUnfollow",
-        "default_popup": "newTab.html"
+        "default_popup": "popup.html"
     },
     "permissions": ["tabs", "activeTab", "scripting", "storage", "sidePanel"],
 
@@ -28,7 +28,7 @@
         {
             "resources": [
                 "content.js.map",
-                "newTab.js.map",
+                "popup.js.map",
                 "service-worker.js.map",
                 "style.css.map",
                 "sandbox.js.map"

@@ -32,7 +32,7 @@ interface FollowingContainer extends HTMLElement {
 // ------- MESSAGES -------f
 type From = 'content' | 'background' | 'newTab'
 type To = 'content' | 'background' | 'newTab'
-type RequestType = 'userData' | 'start'
+type RequestType = 'userData' | 'addDialog' | 'removeDialog'
 
 interface BaseMessage {
     from: From
@@ -50,10 +50,16 @@ interface FromBgToCsData extends BaseMessage {
 interface FromBgToCsStart extends BaseMessage {
     from: 'background'
     to: 'content'
-    type: 'start'
+    type: 'addDialog'
 }
 
-type FromBgToCs = FromBgToCsData | FromBgToCsStart
+interface FromBgToCsRemove extends BaseMessage {
+    from: 'background'
+    to: 'content'
+    type: 'removeDialog'
+}
+
+type FromBgToCs = FromBgToCsData | FromBgToCsStart | FromBgToCsRemove
 
 interface FromBgToTab extends BaseMessage {
     from: 'background'

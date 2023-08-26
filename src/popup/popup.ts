@@ -1,4 +1,5 @@
-import { sendMessageToBg } from '@/background/service-worker'
+import { sendMessageToBg } from '@/shared/messaging'
+import { sessionStorage$ } from '@/shared/storage'
 
 const POPUP_RESULT_ID = 'popup-result'
 
@@ -49,3 +50,13 @@ window.addEventListener(
         }
     }
 )
+
+// go to the following page when the popup button is clicked
+document.getElementById('popup-button')!.addEventListener('click', () => {
+    const twitterTab = sessionStorage$.getValue('contentTabId')
+    if (!twitterTab) {
+        chrome.tabs.create({ url: `https://twitter.com/following` })
+    } else {
+        chrome.tabs.update({ url: `https://twitter.com/following` })
+    }
+})

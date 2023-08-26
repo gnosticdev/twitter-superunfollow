@@ -84,7 +84,7 @@ export const $isUnfollowing = computed($superUnfollowButtonState, (state) =>
  */
 export const enableDisableUnfollowBtn = (
     unfollowingSize: number,
-    button?: HTMLButtonElement | null
+    button?: HTMLButtonElement
 ) => {
     button =
         button ??

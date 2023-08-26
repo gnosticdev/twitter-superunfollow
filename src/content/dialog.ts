@@ -1,14 +1,18 @@
 import { handleSearch, handleViewButtons } from './search'
-import { $following, $followingCount, $unfollowing } from '@/store/persistent'
+import {
+    $following,
+    $followingCount,
+    $unfollowing,
+} from '@/content/stores/persistent'
 import {
     $collectFollowingState,
     handleCollectBtn,
-} from '@/store/collect-button'
+} from '@/content/stores/collect-button'
 import {
     $superUnfollowButtonState,
     handleSuperUnfollowBtn,
     enableDisableUnfollowBtn,
-} from '@/store/unfollow-button'
+} from '@/content/stores/unfollow-button'
 import { createMetrics, createNotice } from './metrics'
 
 export async function addSearchDialog() {

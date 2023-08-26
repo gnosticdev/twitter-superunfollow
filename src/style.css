@@ -1,6 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@300;400;500;600;700&family=Lora:wght@400;500;700&display=swap');
 
-
 :root {
     --su-green: rgb(47 253 214);
     --su-indigo-light: rgb(121 108 255);
@@ -31,10 +30,9 @@
     --su-red-hover: rgb(175, 50, 75);
     --su-dark-bg-opaque: rgb(0 94 159 / 15%);
     --su-dark-bg: rgb(26, 24, 42);
-    --su-font-sans: "Libre Franklin", sans-serif;
+    --su-font-sans: 'Libre Franklin', sans-serif;
     --su-font-alt-serif: Lora, serif;
 }
-
 
 .superUnfollow,
 .superUnfollow > * {
@@ -86,8 +84,6 @@
             background-color: transparent;
         }
 
-
-
         &.super-unfollow {
             background-color: var(--su-indigo);
             color: var(--su-indigo-foreground);
@@ -128,7 +124,6 @@
         &.needed {
             color: var(--su-green);
         }
-
 
         &.su-show-modal {
             border-radius: 0.5rem 0 0.5rem;
@@ -172,7 +167,6 @@
             display: flex;
             flex-direction: column;
 
-
             & .su-heading {
                 color: var(--su-white);
                 font-size: 1rem;
@@ -180,15 +174,12 @@
                 margin-block: 0;
             }
 
-
-
             & .su-heading-input-container {
                 display: flex;
                 flex-direction: column;
                 gap: 0.5rem;
                 align-items: center;
                 justify-content: center;
-
 
                 & .su-sub-heading {
                     color: var(--su-powder-blue);
@@ -216,7 +207,6 @@
                         &::placeholder {
                             color: var(--su-gray-blue-opaque);
                         }
-
 
                         &:focus {
                             outline: 1px solid var(--su-ice-bg);
@@ -308,10 +298,7 @@
                     justify-content: end;
                     gap: 0.5rem;
                 }
-
             }
-
-
 
             & .su-metrics {
                 color: var(--su-white);
@@ -329,8 +316,6 @@
                     color: var(--su-ice);
                 }
             }
-
-
 
             & .su-notice {
                 color: var(--su-powder-blue);
@@ -361,8 +346,6 @@
                     color: var(--su-indigo-hover);
                 }
             }
-
-
 
             & .su-results {
                 display: flex;
@@ -450,11 +433,8 @@
                     }
                 }
             }
-
-
         }
     }
-
 
     & .su-loader {
         display: inline-flex;
@@ -478,11 +458,9 @@
     & .su-error {
         color: var(--su-error);
     }
-
 }
 
 dialog.su-dialog {
-
     &::-webkit-scrollbar {
         background-color: var(--su-dark-bg);
         width: 0.5rem;
@@ -492,9 +470,7 @@ dialog.su-dialog {
         background-color: var(--su-ice-bg);
         border-radius: 0.5rem;
     }
-
 }
-
 
 @keyframes spin {
     to {

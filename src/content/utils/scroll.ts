@@ -1,8 +1,8 @@
-import { Selectors } from '@/shared/shared'
+import { Selectors } from '@/content/utils/utils'
 import { getLastChildHeight, randomDelay } from './utils'
-import { disableCollectBtn } from '@/store/collect-button'
-import { enableDisableUnfollowBtn } from '@/store/unfollow-button'
-import { $unfollowing } from '@/store/persistent'
+import { disableCollectBtn } from '@/content/stores/collect-button'
+import { enableDisableUnfollowBtn } from '@/content/stores/unfollow-button'
+import { $unfollowing } from '@/content/stores/persistent'
 
 /**
  * scrolls to the top of the page and waits for the scroll to complete
@@ -52,13 +52,6 @@ export async function scrollToLastChild(): Promise<boolean> {
     await randomDelay(1000)
 
     const newScrollHeight = document.scrollingElement?.scrollTop
-    // const newLastChildHeight = getLastChildHeight()
-    // console.table({
-    //     scrollHeightBefore,
-    //     newScrollHeight,
-    //     lastChildHeight,
-    //     newLastChildHeight,
-    // })
     if (newScrollHeight === scrollHeightBefore) {
         console.log(
             'scrollHeightBefore === newScrollHeight, stopping scroll down...'

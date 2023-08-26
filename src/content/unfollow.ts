@@ -1,11 +1,11 @@
-import { Selectors } from '@/shared/shared'
+import { Selectors } from '@/content/utils/utils'
 import { $viewResults, createResultsContainer, getResultsDiv } from './search'
 import {
     $unfollowing,
     removeFollowing,
     removeUnfollowing,
-} from '@/store/persistent'
-import { $superUnfollowButtonState } from '@/store/unfollow-button'
+} from '@/content/stores/persistent'
+import { $superUnfollowButtonState } from '@/content/stores/unfollow-button'
 import { randomDelay } from './utils/utils'
 import { prettyConsole } from './utils/console'
 import { waitForElement } from './utils/wait-promise'
@@ -147,7 +147,6 @@ export const displayUnfollowed = (unfollowed: ProfilesMap) => {
 
     resultsDiv.appendChild(unfollowedContainer)
     console.log('appending unfollowed list to results div', unfollowed)
-    debugger
 }
 
 const shouldContinue = () => {

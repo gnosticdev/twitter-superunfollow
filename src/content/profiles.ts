@@ -1,6 +1,6 @@
 import { addCheckbox } from './checkboxes'
-import { Selectors } from '@/shared/shared'
-import { addFollowing } from '@/store/persistent'
+import { Selectors } from '@/content/utils/utils'
+import { addFollowing } from '@/content/stores/persistent'
 import { randomDelay, getProfileTranslateY } from './utils/utils'
 
 export async function processProfile(profile: ProfileInner) {

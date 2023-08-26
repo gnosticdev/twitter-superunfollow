@@ -1,17 +1,18 @@
-import { Selectors } from '@/shared/shared'
-
 /**
- * Wait a random amount of time and return a promise
+ * Wait a random amount of time between ms and msHigh, then and return a promise
  * @param ms {number} - minimum milliseconds to delay (1000 = 1 second)
  * @param msHigh {number} - maximum milliseconds to delay (1000 = 1 second)
  * @returns {Promise<void>}
  */
-export const randomDelay = (ms: number, msHigh = 0) => {
-    const delay = Math.floor(Math.random() * msHigh) + ms
+export const randomDelay = (ms: number, msHigh = ms) => {
+    // delay random amount of time between ms and msHigh. if ms = 2000, msHigh = 4000, then delay between 2 and 4 seconds. if ms = 2000 and msHigh = 0, then delay between 0 and 2 seconds
+    const delay = Math.random() * (msHigh - ms) + ms
     return new Promise((resolve) => {
         setTimeout(resolve, delay)
     })
 }
+
+console.log(randomDelay(0))
 
 /**
  *
@@ -84,3 +85,17 @@ function getIndex(node: HTMLElement) {
     }
     return i
 }
+
+export const Selectors = {
+    /**  The inner div with the profile details */
+    PROFILE_INNER: '[data-testid="UserCell"]',
+    /**  The outermost div that contains a profile for each profile */
+    PROFILE_CONTAINER: '[data-testid="cellInnerDiv"]',
+    /**  The div that contains the profile divs */
+    FOLLOWING_CONTAINER: 'section > div[aria-label="Timeline: Following"]',
+    /** The main unfollow button - opens a confirmation window */
+    UF_BUTTON: '[role="button"][data-testid $= "-unfollow"]',
+    /** The confirm unfollow button in the confirmation window */
+    UF_CONFIRM: '[role="button"][data-testid="confirmationSheetConfirm"]',
+    /** SuperUnfollow show dialog button */
+} as const

@@ -1,5 +1,5 @@
 import { persistentAtom } from '@nanostores/persistent'
-import { enableDisableUnfollowBtn } from '@/store/unfollow-button'
+import { enableDisableUnfollowBtn } from '@/content/stores/unfollow-button'
 import { createMetrics } from '@/content/metrics'
 import { $needToCollect } from '@/content/main'
 
@@ -47,7 +47,6 @@ $following.listen((following) => {
 
 const updateMetrics = (followingSize: number, unfollowingSize: number) => {
     console.log('updating metrics')
-    debugger
     const count = $followingCount.get()
     const metricsContainer = createMetrics(
         count,
@@ -65,10 +64,9 @@ export const $followingCount = persistentAtom('followingCount', 0, {
 })
 
 $followingCount.listen((count) => {
-    console.log(
-        `following count changed from ${$followingCount.get()} to ${count}`
-    )
-    if ($followingCount.get() !== count && count > 0) {
+    const oldValue = $followingCount.get()
+    if (oldValue !== count && count > 0) {
+        console.log(`following count changed from ${oldValue} to ${count}`)
         $needToCollect.set(true)
     }
 })

@@ -1,6 +1,6 @@
 import { atom } from 'nanostores'
 import { handleChange } from './checkboxes'
-import { $following, $unfollowing } from '@/store/persistent'
+import { $following, $unfollowing } from '@/content/stores/persistent'
 
 type Results = 'search' | 'unfollowing' | 'none'
 

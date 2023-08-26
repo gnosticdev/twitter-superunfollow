@@ -1,11 +1,13 @@
 import { processProfile } from './profiles'
 import { addSearchDialog } from './dialog'
-import { Selectors } from '@/shared/shared'
+import { Selectors } from '@/content/utils/utils'
 import { superUnfollow } from './unfollow'
-import { $superUnfollowButtonState } from '@/store/unfollow-button'
+import { $superUnfollowButtonState } from '@/content/stores/unfollow-button'
 import { waitForElement } from './utils/wait-promise'
-import { $followingCount } from '@/store/persistent'
+import { $followingCount } from '@/content/stores/persistent'
 import { atom } from 'nanostores'
+import { prettyConsole } from '@/content/utils/console'
+import { sendMessageToBg } from '@/shared/messaging'
 
 export const $needToCollect = atom<boolean>(true)
 export const $username = atom<string | null>(null)
@@ -30,16 +32,18 @@ export const $username = atom<string | null>(null)
         type: 'userData',
         data: script.innerHTML,
     }
-    console.log(
-        'content script sending userData to background script',
-        userDataMessage
-    )
+
+    prettyConsole('sending userData to background script')
     // send the userData as a string to the backgrounds cript, which then sends it to the newTab
-    await chrome.runtime.sendMessage<FromCsToBg>(userDataMessage)
+    await sendMessageToBg(userDataMessage)
 
     chrome.runtime.onMessage.addListener(async (msg: FromBgToCs) => {
         try {
-            console.log('content received message', msg)
+            prettyConsole(
+                `content script received msg from ${msg.from}: ${msg.type}`,
+                'green',
+                msg
+            )
             if (
                 msg.from === 'background' &&
                 msg.to === 'content' &&
@@ -48,14 +52,25 @@ export const $username = atom<string | null>(null)
             ) {
                 // store the followingCount = friends_count, and the entire userData object for later use
                 $followingCount.set(msg.data.friends_count)
-                $username.set(msg.data.screen_name)
-                await addSearchDialog()
                 // start observer on /following page after getting message from bg script
-            } else if (msg.from === 'background' && msg.type === 'start') {
+            } else if (msg.from === 'background' && msg.type === 'addDialog') {
                 console.log(
-                    'received message from background to start observer'
+                    'content script received start message from background script, adding search dialog & show dialog button...'
                 )
+                await addSearchDialog()
+                const innerProfiles = document.querySelectorAll(
+                    Selectors.PROFILE_INNER
+                ) as NodeListOf<ProfileInner>
+                console.log('inner profiles', innerProfiles)
+                for (const profile of Array.from(innerProfiles)) {
+                    await processProfile(profile)
+                }
                 await startObserver()
+            } else if (
+                msg.from === 'background' &&
+                msg.type === 'removeDialog'
+            ) {
+                removeDialogButton()
             }
         } catch (e) {
             console.log(e)
@@ -65,6 +80,7 @@ export const $username = atom<string | null>(null)
 
 // Start the observer after the userData has been received, and we are on the /following page
 async function startObserver() {
+    prettyConsole('starting observer on /following page')
     const profileObserver = new MutationObserver(async (mutations) => {
         for (const mutation of mutations) {
             if (mutation.addedNodes.length === 0) {
@@ -101,7 +117,14 @@ async function startObserver() {
     })
 }
 
-export const getFollowingSection = async () => {
+function removeDialogButton() {
+    const showDialogBtn = document.getElementById('su-show-modal-button')
+    if (showDialogBtn) {
+        showDialogBtn.remove()
+    }
+}
+
+async function getFollowingSection() {
     const section = await waitForElement(
         Selectors.FOLLOWING_CONTAINER,
         8000,
