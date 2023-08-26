@@ -1,14 +1,17 @@
-type FollowingProfile = {
+type ProfileDetails = {
     index: number
     handle: string
     username: string
     scrollHeight: number
+    image?: string
     description?: string
 }
 
-type ProfileData = Omit<FollowingProfile, 'index'>
+/** Map of profile details for the Unfollowing or Following lists */
+type ProfilesMap = Map<string, ProfileDetails>
 
 type ButtonState = 'ready' | 'running' | 'paused' | 'done' | 'resumed'
+
 interface ProfileContainer extends HTMLElement {
     readonly dataset: {
         testid: 'cellInnerDiv'
@@ -25,52 +28,56 @@ interface Window {
 interface FollowingContainer extends HTMLElement {
     readonly ariaLabel: 'Timeline: Following'
 }
+
+// ------- MESSAGES -------f
 type From = 'content' | 'background' | 'newTab'
 type To = 'content' | 'background' | 'newTab'
 type RequestType = 'userData' | 'start'
-type Data = string | unknown
-type ExtMessage<
-    From extends 'content' | 'newTab' | 'background',
-    To extends 'background' | 'content' | 'newTab',
-    RequestType extends From extends 'content'
-        ? 'userData'
-        : From extends 'background'
-        ? 'userData'
-        : From extends 'newTab'
-        ? 'userData'
-        : never = never,
-    Data extends To extends 'content'
-        ? TwitterUserData | undefined
-        : To extends 'background'
-        ? string | unknown
-        : To extends 'newTab'
-        ? string
-        : never = never
-> = {
+
+interface BaseMessage {
     from: From
     to: To
     type: RequestType
-    data?: Data
 }
-type BGtoCSMessage = ExtMessage<
-    'background',
-    'content',
-    'userData',
-    TwitterUserData
->
-type BGtoTabMessage = ExtMessage<'background', 'newTab', 'userData', string>
-type CStoBGMessage = ExtMessage<'content', 'background', 'userData', string>
-type TabToBGMessage = ExtMessage<
-    'newTab',
-    'background',
-    'userData',
-    TwitterUserData
->
-type ChromeMessage =
-    | BGtoTabMessage
-    | BGtoCSMessage
-    | CStoBGMessage
-    | TabToBGMessage
+
+interface FromBgToCsData extends BaseMessage {
+    from: 'background'
+    to: 'content'
+    type: 'userData'
+    data: TwitterUserData
+}
+
+interface FromBgToCsStart extends BaseMessage {
+    from: 'background'
+    to: 'content'
+    type: 'start'
+}
+
+type FromBgToCs = FromBgToCsData | FromBgToCsStart
+
+interface FromBgToTab extends BaseMessage {
+    from: 'background'
+    to: 'newTab'
+    type: 'userData'
+    data: string
+}
+
+interface FromCsToBg extends BaseMessage {
+    from: 'content'
+    to: 'background'
+    type: 'userData'
+    data: string
+}
+
+interface FromTabToBg extends BaseMessage {
+    from: 'newTab'
+    to: 'background'
+    type: 'userData'
+    data: TwitterUserData
+}
+
+type ExtMessage = FromBgToCs | FromBgToTab | FromCsToBg | FromTabToBg
+
 type WindowMessage = {
     source: {
         window: WindowProxy

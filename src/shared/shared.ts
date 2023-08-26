@@ -21,3 +21,11 @@ export const parseInititalState = (initialStateObj: any) => {
 
     return accountData as TwitterUserData
 }
+
+export function objectKeys<T extends Record<string, unknown>>(obj: T) {
+    return Object.keys(obj) as Array<keyof T>
+}
+
+export function objectEntries<T extends { [key in keyof T]: T[key] }>(obj: T) {
+    return Object.entries(obj) as Array<[keyof T, T[keyof T]]>
+}

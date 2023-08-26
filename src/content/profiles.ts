@@ -1,14 +1,17 @@
 import { addCheckbox } from './checkboxes'
 import { Selectors } from '@/shared/shared'
 import { addFollowing } from '@/store/persistent'
-import { delay, getProfileTranslateY } from './utils/utils'
+import { randomDelay, getProfileTranslateY } from './utils/utils'
 
 export async function processProfile(profile: ProfileInner) {
     try {
         if (!profile.hasAttribute('data-unfollow')) {
             const profileDetails = await getProfileDetails(profile)
-            await addCheckbox(profile, profileDetails)
-            addFollowing(profileDetails.handle, profileDetails)
+            const fullProfileData = addFollowing(
+                profileDetails.handle,
+                profileDetails
+            )
+            await addCheckbox(profile, fullProfileData)
 
             return profile
         }
@@ -24,7 +27,7 @@ export async function processProfile(profile: ProfileInner) {
  */
 export async function getProfileDetails(
     profile: ProfileInner
-): Promise<ProfileData> {
+): Promise<Omit<ProfileDetails, 'index'>> {
     // wait for the profile data to load
     profile = await waitForProfileData(profile, 5000)
     // get the username, handle, and description from the profile div
@@ -41,10 +44,8 @@ export async function getProfileDetails(
         throw new Error(`missing handle for profile`)
     }
     if (!username) {
-        console.log(`missing text username for ${handle}`)
         username = links[1].innerHTML
-            ? '{{' + links[1].innerHTML + '}}'
-            : '<missing>'
+        console.log(`username for ${handle} is not text -> ${username}}`)
     }
     const profileContainer = profile.closest(
         Selectors.PROFILE_CONTAINER
@@ -69,7 +70,7 @@ async function waitForProfileData(
 
     if (links.length < 3 || !links[2]?.textContent?.includes('@')) {
         console.log('waiting for profile data', timeout)
-        await delay(100)
+        await randomDelay(100)
         return await waitForProfileData(profile, timeout - 100)
     }
 

@@ -1,15 +1,21 @@
-import { atom } from 'nanostores'
-import { startSuperUnfollow } from '@/content/unfollow'
+import { atom, computed } from 'nanostores'
+import {
+    $unfollowedProfiles,
+    displayUnfollowed,
+    startSuperUnfollow,
+} from '@/content/unfollow'
+import { disableStuff, enableStuff } from '@/content/utils/scroll'
+import { setNoticeLoading } from './collect-button'
+import { $unfollowing } from './persistent'
 
 // Create a new store for the button state
-export const $superUnfollowButtonState = atom<
-    'ready' | 'running' | 'paused' | 'resumed' | 'done'
->('paused')
+export const $superUnfollowButtonState = atom<ButtonState>('ready')
 
 // start superunfollow process
 export async function handleSuperUnfollowBtn() {
     console.log('superunfollow button clicked')
     switch ($superUnfollowButtonState.get()) {
+        case 'done':
         case 'ready':
             $superUnfollowButtonState.set('running')
             break
@@ -20,9 +26,6 @@ export async function handleSuperUnfollowBtn() {
         case 'paused':
             $superUnfollowButtonState.set('resumed')
             break
-        case 'done':
-            $superUnfollowButtonState.set('running')
-            break
         default:
             break
     }
@@ -31,39 +34,60 @@ export async function handleSuperUnfollowBtn() {
 // Subscribe to changes in the button state
 $superUnfollowButtonState.listen(async (state) => {
     console.log('superunfollow button state changed:', state)
-    const suButton = document.getElementById(
+    const unfollowButton = document.getElementById(
         'superUnfollow-button'
     ) as HTMLButtonElement | null
-    if (suButton) {
-        switch (state) {
-            case 'paused':
-            case 'done':
-                suButton.classList.remove('running')
-                // text updated by listener in unfollow.ts
-                break
-            case 'running':
-                suButton.innerText = 'Click to Pause'
-                suButton.classList.add('running')
-                await startSuperUnfollow()
-                break
-        }
+    const notice = document.getElementById('su-notice') as HTMLDivElement | null
+
+    if (!unfollowButton || !notice) {
+        throw new Error('superunfollow button or notice not found')
+    }
+    const unfollowingSize = $unfollowing.get().size
+    const unfollowedSize = $unfollowedProfiles.get().size
+    switch (state) {
+        case 'paused':
+            unfollowButton.innerText = 'Unfollow'
+            unfollowButton.classList.remove('running')
+            notice.textContent = `${unfollowingSize} profiles left to unfollow`
+            enableStuff('unfollowing')
+            break
+        case 'running':
+        case 'resumed':
+            unfollowButton.innerText = 'Pause'
+            unfollowButton.classList.add('running')
+            disableStuff('unfollowing')
+            setNoticeLoading(notice)
+            displayUnfollowed($unfollowedProfiles.get())
+            await startSuperUnfollow()
+            break
+        case 'done':
+            unfollowButton.innerText = 'Unfollow'
+            unfollowButton.classList.remove('running')
+            enableStuff('unfollowing')
+            notice.classList.add('complete')
+            notice.innerHTML =
+                unfollowingSize === 0
+                    ? `Unfollowed ${unfollowedSize} profiles!`
+                    : unfollowingSize > 0
+                    ? `Unfollowed ${unfollowedSize} profiles! Only ${unfollowingSize} profiles to go...`
+                    : 'Unfollowed 0 profiles... weird...'
+            displayUnfollowed($unfollowedProfiles.get())
+            break
     }
 })
 
+export const $isUnfollowing = computed($superUnfollowButtonState, (state) =>
+    ['running', 'resumed'].includes(state)
+)
 /**
- * Updates the unfollow button with the number of users selected
+ * Disables or enables the unfollow button based on the number of profiles being unfollowed
  */
-export const setUnfollowBtn = (
+export const enableDisableUnfollowBtn = (
     unfollowingSize: number,
-    button?: HTMLButtonElement
+    button?: HTMLButtonElement | null
 ) => {
     button =
         button ??
         (document.getElementById('superUnfollow-button') as HTMLButtonElement)
-
-    if (unfollowingSize > 0) {
-        button.disabled = false
-    } else {
-        button.disabled = true
-    }
+    button.disabled = unfollowingSize === 0
 }

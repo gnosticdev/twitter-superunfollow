@@ -1,8 +1,15 @@
 import { Selectors } from '@/shared/shared'
 
-export const delay = (ms: number) => {
+/**
+ * Wait a random amount of time and return a promise
+ * @param ms {number} - minimum milliseconds to delay (1000 = 1 second)
+ * @param msHigh {number} - maximum milliseconds to delay (1000 = 1 second)
+ * @returns {Promise<void>}
+ */
+export const randomDelay = (ms: number, msHigh = 0) => {
+    const delay = Math.floor(Math.random() * msHigh) + ms
     return new Promise((resolve) => {
-        setTimeout(resolve, ms)
+        setTimeout(resolve, delay)
     })
 }
 

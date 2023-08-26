@@ -1,4 +1,4 @@
-import { handleSearch, handleViewButton, rightChevron } from './search'
+import { handleSearch, handleViewButtons } from './search'
 import { $following, $followingCount, $unfollowing } from '@/store/persistent'
 import {
     $collectFollowingState,
@@ -7,19 +7,20 @@ import {
 import {
     $superUnfollowButtonState,
     handleSuperUnfollowBtn,
-    setUnfollowBtn,
+    enableDisableUnfollowBtn,
 } from '@/store/unfollow-button'
+import { createMetrics, createNotice } from './metrics'
 
 export async function addSearchDialog() {
     // Create the dialog and the input and submit elements
     const dialog = document.createElement('dialog')
     dialog.id = 'su-dialog'
-    dialog.classList.add('superUnfollow', 'su-search-dialog')
+    dialog.classList.add('superUnfollow', 'su-dialog')
     dialog.role = 'dialog'
 
     // create container to hold all elements in dialog
     const dialogContainer = document.createElement('div')
-    dialogContainer.classList.add('superUnfollow', 'su-search-dialog-container')
+    dialogContainer.classList.add('superUnfollow', 'su-dialog-container')
     dialog.appendChild(dialogContainer)
 
     const closeButton = document.createElement('button')
@@ -28,6 +29,7 @@ export async function addSearchDialog() {
 
     closeButton.classList.add('superUnfollow', 'su-close-button')
     closeButton.addEventListener('click', () => {
+        console.log('closing dialog')
         dialog.close()
     })
 
@@ -51,25 +53,31 @@ export async function addSearchDialog() {
     const input = document.createElement('input')
     input.type = 'text'
     input.id = 'su-search-input'
-
+    input.placeholder = 'Enter a search term'
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault()
+            handleSearch(e)
+        }
+    })
     const searchButton = document.createElement('button')
     searchButton.textContent = 'Search'
-    searchButton.classList.add('su-search-button')
-    // when user clicks 'search' - any partial match of username or handle are returned, or any full word match of description. The search results are appended to the dialog or replace the previous results.
+    searchButton.classList.add('su-button', 'su-search-button')
     searchButton.addEventListener('click', handleSearch)
 
     // search input and button container
-    const inputContainer = document.createElement('div')
-    inputContainer.id = 'su-search-input-container'
-    inputContainer.classList.add('su-search-input-container')
-    inputContainer.append(input, searchButton)
+    const searchContainer = document.createElement('div')
+    searchContainer.id = 'su-search-container'
+    searchContainer.classList.add('su-search-container')
+    searchContainer.append(input, searchButton)
+    // when user clicks 'search' - any partial match of username or handle are returned, or any full word match of description. The search results are appended to the dialog or replace the previous results.
 
     const headingInputContainer = document.createElement('div')
     headingInputContainer.classList.add(
         'superUnfollow',
         'su-heading-input-container'
     )
-    headingInputContainer.append(headingContainer, inputContainer)
+    headingInputContainer.append(headingContainer, searchContainer)
 
     // add a results div that gets cleared when the search button is clicked
     const resultsContainer = document.createElement('div')
@@ -77,14 +85,12 @@ export async function addSearchDialog() {
     resultsContainer.classList.add('superUnfollow', 'su-results')
 
     // Create the show dialog button and attach it to the top right of the screen
-    const showModalButton = createShowModalButton(dialog)
     const metricsContainer = createMetrics(
         $followingCount.get(),
-        $following.get().size
+        $following.get().size,
+        $unfollowing.get().size
     )
-
     const notice = createNotice()
-
     const modalButtons = createModalButtons()
 
     // append elements to dialog
@@ -96,10 +102,12 @@ export async function addSearchDialog() {
         modalButtons,
         resultsContainer
     )
-
-    // Add the dialog and show modal button  to the end of the page
-    document.body.appendChild(dialog)
-    document.body.appendChild(showModalButton)
+    // append the container to the dialog
+    dialog.appendChild(dialogContainer)
+    // dont forget to create the button that shows the dialog!
+    const showDialogButton = createShowModalButton(dialog)
+    // append the dialog and the button to the body
+    document.body.append(dialog, showDialogButton)
 
     return dialog
 }
@@ -114,9 +122,9 @@ const createModalButtons = () => {
     collectUnfollowContainer.classList.add('su-collect-superunfollow-container')
     collectUnfollowContainer.append(collectButton, startButton)
 
-    const viewButton = createViewBtn()
+    const viewButtons = createViewButtons()
 
-    modalBtnsContainer.append(viewButton, collectUnfollowContainer)
+    modalBtnsContainer.append(viewButtons, collectUnfollowContainer)
 
     return modalBtnsContainer
 }
@@ -126,7 +134,7 @@ export function createSuperUnfollowBtn() {
     superUnfollowBtn.classList.add('su-button', 'super-unfollow')
     superUnfollowBtn.disabled = true
     superUnfollowBtn.textContent = 'Unfollow'
-    setUnfollowBtn($unfollowing.get().size, superUnfollowBtn)
+    enableDisableUnfollowBtn($unfollowing.get().size, superUnfollowBtn)
     // starting the super unfollow process
     superUnfollowBtn.addEventListener('click', handleSuperUnfollowBtn)
     superUnfollowBtn.id = 'superUnfollow-button'
@@ -138,13 +146,7 @@ export const createShowModalButton = (dialog: HTMLDialogElement) => {
     const modalButton = document.createElement('button')
     modalButton.id = 'su-show-modal-button'
     modalButton.textContent = 'SuperUnfollow'
-    modalButton.classList.add(
-        'superUnfollow',
-        'su-button',
-        'su-modal',
-        'small',
-        'active'
-    )
+    modalButton.classList.add('superUnfollow', 'su-button', 'su-show-modal')
 
     modalButton.addEventListener('click', () => {
         dialog.showModal()
@@ -155,7 +157,7 @@ export const createShowModalButton = (dialog: HTMLDialogElement) => {
 
 export function createCollectBtn() {
     const collectBtn = document.createElement('button')
-    collectBtn.classList.add('su-button', 'small', 'outline', 'alt')
+    collectBtn.classList.add('su-button', 'alt')
     collectBtn.id = 'su-collect-following-button'
     collectBtn.textContent = 'Collect'
     collectBtn.addEventListener('click', handleCollectBtn)
@@ -163,44 +165,48 @@ export function createCollectBtn() {
     return collectBtn
 }
 
-export const createViewBtn = () => {
-    const viewUnfollowing = document.createElement('button')
-    viewUnfollowing.classList.add('no-border', 'su-button', 'view-following')
-    viewUnfollowing.id = 'su-view-button'
-    viewUnfollowing.innerHTML = 'List  ' + rightChevron
-    viewUnfollowing.addEventListener('click', handleViewButton)
+export function createViewButtons() {
+    const viewButtonsContainer = document.createElement('div')
+    viewButtonsContainer.classList.add('su-view-buttons-container')
+    const viewUnfollowingBtn = createViewUnfollowingBtn()
+    const viewSearchResultsBtn = createViewSearchResultsBtn()
+    viewButtonsContainer.append(viewUnfollowingBtn, viewSearchResultsBtn)
 
-    return viewUnfollowing
+    return viewButtonsContainer
 }
 
-export function createMetrics(count: number, size: number) {
-    // section that tells user that they should collect their following list. Shown when $followingCount > $following.get().size
-    const metricsContainer = document.createElement('div')
-    metricsContainer.classList.add('su-metrics-container')
-    metricsContainer.id = 'su-metrics-container'
-    const metrics = document.createElement('div')
-    metrics.classList.add('su-metrics')
-    metrics.id = 'su-metrics'
-    const followingNumber = document.createElement('span')
-    followingNumber.classList.add('su-highlight')
-    followingNumber.textContent = count.toString()
-    const lastCollected = document.createElement('span')
-    lastCollected.classList.add('su-highlight')
-    lastCollected.textContent = size.toString()
-    metrics.innerHTML = `<div>Following: ${followingNumber.outerHTML}</div><div>Collected: ${lastCollected.outerHTML}</div>`
+export const createViewUnfollowingBtn = () => {
+    const input = document.createElement('input')
+    input.type = 'checkbox'
+    input.id = 'su-view-unfollowing'
+    input.classList.add('su-view-button')
+    input.addEventListener('change', handleViewButtons)
 
-    // only show notice if collectFollowing has been run on the current session
-    metricsContainer.append(metrics)
-    return metricsContainer
+    const label = document.createElement('label')
+    label.htmlFor = 'su-view-unfollowing'
+    label.classList.add('su-view-button')
+    label.textContent = 'List'
+
+    label.appendChild(input)
+
+    return label
 }
 
-// Notice updated by collectFollowing button state
-export const createNotice = () => {
-    const notice = document.createElement('div')
-    notice.classList.add('su-notice')
-    notice.id = 'su-notice'
-    notice.textContent = 'Click Collect to get all accounts you follow'
-    return notice
+export const createViewSearchResultsBtn = () => {
+    const input = document.createElement('input')
+    input.type = 'checkbox'
+    input.id = 'su-view-search-results'
+    input.classList.add('su-view-button')
+    input.addEventListener('change', handleViewButtons)
+
+    const label = document.createElement('label')
+    label.htmlFor = 'su-view-search-results'
+    label.classList.add('su-view-button')
+    label.textContent = 'Results'
+
+    label.appendChild(input)
+
+    return label
 }
 
 function closeDialog(
@@ -223,6 +229,7 @@ function closeDialog(
         clientY < top ||
         clientY > bottom
     ) {
+        console.log('closing dialog from click outside')
         this.close()
     }
 }

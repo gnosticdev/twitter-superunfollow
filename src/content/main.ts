@@ -5,6 +5,10 @@ import { superUnfollow } from './unfollow'
 import { $superUnfollowButtonState } from '@/store/unfollow-button'
 import { waitForElement } from './utils/wait-promise'
 import { $followingCount } from '@/store/persistent'
+import { atom } from 'nanostores'
+
+export const $needToCollect = atom<boolean>(true)
+export const $username = atom<string | null>(null)
 
 // 1) send message to background.ts -> receive the response and start init()
 // TODO: add this as an option
@@ -20,7 +24,7 @@ import { $followingCount } from '@/store/persistent'
         throw 'script has not loaded yet'
     }
 
-    const userDataMessage: CStoBGMessage = {
+    const userDataMessage: FromCsToBg = {
         from: 'content',
         to: 'background',
         type: 'userData',
@@ -31,21 +35,27 @@ import { $followingCount } from '@/store/persistent'
         userDataMessage
     )
     // send the userData as a string to the backgrounds cript, which then sends it to the newTab
-    await chrome.runtime.sendMessage<CStoBGMessage>(userDataMessage)
+    await chrome.runtime.sendMessage<FromCsToBg>(userDataMessage)
 
-    chrome.runtime.onMessage.addListener(async (msg: BGtoCSMessage) => {
+    chrome.runtime.onMessage.addListener(async (msg: FromBgToCs) => {
         try {
             console.log('content received message', msg)
             if (
                 msg.from === 'background' &&
-                msg.type === 'userData' &&
                 msg.to === 'content' &&
+                msg.type === 'userData' &&
                 msg.data
             ) {
-                // store the followingCount = friends_count, and the entttire userData object for later use
+                // store the followingCount = friends_count, and the entire userData object for later use
                 $followingCount.set(msg.data.friends_count)
+                $username.set(msg.data.screen_name)
                 await addSearchDialog()
-                startObserver()
+                // start observer on /following page after getting message from bg script
+            } else if (msg.from === 'background' && msg.type === 'start') {
+                console.log(
+                    'received message from background to start observer'
+                )
+                await startObserver()
             }
         } catch (e) {
             console.log(e)
@@ -53,13 +63,14 @@ import { $followingCount } from '@/store/persistent'
     })
 })()
 
+// Start the observer after the userData has been received, and we are on the /following page
 async function startObserver() {
-    const profileObserver = new MutationObserver((mutations) => {
+    const profileObserver = new MutationObserver(async (mutations) => {
         for (const mutation of mutations) {
             if (mutation.addedNodes.length === 0) {
                 continue
             }
-            mutation.addedNodes.forEach(async (node) => {
+            for (const node of Array.from(mutation.addedNodes)) {
                 if (node instanceof HTMLElement) {
                     const profileInner = node.querySelector(
                         Selectors.PROFILE_INNER
@@ -79,7 +90,7 @@ async function startObserver() {
                         }
                     }
                 }
-            })
+            }
         }
     })
     // first make sure the following section is in the DOM, then observe for new profiles added to it

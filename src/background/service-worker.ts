@@ -1,26 +1,90 @@
-import { NEW_TAB_PAGE } from '../shared/shared'
+import { prettyConsole } from '@/content/utils/console'
+import { NEW_TAB_PAGE, objectEntries } from '../shared/shared'
+import { Storage } from '@plasmohq/storage'
 
-const saveSessionTabId = async (
-    tabName: 'contentTabId' | 'newTab',
-    tabId: number
-) => {
-    await chrome.storage.session.set({ [tabName]: tabId })
-}
-
-const getSessionTabId = async (tabName: 'contentTabId' | 'newTab') => {
-    const tabs = (await chrome.storage.session.get(tabName)) as {
-        [tabName: string]: number
+class SyncStorage<T extends { [K in keyof T]: T[K] } = TwitterUserData> {
+    namespace = 'SuperUnfollow_'
+    private storage: Storage
+    constructor() {
+        this.storage = new Storage({ copiedKeyList: ['screen_name'] })
+        this.storage.setNamespace(this.namespace)
     }
-    return tabs[tabName]
+    async getValue<K extends keyof T & string>(key: K): Promise<T[K]> {
+        return this.storage.get(key)
+    }
+
+    async setValue<K extends keyof T & string>(
+        key: K,
+        value: T[K]
+    ): Promise<void> {
+        return this.storage.set(key, value)
+    }
+
+    async setValues(data: T): Promise<void> {
+        for (const [key, value] of objectEntries(data)) {
+            await this.setValue(
+                key as keyof T & string,
+                value as T[keyof T & string]
+            )
+        }
+    }
+
+    watch<K extends keyof T & string>(
+        key: K,
+        callback: (change: { newValue: T[K]; oldValue: T[K]; key: K }) => void
+    ) {
+        this.storage.watch({
+            [key]: (change) => {
+                callback({
+                    newValue: change.newValue as T[K],
+                    oldValue: change.oldValue as T[K],
+                    key: key,
+                })
+            },
+        })
+    }
 }
+
+interface SessionStorageKV {
+    contentTabId: number
+    newTab: number
+}
+
+class SessionStorage<K extends keyof SessionStorageKV> {
+    namespace = 'SuperUnfollow_'
+    private storage: Storage
+    constructor() {
+        this.storage = new Storage({ area: 'session' })
+        this.storage.setNamespace(this.namespace)
+    }
+    async getValue(key: K): Promise<SessionStorageKV[K]> {
+        const value = await this.storage.get(key)
+        return parseInt(value)
+    }
+
+    async setValue(key: K, value: number) {
+        return this.storage.set(key, value)
+    }
+}
+
+const syncStorage$ = new SyncStorage<TwitterUserData>()
+// Watch for changes to screen_name
+syncStorage$.watch('screen_name', (change) => {
+    prettyConsole(`${change.key} changed in sync storage: `, 'green', change)
+})
+
+const sessionStorage$ = new SessionStorage()
 
 // get userData string from content and send to Tab -> does not return anything
-const contentListner = async (
-    msg: CStoBGMessage | TabToBGMessage,
+// Listen for messages from content script and newTab
+const listenForContentScript = async (
+    msg: ExtMessage,
     sender: chrome.runtime.MessageSender
 ) => {
-    if (!sender.tab || !sender.tab.id) {
-        throw 'no sender.tab found'
+    const { tab: senderTab } = sender
+    if (!senderTab || !senderTab.id) {
+        console.log(`⚠️ sender.tab not defined. msg: ${msg}`)
+        return
     }
     // messages sent from content script
     if (
@@ -30,77 +94,95 @@ const contentListner = async (
         msg.data
     ) {
         console.log('background received userData from content', msg)
-        await saveSessionTabId('contentTabId', sender.tab.id)
         const newTab = await createNewTab()
-        await saveSessionTabId('newTab', newTab.id!)
+        await sessionStorage$.setValue('contentTabId', senderTab.id)
         await sendDataToTab(msg.data, newTab)
-        chrome.runtime.onMessage.removeListener(contentListner) // --> Remove listener after first message
-        chrome.runtime.onMessage.addListener(tabListener) // --> Add listener for messages from newTab
+
+        // --> Remove listener after first message
+        // chrome.runtime.onMessage.removeListener(contentListner)
+
+        // --> Add listener for messages from newTab
+        chrome.runtime.onMessage.addListener(listenForTabs)
     }
 }
 
-// Listener for messages from content script and newTab
-chrome.runtime.onMessage.addListener(contentListner)
+chrome.runtime.onMessage.addListener(listenForContentScript)
 
 // userData sent to background from newTab, then send to content script
-const tabListener = async (msg: CStoBGMessage | TabToBGMessage) => {
-    if (isTabToBgMessage(msg) && msg.data) {
+const listenForTabs = async (msg: ExtMessage) => {
+    if (msg.from === 'newTab' && msg.to === 'background' && msg.data) {
         console.log('background received userData from newTab', msg)
-        const bgToContentMsg: BGtoCSMessage = {
+        console.log('adding to chrome storage')
+        await syncStorage$.setValues(msg.data)
+        const bgToContentMsg: FromBgToCs = {
             from: 'background',
             to: 'content',
             type: 'userData',
             data: msg.data,
         }
-        const contentTabId = await getSessionTabId('contentTabId')
-        await sendMessage(contentTabId, bgToContentMsg)
-        chrome.runtime.onMessage.removeListener(tabListener) // --> Remove listener after first message
+        const contentTabId = await sessionStorage$.getValue('contentTabId')
+        await sendMessageToCs(contentTabId, bgToContentMsg)
+
+        // Remove listener after first message
+        chrome.runtime.onMessage.removeListener(listenForTabs)
+
         // delete the new tab
-        const newTabId = await getSessionTabId('newTab')
+        const newTabId = await sessionStorage$.getValue('newTab')
         await chrome.tabs.remove(newTabId)
     }
 }
 
-export const sendMessage = async <T extends ChromeMessage>(
-    tabId: T extends BGtoCSMessage | BGtoTabMessage ? number : undefined,
+export const sendMessageToCs = async <T extends FromBgToCs>(
+    tabId: number,
     message: T
 ) => {
-    if (tabId) {
-        console.log('sending message to tab..', message, tabId)
-        const response = await chrome.tabs.sendMessage<
-            T,
-            T extends BGtoCSMessage
-                ? TwitterUserData
-                : T extends BGtoTabMessage
-                ? void
-                : never
-        >(tabId, message)
+    console.log('sending message to content script...', message, tabId)
+    const response = await chrome.tabs.sendMessage<
+        T,
+        T extends FromBgToCs ? string : never
+    >(tabId, message)
 
-        return response
-    } else {
-        console.log('sending message to background..', message, tabId)
-        const response = await chrome.runtime.sendMessage<
-            T,
-            T extends CStoBGMessage
-                ? string
-                : T extends TabToBGMessage
-                ? TwitterUserData
-                : never
-        >(message)
+    return response
+}
 
-        return response
-    }
+export const sendMessageToTab = async <T extends FromBgToTab>(
+    tabId: number,
+    message: T
+) => {
+    console.log('sending message to tab...', message, tabId)
+    const response = await chrome.tabs.sendMessage<
+        T,
+        T extends FromBgToTab ? string : never
+    >(tabId, message)
+
+    return response
+}
+
+export const sendMessageToBg = async <T extends FromCsToBg | FromTabToBg>(
+    message: T
+) => {
+    console.log('sending message to background...', message)
+    const response = await chrome.runtime.sendMessage<
+        T,
+        T extends FromCsToBg
+            ? string
+            : T extends FromTabToBg
+            ? TwitterUserData
+            : never
+    >(message)
+
+    return response
 }
 
 async function sendDataToTab(data: string, tab: chrome.tabs.Tab) {
     try {
-        const msg: BGtoTabMessage = {
+        const msg: FromBgToTab = {
             from: 'background',
             to: 'newTab',
             type: 'userData',
             data: data,
         }
-        await sendMessage(tab.id!, msg)
+        await sendMessageToTab(tab.id!, msg)
     } catch (e) {
         console.error(e)
     }
@@ -125,7 +207,7 @@ const createNewTab = async () => {
     }
     const tab = await waitForTabToLoad(newTabId)
     console.log('new tab created and loaded.', tab)
-    saveSessionTabId('newTab', tab.id!)
+    await sessionStorage$.setValue('newTab', tab.id!)
     return tab
 }
 
@@ -143,41 +225,15 @@ const waitForTabToLoad = (newTabId: number): Promise<chrome.tabs.Tab> => {
     })
 }
 
-const isTabToBgMessage = (msg: ChromeMessage): msg is TabToBGMessage => {
-    if (
-        msg.from === 'newTab' &&
-        msg.to === 'background' &&
-        msg.type === 'userData' &&
-        msg.data
-    ) {
-        return true
-    } else {
-        return false
-    }
-}
-
-// sidePanel API not yet available on Brave, Arc, or Opera
-// chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-//     if (
-//         changeInfo.status === 'complete' &&
-//         tab.url?.includes('twitter.com') &&
-//         tab.url?.includes('following')
-//     ) {
-//         chrome.sidePanel.setOptions({
-//             enabled: true,
-//             path: 'popup.html',
-//             tabId,
-//         })
-//     } else {
-//         chrome.sidePanel.setOptions({
-//             enabled: false,
-//             tabId,
+// Listen for tab updates, send message to content script on /username/following page
+// chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+//     if (changeInfo.status === 'complete' && tab.url?.includes('twitter.com')) {
+//         const username = await plasmoStorage.get('screen_name')
+//         console.log('twitter username', username)
+//         await sendMessage(tabId, {
+//             from: 'background',
+//             to: 'content',
+//             type: 'start',
 //         })
 //     }
 // })
-
-// chrome.sidePanel
-//     .setPanelBehavior({
-//         openPanelOnActionClick: true,
-//     })
-//     .catch((e) => console.error(e))

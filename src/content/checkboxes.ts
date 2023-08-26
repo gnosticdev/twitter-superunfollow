@@ -1,5 +1,6 @@
 import { Selectors } from '@/shared/shared'
 import {
+    $following,
     $unfollowing,
     addUnfollowing,
     removeUnfollowing,
@@ -11,7 +12,7 @@ import {
  */
 export async function addCheckbox(
     profileInner: ProfileInner,
-    profileDetails: ProfileData
+    profileDetails: ProfileDetails
 ) {
     const unfollowButton = profileInner.querySelector(Selectors.UF_BUTTON)
     if (!unfollowButton) {
@@ -52,9 +53,14 @@ export const handleChange = (event: Event) => {
         throw 'no handle found for profile'
     }
 
+    const profileDetails = $following.get().get(handle)
+    if (!profileDetails) {
+        throw `no profile details found for ${handle}`
+    }
+
     if (target.checked) {
         console.log(`adding ${handle} to unfollowing`)
-        addUnfollowing(handle)
+        addUnfollowing(handle, profileDetails)
     } else {
         console.log(`removing ${handle} from unfollowing`)
         removeUnfollowing(handle)

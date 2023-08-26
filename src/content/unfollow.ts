@@ -1,53 +1,61 @@
 import { Selectors } from '@/shared/shared'
-import { getResultsDiv } from './search'
+import { $viewResults, createResultsContainer, getResultsDiv } from './search'
 import {
     $unfollowing,
     removeFollowing,
     removeUnfollowing,
 } from '@/store/persistent'
 import { $superUnfollowButtonState } from '@/store/unfollow-button'
-import { delay } from './utils/utils'
+import { randomDelay } from './utils/utils'
 import { prettyConsole } from './utils/console'
 import { waitForElement } from './utils/wait-promise'
-import { scrollDownFollowingPage } from './utils/scroll'
+import { scrollToLastChild } from './utils/scroll'
 import { atom } from 'nanostores'
 
 // Tract the profiles that have been unfollowed
-export const $unfollowedProfiles = atom<Set<string>>(new Set())
+export const $unfollowedProfiles = atom<ProfilesMap>(new Map())
 
-$unfollowedProfiles.listen((unfollowed) => {
-    displayUnfollowed(unfollowed)
-})
+const addUnfollowedProfile = (handle: string, profile: ProfileDetails) => {
+    const unfollowedProfiles = $unfollowedProfiles.get()
+    unfollowedProfiles.set(handle, profile)
+    $unfollowedProfiles.set(new Map([...Array.from(unfollowedProfiles)]))
+
+    return profile
+}
 /**
  * Unfollows the first section of profiles loaded on the page (if any)
  * Then scrolls down the page and unfollows the rest
  */
 export async function startSuperUnfollow() {
+    console.log('starting super unfollow')
+    $viewResults.set('unfollowing')
     // get all profiles already loaded on the page
     const profiles = document.querySelectorAll(
         '[data-unfollow="true"]'
     ) as NodeListOf<HTMLElement>
     profiles.forEach(async (profile) => {
-        await superUnfollow(profile)
-        await delay(1000)
+        if (shouldContinue()) {
+            await superUnfollow(profile)
+            await randomDelay(1000, 2000)
+        }
     })
     // scroll down the page and the watcher will pick up the rest
     await scrollUnfollow()
 }
 
 const scrollUnfollow = async () => {
-    if ($superUnfollowButtonState.get() === 'paused') {
-        console.log('stopping super unfollow')
-        return
-    }
-    // superUnfollow handled by MutationObserver in main.ts
-    try {
-        await scrollDownFollowingPage()
-        await delay(1000)
-        await scrollUnfollow()
-    } catch (error) {
-        console.error(error)
-        return
+    while (shouldContinue()) {
+        // superUnfollow handled by MutationObserver in main.ts
+        try {
+            await scrollToLastChild()
+            // delay a random number from 1500 - 3000 ms
+            await randomDelay(1500, 3000)
+            // continue scrolling
+            await scrollUnfollow()
+        } catch (error) {
+            console.error(error)
+            return
+        }
     }
 }
 
@@ -57,23 +65,19 @@ const scrollUnfollow = async () => {
  * @returns {Promise<void>}
  */
 export async function superUnfollow(profile: HTMLElement): Promise<void> {
-    if ($superUnfollowButtonState.get() === 'paused') {
-        console.log('stopping super unfollow')
-        return
-    }
-
     try {
         const { handle } = profile.dataset
-        if (handle && $unfollowing.get().has(handle)) {
+        if (shouldContinue() && handle && $unfollowing.get().has(handle)) {
             const unfollowed = await unfollow(profile)
+            await randomDelay(1000, 2000)
             if (!unfollowed) {
                 $superUnfollowButtonState.set('paused')
                 throw new Error('unfollow failed')
             }
 
             if ($unfollowing.get().size === 0) {
-                prettyConsole('no more profiles to unfollow')
-                $superUnfollowButtonState.set('paused')
+                prettyConsole('Unfollowed all accounts!')
+                $superUnfollowButtonState.set('done')
                 return
             }
         }
@@ -98,7 +102,7 @@ const unfollow = async (profile: HTMLElement) => {
         }
 
         unfollowButton.click()
-        await delay(1500)
+        await randomDelay(1000, 2000)
         // blue and gray out unfollowed profiles
         profile.style.filter = 'blur(1px) grayscale(100%) brightness(0.5)'
         const confirmUnfollow = await waitForElement(Selectors.UF_CONFIRM)
@@ -107,12 +111,11 @@ const unfollow = async (profile: HTMLElement) => {
             throw new Error('no confirm unfollow button found')
         }
         confirmUnfollow.click()
-        await delay(1500)
+        // add profile to unfollowed store
+        addUnfollowedProfile(handle, $unfollowing.get().get(handle)!)
         // remove profile from unfollowing store
         removeUnfollowing(handle)
         removeFollowing(handle)
-
-        $unfollowedProfiles.set($unfollowedProfiles.get().add(handle))
 
         debugger
 
@@ -124,26 +127,30 @@ const unfollow = async (profile: HTMLElement) => {
 }
 
 // display the unfollowed handles in the results section of the dialog while superUnfollow is running
-export const displayUnfollowed = (unfollowed: Readonly<Set<string>>) => {
+export const displayUnfollowed = (unfollowed: ProfilesMap) => {
+    console.log('displaying unfollowed', unfollowed)
+    $viewResults.set('none')
     const resultsDiv = getResultsDiv()
-    const unfollowedContainer = document.createElement('div')
-    unfollowedContainer.id = 'su-unfollowed-container'
-    unfollowedContainer.style.cssText = `
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-    `
-    resultsDiv.innerHTML = `<h3>${
-        $unfollowing.get().size - $unfollowedProfiles.get().size
-    } profiles remaining</h3>`
-
-    unfollowed.forEach((handle) => {
-        const unfollowedHandle = document.createElement('p')
-        unfollowedHandle.textContent = handle
-        unfollowedContainer.appendChild(unfollowedHandle)
+    const unfollowedContainer = createResultsContainer('unfollowing')
+    const list = document.createElement('ol')
+    list.classList.add('su-search-result')
+    Array.from($unfollowing.get()).forEach(([handle, profile]) => {
+        const result = document.createElement('li')
+        result.classList.add('su-list-item')
+        unfollowed.has(handle) && result.classList.add('success')
+        result.innerHTML = `<div class="su-result-label">${profile.username}&nbsp;&nbsp;<span class="su-handle">${handle}</span></div>`
+        result.textContent = `${profile.username} ${handle}`
+        list.appendChild(result)
     })
+
+    unfollowedContainer.appendChild(list)
+
     resultsDiv.appendChild(unfollowedContainer)
     console.log('appending unfollowed list to results div', unfollowed)
+    debugger
+}
+
+const shouldContinue = () => {
+    const state = $superUnfollowButtonState.get()
+    return state === 'running' || state === 'resumed'
 }

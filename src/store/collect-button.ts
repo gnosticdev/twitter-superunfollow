@@ -1,8 +1,11 @@
-import { atom } from 'nanostores'
+import { atom, computed } from 'nanostores'
 import { collectFollowing } from '@/content/collect-following'
-import { disableScroll, enableScroll } from '@/content/utils/scroll'
 import { createLoadingSpinner } from '@/content/utils/utils'
 import { $following, $followingCount } from './persistent'
+import { Selectors } from '@/shared/shared'
+import { getProfileDetails } from '@/content/profiles'
+import { disableStuff, enableStuff } from '@/content/utils/scroll'
+import { $isUnfollowing } from './unfollow-button'
 
 export const $collectFollowingState = atom<ButtonState>('ready')
 
@@ -37,10 +40,14 @@ export const getNoticeDiv = () =>
 
 $collectFollowingState.listen(async (state) => {
     console.log('collect following button state changed:', state)
-    await updateFollowingStats(state)
+    await updateCollect(state)
 })
 
-export const updateFollowingStats = async (state: ButtonState) => {
+export const $isCollecting = computed($collectFollowingState, (state) =>
+    ['running', 'resumed'].includes(state)
+)
+
+export const updateCollect = async (state: ButtonState) => {
     state = state ?? 'ready'
     const notice = document.getElementById('su-notice') as HTMLDivElement | null
     const collectBtn = getCollectBtn()
@@ -53,13 +60,16 @@ export const updateFollowingStats = async (state: ButtonState) => {
         case 'ready':
             collectBtn.innerHTML = 'Collect'
             collectBtn.classList.remove('running')
-            notice.textContent = 'Run Collect Following to get started'
+            const needsToCollect = await shouldCollect()
+            notice.textContent = needsToCollect
+                ? 'Run Collect Following to get started'
+                : 'You have no new accounts to collect'
             break
         case 'running':
         case 'resumed':
             collectBtn.classList.add('running')
             collectBtn.innerHTML = 'Pause'
-            disableScroll()
+            disableStuff('collecting')
             setNoticeLoading(notice)
             await collectFollowing()
             break
@@ -69,7 +79,7 @@ export const updateFollowingStats = async (state: ButtonState) => {
             notice.textContent = `Need to collect ${
                 total - collected
             } more accounts`
-            enableScroll()
+            enableStuff('collecting')
             break
         case 'done':
             collectBtn.innerHTML = 'Collect'
@@ -81,17 +91,59 @@ export const updateFollowingStats = async (state: ButtonState) => {
                     : collected > total
                     ? "Collected more than expected, is there something you didn't tell me?!"
                     : 'Collected less than expected 😔<br>You can refresh the page and try again to start over.'
-            enableScroll()
+            enableStuff('collecting')
             break
         default:
             break
     }
 }
 
-const setNoticeLoading = (notice: HTMLElement) => {
+/**
+ * Only run at top of the page where new profiles are loaded
+ * @returns true if the user has followed any new profiles since the last time
+ */
+export const shouldCollect = async () => {
+    const following = $following.get().size
+    const total = $followingCount.get()
+    const changed = await followingChanged()
+    return following !== total || changed
+}
+
+/**
+ * Check if the user has followed any new profiles since the last time
+ */
+const followingChanged = async () => {
+    const existingProfiles = $following.get()
+    const newProfiles = document.querySelectorAll(
+        Selectors.PROFILE_INNER
+    ) as NodeListOf<ProfileInner>
+
+    for (const profile of Array.from(newProfiles)) {
+        const profileDetails = await getProfileDetails(profile)
+        if (!existingProfiles.has(profileDetails.handle)) {
+            return true
+        }
+    }
+    return false
+}
+
+export const setNoticeLoading = (notice: HTMLElement) => {
     console.log('setting loading state for notice')
     const loader = createLoadingSpinner()
-    notice.innerHTML = `${loader.outerHTML} Collecting accounts you follow...`
+    notice.innerHTML = loader.outerHTML
+    if ($isCollecting.get()) {
+        notice.innerHTML += 'Collecting accounts you follow...'
+    } else if ($isUnfollowing.get()) {
+        notice.innerHTML += 'Unfollowing accounts...'
+    }
 
     return notice
+}
+
+export const disableCollectBtn = (unfollowing?: boolean) => {
+    const collectBtn = getCollectBtn()
+    if (!collectBtn) {
+        return
+    }
+    collectBtn.disabled = unfollowing ?? false
 }
