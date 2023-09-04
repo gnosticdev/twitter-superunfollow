@@ -1,4 +1,4 @@
-type ProfileDetails = {
+type ProfileDetail = {
     index: number
     handle: string
     username: string
@@ -8,9 +8,7 @@ type ProfileDetails = {
 }
 
 /** Map of profile details for the Unfollowing or Following lists */
-type ProfilesMap = Map<string, ProfileDetails>
-
-type ButtonState = 'ready' | 'running' | 'paused' | 'done' | 'resumed'
+type ProfilesMap = Map<string, ProfileDetail>
 
 interface ProfileContainer extends HTMLElement {
     readonly dataset: {
@@ -20,6 +18,7 @@ interface ProfileContainer extends HTMLElement {
 interface ProfileInner extends HTMLElement {
     readonly dataset: {
         testid: 'UserCell'
+        handle?: string
     }
 }
 interface Window {

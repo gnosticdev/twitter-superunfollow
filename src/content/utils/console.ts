@@ -1,9 +1,9 @@
-export const prettyConsole = (
+export function prettyConsole(
     message: string,
     color?: 'blue' | 'red' | 'green',
     object?: any
-) => {
-    color = color ?? 'blue'
+) {
+    color ??= 'blue'
     message = `%c🏄‍♂️ SuperUnfollow: %c${message}`
     const messageStyle = {
         blue: 'color: dodgerblue;',

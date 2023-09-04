@@ -13,13 +13,11 @@
     "background": {
         "service_worker": "service-worker.js"
     },
-
     "sandbox": {
         "pages": ["sandbox.html"]
     },
     "action": {
-        "default_title": "Twitter SuperUnfollow",
-        "default_popup": "popup.html"
+        "default_title": "Twitter SuperUnfollow"
     },
     "permissions": ["tabs", "activeTab", "scripting", "storage", "sidePanel"],
 
@@ -30,6 +28,7 @@
                 "content.js.map",
                 "popup.js.map",
                 "service-worker.js.map",
+                "temp-tab.js.map",
                 "style.css.map",
                 "sandbox.js.map"
             ],

@@ -1,11 +1,16 @@
 import { persistentAtom } from '@nanostores/persistent'
-import { enableDisableUnfollowBtn } from '@/content/stores/unfollow-button'
-import { createMetrics } from '@/content/metrics'
+import { enableUnfollowButton } from '@/content/stores/unfollow-button'
+import { createMetrics } from '@/content/ui/metrics'
 import { $needToCollect } from '@/content/main'
+import { action } from 'nanostores'
 
+/**
+ * Map of profiles that are selected to be unfollowed by the user. Can be added/removed by checking the checkbox next to the profile, or from the dialog
+ * The key is the user's handle, and the value is the profile details.
+ */
 export const $unfollowing = persistentAtom(
     'unfollowing',
-    new Map<string, ProfileDetails>(),
+    new Map<string, ProfileDetail>(),
     {
         encode: (value) => {
             return JSON.stringify(Array.from(value.entries()))
@@ -16,18 +21,20 @@ export const $unfollowing = persistentAtom(
     }
 )
 
-// Subscriptions
 $unfollowing.listen((unfollow) => {
-    console.log(`now unfollowing ${unfollow.size.toString()} profiles`)
-    enableDisableUnfollowBtn(unfollow.size)
+    enableUnfollowButton(unfollow.size)
     const followingSize = $following.get().size
     const unfollowingSize = unfollow.size
     updateMetrics(followingSize, unfollowingSize)
 })
 
+/**
+ * Map of profiles that are being followed by the user. The key is the user's handle, and the value is the profile details.
+ * Populated as the user scrolls through down following page, and profiles are added to the DOM. Also populated by using the Collect button.
+ */
 export const $following = persistentAtom(
     'following',
-    new Map<string, ProfileDetails>(),
+    new Map<string, ProfileDetail>(),
     {
         encode: (value) => {
             return JSON.stringify(Array.from(value.entries()))
@@ -38,15 +45,16 @@ export const $following = persistentAtom(
     }
 )
 
-// listen to the $following store and update the metrics when it changes
+/**
+ *  listen to the $following store and update the metrics when it changes
+ */
 $following.listen((following) => {
     const followingSize = following.size
     const unfollowingSize = $unfollowing.get().size
     updateMetrics(followingSize, unfollowingSize)
 })
 
-const updateMetrics = (followingSize: number, unfollowingSize: number) => {
-    console.log('updating metrics')
+function updateMetrics(followingSize: number, unfollowingSize: number) {
     const count = $followingCount.get()
     const metricsContainer = createMetrics(
         count,
@@ -58,7 +66,10 @@ const updateMetrics = (followingSize: number, unfollowingSize: number) => {
     currentMetrics?.replaceWith(metricsContainer)
 }
 
-export const $followingCount = persistentAtom('followingCount', 0, {
+/**
+ * the total number of accounts that are being followed by the user, according to the Twitter __INITIAL_STATE__ object, recorded at page load.
+ */
+export const $followingCount = persistentAtom<number>('followingCount', 0, {
     encode: (value) => value.toString(),
     decode: (value) => parseInt(value),
 })
@@ -71,44 +82,76 @@ $followingCount.listen((count) => {
     }
 })
 
-export const addUnfollowing = (handle: string, profileData: ProfileDetails) => {
-    if ($unfollowing.get().has(handle)) {
+/**
+ * Adds a profile to the $unfollowing store
+ * @param handle
+ * @param profileData
+ * @returns {ProfileDetail}
+ */
+export function addUnfollowing(handle: string, profileData: ProfileDetail) {
+    const unfollowingMap = $unfollowing.get()
+    if (unfollowingMap.has(handle)) {
         return
     }
     // get the index from the length of the map
-    const index = $unfollowing.get().size
+    const index = unfollowingMap.size
     // add the index to the user
     const profile = { ...profileData, index }
-    $unfollowing.set(new Map([...$unfollowing.get().set(handle, profile)]))
+    $unfollowing.set(new Map([...unfollowingMap.set(handle, profile)]))
 
     return $unfollowing.get().get(handle)!
 }
 
-export const removeUnfollowing = (handle: string) => {
-    const unfollowing = $unfollowing.get()
-    unfollowing.delete(handle)
-    $unfollowing.set(new Map([...Array.from(unfollowing)]))
+export const removeUnfollowing = action(
+    $unfollowing,
+    'removeUnfollowing',
+    async (store, handle: string) => {
+        console.log('removing unfollowing', handle)
+        const currentUnfollowing = store.get()
+        currentUnfollowing.delete(handle)
+        store.set(new Map([...Array.from(currentUnfollowing)]))
 
-    return $unfollowing.get()
-}
+        return store.get()
+    }
+)
 
-export const addFollowing = (
+// export function removeUnfollowing(handle: string) {
+//     const unfollowing = $unfollowing.get()
+//     unfollowing.delete(handle)
+//     $unfollowing.set(new Map([...Array.from(unfollowing)]))
+
+//     return $unfollowing.get()
+// }
+
+/**
+ * Adds a profile to the $following store
+ * @param handle
+ * @param profileData
+ * @returns {ProfileDetail}
+ */
+export function addFollowing(
     handle: string,
-    profileData: Omit<ProfileDetails, 'index'>
-) => {
-    if ($following.get().has(handle)) {
-        return $following.get().get(handle)!
+    profileData: Omit<ProfileDetail, 'index'>
+) {
+    const followingMap = $following.get()
+    if (followingMap.has(handle)) {
+        return followingMap.get(handle)!
     }
     // get the index from the length of the map
-    const index = $following.get().size
+    const index = followingMap.size
     // add the index to the user
     const profile = { ...profileData, index }
-    $following.set(new Map([...$following.get().set(handle, profile)]))
+    $following.set(new Map([...followingMap.set(handle, profile)]))
 
-    return $following.get().get(handle)!
+    return followingMap.get(handle)!
 }
 
-export const removeFollowing = (handle: string) => {
+/**
+ * Removes a profile from the $following store
+ * @param handle
+ * @returns {Map<string, ProfileDetail>}
+ */
+export function removeFollowing(handle: string) {
     const following = $following.get()
     following.delete(handle)
     $following.set(new Map([...Array.from(following)]))

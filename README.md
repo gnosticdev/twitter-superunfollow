@@ -16,9 +16,4 @@ Script to be used in Chrome Extension or Arc Boost:
 -   Adds a small button to the top right hand corner of the page, which opens a modal when clicked.
 -   Uses localstorage (nanostores) to save the following/unfollowing information so minimal auto scrolling is needed.
 
-### TODO:
-
--   Start unfollow at the first profile scroll position, so no need to scroll to top and go down entire page.
--   Add option to ignore skip unfollowing: follows you, verified
-
 _Use at your own risk, I make no guarantee that Twitter will not flag your account._

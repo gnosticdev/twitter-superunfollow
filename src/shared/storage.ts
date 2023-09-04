@@ -62,9 +62,10 @@ class SessionStorage<K extends keyof SessionStorageKV> {
         this.storage = new Storage({ area: 'session' })
         this.storage.setNamespace(this.namespace)
     }
+
     async getValue(key: K): Promise<SessionStorageKV[K]> {
-        const value = await this.storage.get(key)
-        return parseInt(value)
+        const value = await this.storage.get(key.toString())
+        return parseInt(value) satisfies SessionStorageKV[K]
     }
 
     async setValue(key: K, value: SessionStorageKV[K]) {

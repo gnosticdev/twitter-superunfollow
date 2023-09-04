@@ -1,13 +1,14 @@
 import { processProfile } from './profiles'
-import { addSearchDialog } from './dialog'
-import { Selectors } from '@/content/utils/utils'
+import { addDialogToDom } from './ui/dialog'
+import { Selectors } from '@/content/utils/ui-elements'
 import { superUnfollow } from './unfollow'
 import { $superUnfollowButtonState } from '@/content/stores/unfollow-button'
 import { waitForElement } from './utils/wait-promise'
-import { $followingCount } from '@/content/stores/persistent'
+import { $following, $followingCount } from '@/content/stores/persistent'
 import { atom } from 'nanostores'
 import { prettyConsole } from '@/content/utils/console'
 import { sendMessageToBg } from '@/shared/messaging'
+import { getInnerProfiles } from '@/content/utils/ui-elements'
 
 export const $needToCollect = atom<boolean>(true)
 export const $username = atom<string | null>(null)
@@ -39,37 +40,26 @@ export const $username = atom<string | null>(null)
 
     chrome.runtime.onMessage.addListener(async (msg: FromBgToCs) => {
         try {
-            prettyConsole(
-                `content script received msg from ${msg.from}: ${msg.type}`,
-                'green',
-                msg
-            )
-            if (
-                msg.from === 'background' &&
-                msg.to === 'content' &&
-                msg.type === 'userData' &&
-                msg.data
-            ) {
+            if (msg.from !== 'background' || msg.to !== 'content') {
+                return
+            }
+            if (msg.type === 'userData' && msg.data) {
                 // store the followingCount = friends_count, and the entire userData object for later use
                 $followingCount.set(msg.data.friends_count)
-                // start observer on /following page after getting message from bg script
-            } else if (msg.from === 'background' && msg.type === 'addDialog') {
                 console.log(
-                    'content script received start message from background script, adding search dialog & show dialog button...'
+                    `followingCount: ${msg.data.friends_count}, collected: ${
+                        $following.get().size
+                    }, needToCollect: ${$needToCollect.get()}`
                 )
-                await addSearchDialog()
-                const innerProfiles = document.querySelectorAll(
-                    Selectors.PROFILE_INNER
-                ) as NodeListOf<ProfileInner>
-                console.log('inner profiles', innerProfiles)
+                // start observer on /following page after getting message from bg script
+            } else if (msg.type === 'addDialog') {
+                await addDialogToDom()
+                const innerProfiles = getInnerProfiles()
                 for (const profile of Array.from(innerProfiles)) {
                     await processProfile(profile)
                 }
                 await startObserver()
-            } else if (
-                msg.from === 'background' &&
-                msg.type === 'removeDialog'
-            ) {
+            } else if (msg.type === 'removeDialog') {
                 removeDialogButton()
             }
         } catch (e) {
@@ -80,7 +70,6 @@ export const $username = atom<string | null>(null)
 
 // Start the observer after the userData has been received, and we are on the /following page
 async function startObserver() {
-    prettyConsole('starting observer on /following page')
     const profileObserver = new MutationObserver(async (mutations) => {
         for (const mutation of mutations) {
             if (mutation.addedNodes.length === 0) {

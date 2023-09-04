@@ -1,7 +1,7 @@
-import { Selectors } from '@/content/utils/utils'
-import { getLastChildHeight, randomDelay } from './utils'
-import { disableCollectBtn } from '@/content/stores/collect-button'
-import { enableDisableUnfollowBtn } from '@/content/stores/unfollow-button'
+import { Selectors, getProfileTranslateY } from '@/content/utils/ui-elements'
+import { getLastChildHeight, randomDelay } from './ui-elements'
+import { disableCollectButton } from '@/content/stores/collect-button'
+import { enableUnfollowButton } from '@/content/stores/unfollow-button'
 import { $unfollowing } from '@/content/stores/persistent'
 
 /**
@@ -10,7 +10,7 @@ import { $unfollowing } from '@/content/stores/persistent'
  * @returns {Promise<boolean>} true if the top has been reached
  */
 export async function waitForScrollTo(top: number) {
-    return new Promise((resolve) => {
+    return new Promise<boolean>((resolve) => {
         window.scrollTo({
             top,
             behavior: 'smooth',
@@ -32,13 +32,10 @@ export async function waitForScrollTo(top: number) {
 }
 /**
  * Brings the last child to the top of the page, triggering the loading of the next section of profiles
- * @param {number} delayMS - number of milliseconds to wait before scrolling down
  * @returns {boolean} - returns true if the end of the following section has been reached, false if not
  */
-export async function scrollToLastChild(): Promise<boolean> {
-    // NEED TO CHECK THIS BEFORE AND AFTER SCROLLING
-
-    // use the translate property within the profile container to determine the height of the last profile
+export async function scrollToLastChild() {
+    // use the translate property within the profile container to get height of last profile
     const lastChildHeight = getLastChildHeight()
     const scrollHeightBefore = document.scrollingElement?.scrollTop
 
@@ -49,7 +46,7 @@ export async function scrollToLastChild(): Promise<boolean> {
     })
 
     // wait for data to load and scroll to complete
-    await randomDelay(1000)
+    await randomDelay(1000, 2000)
 
     const newScrollHeight = document.scrollingElement?.scrollTop
     if (newScrollHeight === scrollHeightBefore) {
@@ -62,19 +59,48 @@ export async function scrollToLastChild(): Promise<boolean> {
     }
 }
 
-export const enableStuff = (running: 'unfollowing' | 'collecting') => {
+export async function scrollToProfile(profileDetails: ProfileDetail) {
+    // check if the profile is already visible
+    const profile = document.querySelector(
+        `[data-handle="${profileDetails.handle}"]`
+    ) as HTMLElement
+    if (profile) {
+        return profile
+    }
+    // scroll to the profile if not in DOM
+    const lastChildHeight = getLastChildHeight()
+    const firstChildHeight = getProfileTranslateY(
+        document.querySelector(Selectors.PROFILE_CONTAINER) as ProfileContainer
+    )
+    const profileHeight = profileDetails.scrollHeight
+
+    // if the profile is above the first child, scroll to the top of the page
+    if (profileHeight < firstChildHeight) {
+        await waitForScrollTo(0)
+    }
+    // if the profile is below the last child, scroll to the bottom of the page
+    else if (profileHeight > lastChildHeight) {
+        await waitForScrollTo(lastChildHeight)
+    }
+    // if the profile is between the first and last child, scroll to the profile
+    else {
+        await waitForScrollTo(profileHeight)
+    }
+}
+
+export function enableStuff(running: 'unfollowing' | 'collecting') {
     if (running === 'unfollowing') {
-        disableCollectBtn(false)
+        disableCollectButton(false)
         enableScroll()
     } else {
-        enableDisableUnfollowBtn($unfollowing.get().size, undefined)
+        enableUnfollowButton($unfollowing.get().size, undefined)
         enableScroll()
     }
 }
 
-export const disableStuff = (running: 'unfollowing' | 'collecting') => {
+export function disableStuff(running: 'unfollowing' | 'collecting') {
     if (running === 'unfollowing') {
-        disableCollectBtn(true)
+        disableCollectButton(true)
         disableScroll()
     } else {
         const unfollowBtn = document.getElementById(
@@ -85,19 +111,16 @@ export const disableStuff = (running: 'unfollowing' | 'collecting') => {
     }
 }
 
-export const getFollowingContainer = () =>
-    document.querySelector(Selectors.FOLLOWING_CONTAINER) as HTMLElement
-
-const disableScroll = () => {
+function disableScroll() {
     window.addEventListener('wheel', preventDefault, { passive: false })
     window.addEventListener('touchmove', preventDefault, { passive: false })
 }
 
-const enableScroll = () => {
+function enableScroll() {
     window.removeEventListener('wheel', preventDefault)
     window.removeEventListener('touchmove', preventDefault)
 }
 
-const preventDefault = (e: Event) => {
+function preventDefault(e: Event) {
     e.preventDefault()
 }

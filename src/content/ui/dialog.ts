@@ -1,4 +1,4 @@
-import { handleSearch, handleViewButtons } from './search'
+import { handleSearch, handleViewButtons } from '../search'
 import {
     $following,
     $followingCount,
@@ -6,16 +6,16 @@ import {
 } from '@/content/stores/persistent'
 import {
     $collectFollowingState,
-    handleCollectBtn,
+    handleCollectButton,
 } from '@/content/stores/collect-button'
 import {
     $superUnfollowButtonState,
     handleSuperUnfollowBtn,
-    enableDisableUnfollowBtn,
+    enableUnfollowButton,
 } from '@/content/stores/unfollow-button'
 import { createMetrics, createNotice } from './metrics'
 
-export async function addSearchDialog() {
+export async function addDialogToDom() {
     // Create the dialog and the input and submit elements
     const dialog = document.createElement('dialog')
     dialog.id = 'su-dialog'
@@ -33,7 +33,6 @@ export async function addSearchDialog() {
 
     closeButton.classList.add('superUnfollow', 'su-close-button')
     closeButton.addEventListener('click', () => {
-        console.log('closing dialog')
         dialog.close()
     })
 
@@ -94,7 +93,8 @@ export async function addSearchDialog() {
         $following.get().size,
         $unfollowing.get().size
     )
-    const notice = createNotice()
+    const notice = await createNotice()
+
     const modalButtons = createModalButtons()
 
     // append elements to dialog
@@ -116,7 +116,7 @@ export async function addSearchDialog() {
     return dialog
 }
 
-const createModalButtons = () => {
+function createModalButtons() {
     const modalBtnsContainer = document.createElement('div')
     modalBtnsContainer.classList.add('su-modal-buttons-container')
 
@@ -138,7 +138,7 @@ export function createSuperUnfollowBtn() {
     superUnfollowBtn.classList.add('su-button', 'super-unfollow')
     superUnfollowBtn.disabled = true
     superUnfollowBtn.textContent = 'Unfollow'
-    enableDisableUnfollowBtn($unfollowing.get().size, superUnfollowBtn)
+    enableUnfollowButton($unfollowing.get().size, superUnfollowBtn)
     // starting the super unfollow process
     superUnfollowBtn.addEventListener('click', handleSuperUnfollowBtn)
     superUnfollowBtn.id = 'superUnfollow-button'
@@ -146,7 +146,7 @@ export function createSuperUnfollowBtn() {
     return superUnfollowBtn
 }
 
-export const createShowModalButton = (dialog: HTMLDialogElement) => {
+export function createShowModalButton(dialog: HTMLDialogElement) {
     const modalButton = document.createElement('button')
     modalButton.id = 'su-show-modal-button'
     modalButton.textContent = 'SuperUnfollow'
@@ -164,7 +164,7 @@ export function createCollectBtn() {
     collectBtn.classList.add('su-button', 'alt')
     collectBtn.id = 'su-collect-following-button'
     collectBtn.textContent = 'Collect'
-    collectBtn.addEventListener('click', handleCollectBtn)
+    collectBtn.addEventListener('click', handleCollectButton)
 
     return collectBtn
 }
@@ -179,7 +179,7 @@ export function createViewButtons() {
     return viewButtonsContainer
 }
 
-export const createViewUnfollowingBtn = () => {
+export function createViewUnfollowingBtn() {
     const input = document.createElement('input')
     input.type = 'checkbox'
     input.id = 'su-view-unfollowing'
@@ -196,7 +196,7 @@ export const createViewUnfollowingBtn = () => {
     return label
 }
 
-export const createViewSearchResultsBtn = () => {
+export function createViewSearchResultsBtn() {
     const input = document.createElement('input')
     input.type = 'checkbox'
     input.id = 'su-view-search-results'
@@ -233,7 +233,6 @@ function closeDialog(
         clientY < top ||
         clientY > bottom
     ) {
-        console.log('closing dialog from click outside')
         this.close()
     }
 }

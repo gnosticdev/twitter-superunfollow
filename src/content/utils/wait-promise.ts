@@ -1,5 +1,12 @@
 import { prettyConsole } from './console'
 
+/**
+ *  Wait for an element to be added to the DOM
+ * @param selector - the selector to wait for
+ * @param timeout  - the number of milliseconds to wait for the element to be added to the DOM. Default is 5000ms
+ * @param label - the label to use in the console log. Default is the selector
+ * @returns {Promise<HTMLElement | null>} - the element that was added to the DOM
+ */
 export function waitForElement(
     selector: string,
     timeout = 5000,

@@ -1,16 +1,21 @@
 import { atom, computed } from 'nanostores'
 import { collectFollowing } from '@/content/collect-following'
-import { createLoadingSpinner } from '@/content/utils/utils'
+import {
+    createLoadingSpinner,
+    getInnerProfiles,
+} from '@/content/utils/ui-elements'
 import { $following, $followingCount } from './persistent'
-import { Selectors } from '@/content/utils/utils'
 import { getProfileDetails } from '@/content/profiles'
 import { disableStuff, enableStuff } from '@/content/utils/scroll'
 import { $isUnfollowing } from './unfollow-button'
+import { setNoticeText } from '@/content/ui/metrics'
+
+export type ButtonState = 'ready' | 'running' | 'paused' | 'resumed' | 'done'
 
 export const $collectFollowingState = atom<ButtonState>('ready')
 
-export function handleCollectBtn() {
-    const collectBtn = getCollectBtn()
+export function handleCollectButton() {
+    const collectBtn = getCollectButton()
     if (collectBtn) {
         switch ($collectFollowingState.get()) {
             case 'ready':
@@ -30,118 +35,100 @@ export function handleCollectBtn() {
     }
 }
 
-export const getCollectBtn = () =>
-    document.getElementById(
+export function getCollectButton() {
+    return document.getElementById(
         'su-collect-following-button'
     ) as HTMLButtonElement | null
-
-export const getNoticeDiv = () =>
-    document.getElementById('su-notice') as HTMLDivElement | null
+}
 
 $collectFollowingState.listen(async (state) => {
     console.log('collect following button state changed:', state)
-    await updateCollect(state)
+    await updateCollectButton(state)
 })
 
 export const $isCollecting = computed($collectFollowingState, (state) =>
     ['running', 'resumed'].includes(state)
 )
 
-export const updateCollect = async (state: ButtonState) => {
-    state = state ?? 'ready'
-    const notice = document.getElementById('su-notice') as HTMLDivElement | null
-    const collectBtn = getCollectBtn()
-    const collected = $following.get().size
-    const total = $followingCount.get()
-    if (!collectBtn || !notice) {
+export async function updateCollectButton(state: ButtonState = 'ready') {
+    const collectBtn = getCollectButton()
+    if (!collectBtn) {
+        console.error('collect button or notice div not found')
         return
     }
     switch (state) {
         case 'ready':
             collectBtn.innerHTML = 'Collect'
             collectBtn.classList.remove('running')
-            const needsToCollect = await shouldCollect()
-            notice.textContent = needsToCollect
-                ? 'Run Collect Following to get started'
-                : 'You have no new accounts to collect'
             break
         case 'running':
         case 'resumed':
             collectBtn.classList.add('running')
             collectBtn.innerHTML = 'Pause'
             disableStuff('collecting')
-            setNoticeLoading(notice)
             await collectFollowing()
             break
         case 'paused':
             collectBtn.innerHTML = 'Resume'
             collectBtn.classList.remove('running')
-            notice.textContent = `Need to collect ${
-                total - collected
-            } more accounts`
             enableStuff('collecting')
             break
         case 'done':
             collectBtn.innerHTML = 'Collect'
             collectBtn.classList.remove('running')
-            notice.classList.add('complete')
-            notice.innerHTML =
-                collected === total
-                    ? 'Collected all accounts you follow!'
-                    : collected > total
-                    ? "Collected more than expected, is there something you didn't tell me?!"
-                    : 'Collected less than expected 😔<br>You can refresh the page and try again to start over.'
             enableStuff('collecting')
             break
         default:
             break
     }
+    await setNoticeText(state)
 }
-
 /**
  * Only run at top of the page where new profiles are loaded
  * @returns true if the user has followed any new profiles since the last time
  */
-export const shouldCollect = async () => {
-    const following = $following.get().size
-    const total = $followingCount.get()
-    const changed = await followingChanged()
-    return following !== total || changed
+export async function shouldCollect() {
+    if ($followingCount.get() === 0) return true
+    if ($following.get().size !== $followingCount.get()) {
+        console.log('following count mismatch, user should collect')
+        return true
+    }
+    return await followingChanged()
 }
 
 /**
  * Check if the user has followed any new profiles since the last time
  */
-const followingChanged = async () => {
-    const existingProfiles = $following.get()
-    const newProfiles = document.querySelectorAll(
-        Selectors.PROFILE_INNER
-    ) as NodeListOf<ProfileInner>
-
+async function followingChanged() {
+    const newProfiles = getInnerProfiles()
     for (const profile of Array.from(newProfiles)) {
         const profileDetails = await getProfileDetails(profile)
-        if (!existingProfiles.has(profileDetails.handle)) {
+        if (!$following.get().has(profileDetails.handle)) {
+            console.log('new profile found:', profileDetails.handle)
             return true
         }
     }
+    console.log('no new profiles found')
     return false
 }
 
-export const setNoticeLoading = (notice: HTMLElement) => {
+export function setNoticeLoading(notice: HTMLElement) {
     console.log('setting loading state for notice')
     const loader = createLoadingSpinner()
     notice.innerHTML = loader.outerHTML
     if ($isCollecting.get()) {
-        notice.innerHTML += 'Collecting accounts you follow...'
+        notice.innerHTML +=
+            'Collecting accounts you follow. Do not navigate away from this tab until complete.'
     } else if ($isUnfollowing.get()) {
-        notice.innerHTML += 'Unfollowing accounts...'
+        notice.innerHTML +=
+            "Unfollowing accounts...Don't navigate away from this tab until complete."
     }
 
     return notice
 }
 
-export const disableCollectBtn = (unfollowing?: boolean) => {
-    const collectBtn = getCollectBtn()
+export function disableCollectButton(unfollowing?: boolean) {
+    const collectBtn = getCollectButton()
     if (!collectBtn) {
         return
     }

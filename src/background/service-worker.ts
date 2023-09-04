@@ -1,14 +1,15 @@
 import { syncStorage$, sessionStorage$ } from '@/shared/storage'
 import { sendMessageToTab, sendMessageToCs } from '@/shared/messaging'
 
-export const NEW_TAB_PAGE = 'popup.html'
+export const NEW_TAB_PAGE = 'temp-tab.html'
 
 // get userData string from content and send to Tab -> does not return anything
 // Listen for messages from content script and newTab
-const listenForContentMsg = async (
+chrome.runtime.onMessage.addListener(listenForContentMsg)
+async function listenForContentMsg(
     msg: ExtMessage,
     sender: chrome.runtime.MessageSender
-) => {
+) {
     const { tab: senderTab } = sender
     if (!senderTab || !senderTab.id) {
         console.log(`⚠️ sender.tab not defined. msg: ${msg}`)
@@ -22,7 +23,7 @@ const listenForContentMsg = async (
         msg.data
     ) {
         console.log('background received userData from content script', msg)
-        const newTab = await createNewTab()
+        const newTab = await createTempTab()
         await sessionStorage$.setValue('contentTabId', senderTab.id)
         await sendMessageToTab(newTab.id!, {
             from: 'background',
@@ -36,10 +37,9 @@ const listenForContentMsg = async (
     }
 }
 
-chrome.runtime.onMessage.addListener(listenForContentMsg)
-
-// userData sent to background from newTab, then send to content script
-const listenForTabMsg = async (msg: ExtMessage) => {
+// userData sent to background from newTab.
+// Added in listenForContentMsg (above)
+async function listenForTabMsg(msg: ExtMessage) {
     if (msg.from === 'newTab' && msg.to === 'background' && msg.data) {
         console.log(
             'background received parsed userData from newTab -> adding to sync storage',
@@ -65,7 +65,8 @@ const listenForTabMsg = async (msg: ExtMessage) => {
     }
 }
 
-async function createNewTab() {
+// Tab used to parse userData
+async function createTempTab() {
     // check if existing tab is already open
     const existingTabs = await chrome.tabs.query({
         url: chrome.runtime.getURL(NEW_TAB_PAGE),
@@ -101,10 +102,10 @@ function waitForTabToLoad(newTabId: number): Promise<chrome.tabs.Tab> {
     })
 }
 
-// Listen for tab updates, send message to content script when navigating to/from the /following page so it can add/remove the show dialog button
+// Listen for tab updates, send message to content script when navigating to/from the /following page so it can add/remove the show dialog button.
 chrome.tabs.onUpdated.addListener(addRemoveDialogBtn)
 async function addRemoveDialogBtn(
-    tabid: number,
+    tabId: number,
     changeInfo: chrome.tabs.TabChangeInfo,
     tab: chrome.tabs.Tab
 ) {
@@ -118,16 +119,30 @@ async function addRemoveDialogBtn(
         console.log('got username from sync storage', username)
     }
     if (tab.url.includes(`${username}/following`)) {
-        await sendMessageToCs(tabid, {
+        await sendMessageToCs(tabId, {
             from: 'background',
             to: 'content',
             type: 'addDialog',
         })
     } else {
-        await sendMessageToCs(tabid, {
+        await sendMessageToCs(tabId, {
             from: 'background',
             to: 'content',
             type: 'removeDialog',
         })
     }
 }
+
+// Go to Following Page when extension icon is clicked (no popup)
+chrome.action.onClicked.addListener(async (tab) => {
+    console.log('action clicked', tab)
+    const username = await syncStorage$.getValue('screen_name')
+    if (!username) {
+        console.log('no username found in sync storage')
+        return
+    }
+    const url = username
+        ? `https://twitter.com/${username}/following`
+        : 'https://twitter.com/following'
+    await chrome.tabs.create({ url, active: true })
+})

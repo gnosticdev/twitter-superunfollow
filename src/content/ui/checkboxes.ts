@@ -1,4 +1,4 @@
-import { Selectors } from '@/content/utils/utils'
+import { Selectors } from '@/content/utils/ui-elements'
 import {
     $following,
     $unfollowing,
@@ -7,12 +7,11 @@ import {
 } from '@/content/stores/persistent'
 
 /**
- * add checkboxes to each profile on the following page. If the checkbox is checked, the profile will be unfollowed when the unfollow button is clicked
- * also needs to process profiles that were checked, then removed while scrolling, then added back
+ * Adds a checkbox to a profile on the /following page. When checked, the profile will be added to the $unfollowing store
  */
 export async function addCheckbox(
     profileInner: ProfileInner,
-    profileDetails: ProfileDetails
+    profileDetails: ProfileDetail
 ) {
     const unfollowButton = profileInner.querySelector(Selectors.UF_BUTTON)
     if (!unfollowButton) {
@@ -59,18 +58,14 @@ export const handleChange = (event: Event) => {
     }
 
     if (target.checked) {
-        console.log(`adding ${handle} to unfollowing`)
         addUnfollowing(handle, profileDetails)
     } else {
-        console.log(`removing ${handle} from unfollowing`)
         removeUnfollowing(handle)
     }
 
     const profile = document.querySelector(`[data-handle="${handle}"]`)
     // if no profile is found, it's probably because the user scrolled down and the profile was removed from the DOM
-    if (!profile) {
-        console.log(`profile for ${handle} not in view`)
-    } else {
+    if (profile) {
         const cb = profile.querySelector(
             'input[type="checkbox"]'
         ) as HTMLInputElement

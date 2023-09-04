@@ -1,6 +1,7 @@
 import { atom } from 'nanostores'
-import { handleChange } from './checkboxes'
+import { handleChange } from './ui/checkboxes'
 import { $following, $unfollowing } from '@/content/stores/persistent'
+import { Selectors } from '@/content/utils/ui-elements'
 
 type Results = 'search' | 'unfollowing' | 'none'
 
@@ -62,7 +63,7 @@ export async function handleSearch(e: Event) {
 
 /** @param {string} searchTerm */
 export function searchFollowingList(searchTerm: string) {
-    let results = new Map<string, ProfileDetails>()
+    let results = new Map<string, ProfileDetail>()
     $following.get().forEach((entry) => {
         const { username, handle, description } = entry
         const wordRegex = new RegExp(`\\b${searchTerm}\\b`, 'i')
@@ -147,9 +148,7 @@ export function showResults(results: ProfilesMap, resultType: Results) {
     return resultsContainer
 }
 
-export const createResultsContainer = (
-    resultType: Exclude<Results, 'done'>
-) => {
+export function createResultsContainer(resultType: Results) {
     const title = document.createElement('h4')
     title.classList.add('su-results-title')
 
@@ -193,7 +192,7 @@ function handleSelectAll() {
         'su-search-select-all'
     ) as HTMLInputElement
     const checkboxes = document.querySelectorAll(
-        '.su-search-result input[type="checkbox"]:not(#su-search-select-all)'
+        Selectors.DIALOG_CHECKBOXES
     ) as NodeListOf<HTMLInputElement>
     checkboxes.forEach((checkbox) => {
         checkbox.checked = selectAll.checked
@@ -201,6 +200,6 @@ function handleSelectAll() {
     })
 }
 
-export const getResultsDiv = () => {
+export function getResultsDiv() {
     return document.getElementById('su-results') as HTMLDivElement
 }
