@@ -1,9 +1,5 @@
 import { handleSearch, handleViewButtons } from '../search'
-import {
-    $following,
-    $followingCount,
-    $unfollowing,
-} from '@/content/stores/persistent'
+import { $followingCount, $unfollowing } from '@/content/stores/persistent'
 import {
     $collectFollowingState,
     handleCollectButton,
@@ -90,7 +86,6 @@ export async function addDialogToDom() {
     // Create the show dialog button and attach it to the top right of the screen
     const metricsContainer = createMetrics(
         $followingCount.get(),
-        $following.get().size,
         $unfollowing.get().size
     )
     const notice = await createNotice()

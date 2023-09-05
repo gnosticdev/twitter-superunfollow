@@ -9,7 +9,6 @@ export const $searchResults = atom<ProfilesMap>(new Map())
 export const $viewResults = atom<Results>('none')
 export const $searchInput = atom<string>('')
 
-$searchResults.listen((results) => console.log('search results:', results))
 $viewResults.listen((view) => {
     const resultsDiv = getResultsDiv()
     const viewUnfollowingBtn = document.getElementById(
@@ -45,7 +44,6 @@ $viewResults.listen((view) => {
  */
 export async function handleSearch(e: Event) {
     e.preventDefault()
-    console.log(e)
     $viewResults.set('search')
     const input = document.getElementById('su-search-input') as HTMLInputElement
     const inputValue = input.value === '' ? '.*' : input.value

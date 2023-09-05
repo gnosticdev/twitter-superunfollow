@@ -5,11 +5,16 @@ import {
     startSuperUnfollow,
 } from '@/content/unfollow'
 import { disableStuff, enableStuff } from '@/content/utils/scroll'
-import { ButtonState } from './collect-button'
+
 import { setNoticeText } from '@/content/ui/metrics'
+import { ButtonState } from '@/content/stores/collect-button'
+import { getSuperUnfollowButton } from '@/content/utils/ui-elements'
 
 // Create a new store for the button state
 export const $superUnfollowButtonState = atom<ButtonState>('ready')
+export const $lastActiveFunction = atom<'collecting' | 'unfollowing' | null>(
+    null
+)
 
 // start superunfollow process
 export async function handleSuperUnfollowBtn() {
@@ -36,7 +41,6 @@ $superUnfollowButtonState.listen(async (state) => {
     console.log('superunfollow button state changed:', state)
 
     const unfollowButton = getSuperUnfollowButton()
-
     if (!unfollowButton) {
         throw new Error('superunfollow button or notice not found')
     }
@@ -45,7 +49,6 @@ $superUnfollowButtonState.listen(async (state) => {
         case 'paused':
             unfollowButton.innerText = 'Unfollow'
             unfollowButton.classList.remove('running')
-
             enableStuff('unfollowing')
             break
         case 'running':
@@ -53,7 +56,6 @@ $superUnfollowButtonState.listen(async (state) => {
             unfollowButton.innerText = 'Pause'
             unfollowButton.classList.add('running')
             disableStuff('unfollowing')
-
             displayUnfollowed($unfollowedProfiles.get())
             await startSuperUnfollow()
             break
@@ -61,28 +63,10 @@ $superUnfollowButtonState.listen(async (state) => {
             unfollowButton.innerText = 'Unfollow'
             unfollowButton.classList.remove('running')
             enableStuff('unfollowing')
-            // notice.classList.add('complete')
-            // notice.innerHTML =
-            //     unfollowingSize === 0
-            //         ? `Unfollowed ${unfollowedSize} profiles!`
-            //         : unfollowingSize > 0
-            //         ? `Unfollowed ${unfollowedSize} profiles! Only ${unfollowingSize} profiles to go...`
-            //         : 'Unfollowed 0 profiles... weird...'
-            displayUnfollowed($unfollowedProfiles.get())
             break
     }
-    await setNoticeText(state)
+    await setNoticeText(state, 'unfollow')
 })
-
-export const getSuperUnfollowButton = () => {
-    const unfollowButton = document.getElementById(
-        'superUnfollow-button'
-    ) as HTMLButtonElement | null
-    if (!unfollowButton) {
-        throw new Error('superunfollow button not found')
-    }
-    return unfollowButton
-}
 
 export const $isUnfollowing = computed($superUnfollowButtonState, (state) =>
     ['running', 'resumed'].includes(state)
@@ -94,8 +78,6 @@ export function enableUnfollowButton(
     unfollowingSize: number,
     button?: HTMLButtonElement
 ) {
-    button =
-        button ??
-        (document.getElementById('superUnfollow-button') as HTMLButtonElement)
+    button ??= getSuperUnfollowButton()
     button.disabled = unfollowingSize === 0
 }

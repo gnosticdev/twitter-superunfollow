@@ -159,7 +159,7 @@ async function unfollow(profile: ProfileInner) {
  * */
 export const displayUnfollowed = (unfollowed: ProfilesMap) => {
     console.log('displaying unfollowed', unfollowed)
-    $viewResults.set('none')
+    $viewResults.set('unfollowing')
     const resultsDiv = getResultsDiv()
     const unfollowedContainer = createResultsContainer('unfollowing')
     const list = document.createElement('ol')
@@ -167,8 +167,11 @@ export const displayUnfollowed = (unfollowed: ProfilesMap) => {
     Array.from($unfollowing.get()).forEach(([handle, profile]) => {
         const result = document.createElement('li')
         result.classList.add('su-list-item')
-        unfollowed.has(handle) && result.classList.add('success')
-        result.innerHTML = `<div class="su-result-label">${profile.username}&nbsp;&nbsp;<span class="su-handle">${handle}</span></div>`
+        unfollowed.has(handle) ? result.classList.add('success') : null
+        result.innerHTML = `
+        <div class="su-result-label">${profile.username}&nbsp;&nbsp;
+        <span class="su-handle">${handle}</span></div>
+        `
         result.textContent = `${profile.username} ${handle}`
         list.appendChild(result)
     })
@@ -176,5 +179,5 @@ export const displayUnfollowed = (unfollowed: ProfilesMap) => {
     unfollowedContainer.appendChild(list)
 
     resultsDiv.appendChild(unfollowedContainer)
-    console.log('appending unfollowed list to results div', unfollowed)
+    console.log('unfollowed container', unfollowedContainer)
 }

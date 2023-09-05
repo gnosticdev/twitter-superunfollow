@@ -160,3 +160,13 @@ export function getDialogCheckboxes() {
 export function getNoticeDiv() {
     return document.getElementById('su-notice') as HTMLDivElement | null
 }
+
+export const getSuperUnfollowButton = () => {
+    const unfollowButton = document.getElementById(
+        'superUnfollow-button'
+    ) as HTMLButtonElement | null
+    if (!unfollowButton) {
+        throw new Error('superunfollow button not found')
+    }
+    return unfollowButton
+}

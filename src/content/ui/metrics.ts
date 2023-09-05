@@ -11,11 +11,7 @@ import {
 import { $unfollowedProfiles } from '@/content/unfollow'
 import { getNoticeDiv } from '@/content/utils/ui-elements'
 
-export function createMetrics(
-    followingCount: number,
-    followingSize: number,
-    unfollowingSize: number
-) {
+export function createMetrics(followingCount: number, unfollowingSize: number) {
     // section that tells user that they should collect their following list. Shown when $followingCount > $following.get().size
     const metrics = document.createElement('div')
     metrics.classList.add('su-metrics')
@@ -23,14 +19,13 @@ export function createMetrics(
     const followingNumber = document.createElement('span')
     followingNumber.classList.add('su-highlight')
     followingNumber.textContent = followingCount.toString()
-    const lastCollected = document.createElement('span')
-    lastCollected.classList.add('su-highlight')
-    lastCollected.textContent = followingSize.toString()
     const unfollowing = document.createElement('span')
     unfollowing.classList.add('su-highlight')
     unfollowing.textContent = unfollowingSize.toString()
-    metrics.innerHTML = `<div>Following: ${followingNumber.outerHTML}</div><div>Collected: ${lastCollected.outerHTML}</div><div>Unfollowing: ${unfollowing.outerHTML}</div>`
-
+    metrics.innerHTML = `
+    <div>Following: ${followingNumber.outerHTML}</div>
+    <div>Unfollowing: ${unfollowing.outerHTML}</div>
+    `
     // only show notice if collectFollowing has been run on the current session
     return metrics
 }
@@ -40,13 +35,14 @@ export async function createNotice() {
     const notice = document.createElement('div')
     notice.classList.add('su-notice')
     notice.id = 'su-notice'
-    setNoticeText('ready', notice)
+    setNoticeText('ready', 'collect', notice)
     return notice
 }
 
 // TODO: Change based on whether collectFollowing or superUnfollow is running
 export async function setNoticeText(
     state: ButtonState,
+    noticeFor: 'collect' | 'unfollow',
     notice: HTMLDivElement | null = null
 ) {
     notice ??= getNoticeDiv()
@@ -58,8 +54,8 @@ export async function setNoticeText(
     const unfollowedSize = $unfollowedProfiles.get().size
     switch (state) {
         case 'ready':
-            const needsToCollect = await shouldCollect()
-            notice.textContent = needsToCollect
+            // state = ready on page load only, so only need to show collect notice
+            notice.textContent = (await shouldCollect())
                 ? 'Run Collect Following to get started'
                 : 'You have no new accounts to collect'
             break
@@ -73,13 +69,28 @@ export async function setNoticeText(
             } profiles left to unfollow`
             break
         case 'done':
-            notice.classList.add('complete')
-            notice.innerHTML =
-                $following.get().size === $followingCount.get()
-                    ? 'Collected all accounts you follow!'
-                    : $following.get().size > $followingCount.get()
-                    ? "Collected more than expected, is there something you didn't tell me?!"
-                    : 'Collected less than expected 😔<br>You can refresh the page and try again to start over.'
+            if (noticeFor === 'collect') {
+                if (
+                    $following.get().size === $followingCount.get() ||
+                    $followingCount.get() === 0
+                ) {
+                    notice.classList.add('complete')
+                    notice.textContent = 'Collected all accounts you follow!'
+                } else {
+                    notice.classList.add('error')
+                    notice.textContent =
+                        'Something went wrong... Re-run Collect Following'
+                }
+            }
+            if (noticeFor === 'unfollow') {
+                notice.classList.add('complete')
+                notice.innerHTML =
+                    unfollowingSize === 0
+                        ? `Unfollowed ${unfollowedSize} profiles!`
+                        : unfollowingSize > 0
+                        ? `Unfollowed ${unfollowedSize} profiles! Only ${unfollowingSize} profiles to go...`
+                        : 'Unfollowed 0 profiles... weird...'
+            }
             break
     }
 }

@@ -16,22 +16,23 @@ export const $collectFollowingState = atom<ButtonState>('ready')
 
 export function handleCollectButton() {
     const collectBtn = getCollectButton()
-    if (collectBtn) {
-        switch ($collectFollowingState.get()) {
-            case 'ready':
-            case 'done':
-                $collectFollowingState.set('running')
-                break
-            case 'resumed':
-            case 'running':
-                $collectFollowingState.set('paused')
-                break
-            case 'paused':
-                $collectFollowingState.set('resumed')
-                break
-            default:
-                break
-        }
+    if (!collectBtn) {
+        throw new Error('collect button or notice div not found')
+    }
+    switch ($collectFollowingState.get()) {
+        case 'ready':
+        case 'done':
+            $collectFollowingState.set('running')
+            break
+        case 'resumed':
+        case 'running':
+            $collectFollowingState.set('paused')
+            break
+        case 'paused':
+            $collectFollowingState.set('resumed')
+            break
+        default:
+            break
     }
 }
 
@@ -81,7 +82,7 @@ export async function updateCollectButton(state: ButtonState = 'ready') {
         default:
             break
     }
-    await setNoticeText(state)
+    await setNoticeText(state, 'collect')
 }
 /**
  * Only run at top of the page where new profiles are loaded

@@ -56,6 +56,7 @@ async function buildContexts() {
         bundle: true,
         outfile: 'dist/style.css',
         target: 'es2020',
+        logLevel: 'debug',
         sourcemap: 'linked',
     })
 
@@ -69,6 +70,7 @@ async function buildContexts() {
         bundle: true,
         outdir: 'dist',
         entryNames: '[name]',
+        logLevel: 'debug',
         loader: {
             '.json': 'copy',
             '.html': 'copy',
@@ -100,34 +102,6 @@ const disposeAll = async () => {
     const contexts = await buildContexts()
     await Promise.allSettled(contexts.map((context) => context.dispose()))
 }
-
-// const watchAll = async () => {
-//     await contentContext.watch()
-//     await popupContext.watch()
-//     await tempTabContext.watch()
-//     await sandboxContext.watch()
-//     await backgroundContext.watch()
-//     await cssBuild.watch()
-//     await copyContext.watch()
-// }
-
-// const rebuildAll = async () => {
-//     await contentContext.rebuild()
-//     await popupContext.rebuild()
-//     await sandboxContext.rebuild()
-//     await backgroundContext.rebuild()
-//     await cssBuild.rebuild()
-//     await copyContext.rebuild()
-// }
-
-// const disposeAll = async () => {
-//     await contentContext.dispose()
-//     await sandboxContext.dispose()
-//     await popupContext.dispose()
-//     await backgroundContext.dispose()
-//     await cssBuild.dispose()
-//     await copyContext.dispose()
-// }
 
 try {
     if (process.argv.includes('--watch')) {
