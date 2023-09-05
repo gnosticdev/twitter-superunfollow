@@ -170,3 +170,9 @@ export const getSuperUnfollowButton = () => {
     }
     return unfollowButton
 }
+
+export function getCollectButton() {
+    return document.getElementById(
+        'su-collect-following-button'
+    ) as HTMLButtonElement | null
+}

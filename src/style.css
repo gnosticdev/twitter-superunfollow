@@ -168,6 +168,7 @@
         & .su-dialog-container {
             display: flex;
             flex-direction: column;
+            padding-left: 0.5rem;
 
             & .su-heading {
                 color: var(--su-white);
@@ -375,7 +376,6 @@
                             align-items: baseline;
                             justify-content: start;
                             flex-wrap: wrap;
-                            list-style-type: auto;
 
                             & .su-handle {
                                 color: var(--su-gray-blue);
@@ -388,7 +388,11 @@
                             align-items: baseline;
                             justify-content: start;
                             flex-wrap: wrap;
-                            list-style-type: auto;
+
+                            & .success {
+                                color: var(--su-gray-blue);
+                                text-decoration: line-through;
+                            }
 
                             & .su-handle {
                                 color: var(--su-gray-blue);

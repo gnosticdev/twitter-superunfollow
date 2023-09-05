@@ -157,13 +157,15 @@ async function unfollow(profile: ProfileInner) {
 /* display the unfollowed handles in the results section of the dialog while superUnfollow is running
  * @param {ProfilesMap} unfollowed - the profiles that have been unfollowed
  * */
-export const displayUnfollowed = (unfollowed: ProfilesMap) => {
+export const showUnfollowed = (unfollowed: ProfilesMap) => {
     console.log('displaying unfollowed', unfollowed)
-    $viewResults.set('unfollowing')
+    $viewResults.set('unfollowed-done')
     const resultsDiv = getResultsDiv()
-    const unfollowedContainer = createResultsContainer('unfollowing')
+    const unfollowedContainer = createResultsContainer('unfollowed-done')
     const list = document.createElement('ol')
+    list.type = '1'
     list.classList.add('su-search-result')
+    // Show the profiles to be unfollowed, then cross them off as they are unfollowed
     Array.from($unfollowing.get()).forEach(([handle, profile]) => {
         const result = document.createElement('li')
         result.classList.add('su-list-item')

@@ -1,14 +1,15 @@
 import { atom, computed } from 'nanostores'
 import {
     $unfollowedProfiles,
-    displayUnfollowed,
+    showUnfollowed,
     startSuperUnfollow,
 } from '@/content/unfollow'
 import { disableStuff, enableStuff } from '@/content/utils/scroll'
 
-import { setNoticeText } from '@/content/ui/metrics'
-import { ButtonState } from '@/content/stores/collect-button'
+import { setUnfollowNoticeText } from '@/content/ui/metrics'
+
 import { getSuperUnfollowButton } from '@/content/utils/ui-elements'
+import { ButtonState } from '@/content/stores/collect-button'
 
 // Create a new store for the button state
 export const $superUnfollowButtonState = atom<ButtonState>('ready')
@@ -56,7 +57,7 @@ $superUnfollowButtonState.listen(async (state) => {
             unfollowButton.innerText = 'Pause'
             unfollowButton.classList.add('running')
             disableStuff('unfollowing')
-            displayUnfollowed($unfollowedProfiles.get())
+            showUnfollowed($unfollowedProfiles.get())
             await startSuperUnfollow()
             break
         case 'done':
@@ -64,8 +65,10 @@ $superUnfollowButtonState.listen(async (state) => {
             unfollowButton.classList.remove('running')
             enableStuff('unfollowing')
             break
+        default:
+            break
     }
-    await setNoticeText(state, 'unfollow')
+    await setUnfollowNoticeText(state)
 })
 
 export const $isUnfollowing = computed($superUnfollowButtonState, (state) =>

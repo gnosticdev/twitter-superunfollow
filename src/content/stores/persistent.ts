@@ -23,9 +23,8 @@ export const $unfollowing = persistentAtom(
 
 $unfollowing.listen((unfollow) => {
     enableUnfollowButton(unfollow.size)
-    const followingSize = $following.get().size
     const unfollowingSize = unfollow.size
-    updateMetrics(followingSize, unfollowingSize)
+    updateMetrics({ unfollowingSize })
 })
 
 /**
@@ -45,22 +44,9 @@ export const $following = persistentAtom(
     }
 )
 
-/**
- *  listen to the $following store and update the metrics when it changes
- */
-$following.listen((following) => {
-    const followingSize = following.size
-    const unfollowingSize = $unfollowing.get().size
-    updateMetrics(followingSize, unfollowingSize)
-})
-
-function updateMetrics(followingSize: number, unfollowingSize: number) {
+function updateMetrics({ unfollowingSize }: { unfollowingSize: number }) {
     const count = $followingCount.get()
-    const metricsContainer = createMetrics(
-        count,
-        followingSize,
-        unfollowingSize
-    )
+    const metricsContainer = createMetrics(count, unfollowingSize)
     // remove the current metrics and replace with the updated metrics
     const currentMetrics = document.getElementById('su-metrics')
     currentMetrics?.replaceWith(metricsContainer)

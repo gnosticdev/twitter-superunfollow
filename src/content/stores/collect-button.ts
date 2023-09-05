@@ -1,14 +1,11 @@
 import { atom, computed } from 'nanostores'
 import { collectFollowing } from '@/content/collect-following'
-import {
-    createLoadingSpinner,
-    getInnerProfiles,
-} from '@/content/utils/ui-elements'
+import { getCollectButton, getInnerProfiles } from '@/content/utils/ui-elements'
 import { $following, $followingCount } from './persistent'
 import { getProfileDetails } from '@/content/profiles'
 import { disableStuff, enableStuff } from '@/content/utils/scroll'
-import { $isUnfollowing } from './unfollow-button'
-import { setNoticeText } from '@/content/ui/metrics'
+
+import { setCollectNoticeText } from '@/content/ui/metrics'
 
 export type ButtonState = 'ready' | 'running' | 'paused' | 'resumed' | 'done'
 
@@ -34,12 +31,6 @@ export function handleCollectButton() {
         default:
             break
     }
-}
-
-export function getCollectButton() {
-    return document.getElementById(
-        'su-collect-following-button'
-    ) as HTMLButtonElement | null
 }
 
 $collectFollowingState.listen(async (state) => {
@@ -82,7 +73,7 @@ export async function updateCollectButton(state: ButtonState = 'ready') {
         default:
             break
     }
-    await setNoticeText(state, 'collect')
+    await setCollectNoticeText(state)
 }
 /**
  * Only run at top of the page where new profiles are loaded
@@ -111,21 +102,6 @@ async function followingChanged() {
     }
     console.log('no new profiles found')
     return false
-}
-
-export function setNoticeLoading(notice: HTMLElement) {
-    console.log('setting loading state for notice')
-    const loader = createLoadingSpinner()
-    notice.innerHTML = loader.outerHTML
-    if ($isCollecting.get()) {
-        notice.innerHTML +=
-            'Collecting accounts you follow. Do not navigate away from this tab until complete.'
-    } else if ($isUnfollowing.get()) {
-        notice.innerHTML +=
-            "Unfollowing accounts...Don't navigate away from this tab until complete."
-    }
-
-    return notice
 }
 
 export function disableCollectButton(unfollowing?: boolean) {

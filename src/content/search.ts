@@ -3,7 +3,7 @@ import { handleChange } from './ui/checkboxes'
 import { $following, $unfollowing } from '@/content/stores/persistent'
 import { Selectors } from '@/content/utils/ui-elements'
 
-type Results = 'search' | 'unfollowing' | 'none'
+type Results = 'search' | 'unfollowing' | 'unfollowed-done' | 'none'
 
 export const $searchResults = atom<ProfilesMap>(new Map())
 export const $viewResults = atom<Results>('none')
@@ -30,10 +30,13 @@ $viewResults.listen((view) => {
             viewUnfollowingBtn.checked = true
             resultsDiv.append(results)
             break
+        case 'unfollowed-done':
         case 'none':
             // uncheck the view buttons
             viewUnfollowingBtn.checked = false
             viewSearchResultsBtn.checked = false
+            break
+        default:
             break
     }
 })
@@ -107,10 +110,10 @@ export function handleViewButtons(e: Event) {
 }
 
 // display search results as a checkbox list with the option to select all
-export function showResults(results: ProfilesMap, resultType: Results) {
+export function showResults(profiles: ProfilesMap, resultType: Results) {
     const resultsContainer = createResultsContainer(resultType)
     // if no results, display a message
-    if (results.size === 0) {
+    if (profiles.size === 0) {
         const noResults = document.createElement('p')
         noResults.classList.add('su-error')
         noResults.textContent =
@@ -126,7 +129,7 @@ export function showResults(results: ProfilesMap, resultType: Results) {
     const selectAllContainer = createSelectAll()
     resultsContainer.append(selectAllContainer)
     // create the checkboxes for each result
-    results.forEach((result) => {
+    profiles.forEach((result) => {
         const { handle, username } = result
         const checkbox = document.createElement('input')
         checkbox.type = 'checkbox'
@@ -157,6 +160,8 @@ export function createResultsContainer(resultType: Results) {
         }</span>`
     } else if (resultType === 'unfollowing') {
         title.textContent = `Unfollowing List`
+    } else if (resultType === 'unfollowed-done') {
+        title.textContent = `Unfollowed Profiles`
     }
 
     const resultsContainer = document.createElement('div')
