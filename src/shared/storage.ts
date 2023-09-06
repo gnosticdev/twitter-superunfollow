@@ -10,14 +10,12 @@ class SyncStorage<T extends { [K in keyof T]: T[K] } = TwitterUserData> {
     async getValue<K extends keyof T & string>(key: K): Promise<T[K]> {
         return this.storage.get(key)
     }
-
     async setValue<K extends keyof T & string>(
         key: K,
         value: T[K]
     ): Promise<void> {
         return this.storage.set(key, value)
     }
-
     async setValues(data: T): Promise<void> {
         for (const [key, value] of objectEntries(data)) {
             await this.setValue(
@@ -26,7 +24,6 @@ class SyncStorage<T extends { [K in keyof T]: T[K] } = TwitterUserData> {
             )
         }
     }
-
     watch<K extends keyof T & string>(
         key: K,
         callback: (change: { newValue: T[K]; oldValue: T[K]; key: K }) => void
@@ -62,12 +59,10 @@ class SessionStorage<K extends keyof SessionStorageKV> {
         this.storage = new Storage({ area: 'session' })
         this.storage.setNamespace(this.namespace)
     }
-
     async getValue(key: K): Promise<SessionStorageKV[K]> {
         const value = await this.storage.get(key.toString())
         return parseInt(value) satisfies SessionStorageKV[K]
     }
-
     async setValue(key: K, value: SessionStorageKV[K]) {
         return this.storage.set(key, value)
     }

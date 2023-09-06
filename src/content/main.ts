@@ -9,6 +9,7 @@ import { atom } from 'nanostores'
 import { prettyConsole } from '@/content/utils/console'
 import { sendMessageToBg } from '@/shared/messaging'
 import { getInnerProfiles } from '@/content/utils/ui-elements'
+import { $$twitterSyncStorage } from '@/shared/storage'
 
 export const $needToCollect = atom<boolean>(true)
 export const $username = atom<string | null>(null)
@@ -37,7 +38,14 @@ export const $username = atom<string | null>(null)
     prettyConsole('sending userData to background script')
     // send the userData as a string to the backgrounds cript, which then sends it to the newTab
     await sendMessageToBg(userDataMessage)
-
+    $$twitterSyncStorage.watch(
+        'friends_count',
+        ({ key, newValue, oldValue }) => {
+            console.log(
+                `$$twitterSyncStorage: ${key} changed from ${oldValue} to ${newValue}`
+            )
+        }
+    )
     chrome.runtime.onMessage.addListener(async (msg: FromBgToCs) => {
         try {
             if (msg.from !== 'background' || msg.to !== 'content') {

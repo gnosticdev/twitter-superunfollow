@@ -1,6 +1,10 @@
 import { action, atom, onSet } from 'nanostores'
 import { collectFollowing } from '@/content/collect-following'
-import { getCollectButton, getInnerProfiles } from '@/content/utils/ui-elements'
+import {
+    getCollectButton,
+    getInnerProfiles,
+    getSuperUnfollowButton,
+} from '@/content/utils/ui-elements'
 import { $following, $followingCount } from './persistent'
 import { getProfileDetails } from '@/content/profiles'
 
@@ -56,7 +60,7 @@ export function handleCollectButton() {
 onSet($collectFollowingState, async ({ newValue }) => {
     console.log('collect following button state changed:', newValue)
     const collectButton = getCollectButton()
-    const unfollowButton = getCollectButton()
+    const unfollowButton = getSuperUnfollowButton()
     switch (newValue) {
         case 'ready':
             collectButton.innerHTML = 'Collect'

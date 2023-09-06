@@ -1,7 +1,7 @@
 import {
     Selectors,
     getInnerProfiles,
-    getUnfollowButton,
+    getProfileUnfollowButton,
 } from '@/content/utils/ui-elements'
 import { $viewResults, createResultsContainer, getResultsDiv } from './search'
 import {
@@ -127,7 +127,7 @@ async function unfollow(profile: ProfileInner) {
     try {
         const { handle } = profile.dataset
         // click the unfollow button
-        const unfollowButton = getUnfollowButton(profile)
+        const unfollowButton = getProfileUnfollowButton(profile)
         if (!unfollowButton || !handle) {
             throw new Error(
                 !handle ? 'no handle found' : 'no unfollow button for ' + handle

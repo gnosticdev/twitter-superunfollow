@@ -1,8 +1,9 @@
 import { persistentAtom } from '@nanostores/persistent'
 import { createMetrics } from '@/content/ui/metrics'
 import { $needToCollect } from '@/content/main'
-import { action } from 'nanostores'
+import { action, computed, onSet } from 'nanostores'
 import { getSuperUnfollowButton } from '@/content/utils/ui-elements'
+import { $$twitterSyncStorage } from '@/shared/storage'
 
 /**
  * Map of profiles that are selected to be unfollowed by the user. Can be added/removed by checking the checkbox next to the profile, or from the dialog
@@ -71,13 +72,33 @@ export const $followingCount = persistentAtom<number>('followingCount', 0, {
     decode: (value) => parseInt(value),
 })
 
-$followingCount.listen((count) => {
-    const oldValue = $followingCount.get()
-    if (oldValue !== count && count > 0) {
-        console.log(`following count changed from ${oldValue} to ${count}`)
-        $needToCollect.set(true)
+export const $$followingCount = await $$twitterSyncStorage.getValue(
+    'friends_count'
+)
+
+const checkNewCount = computed(
+    [$followingCount, $needToCollect],
+    (newCount, needsCollect) => {
+        const oldValue = $followingCount.get()
+        if (oldValue !== newCount && newCount > 0) {
+            console.log(
+                `following count changed from ${oldValue} to ${newCount}`
+            )
+            $needToCollect.set(true)
+        }
     }
-})
+)
+
+const setNeedsCollect = action(
+    $needToCollect,
+    'setNeedsCollect',
+    (needs, newCount: number) => {
+        if (newCount <= 0) {
+            needs.set(true)
+        } else {
+        }
+    }
+)
 
 /**
  * Adds a profile to the $unfollowing store

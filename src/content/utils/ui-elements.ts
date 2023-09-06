@@ -135,12 +135,16 @@ export function getProfileContainer(profile?: ProfileInner) {
 }
 
 export function getFollowingContainer() {
-    return document.querySelector(
+    const container = document.querySelector(
         Selectors.FOLLOWING_CONTAINER
     ) as FollowingContainer | null
+    if (!container) {
+        throw new Error('following container not found')
+    }
+    return container
 }
 
-export function getUnfollowButton(profile?: ProfileInner) {
+export function getProfileUnfollowButton(profile?: ProfileInner) {
     if (profile) {
         return profile.querySelector(Selectors.UF_BUTTON) as HTMLElement | null
     }
@@ -148,7 +152,13 @@ export function getUnfollowButton(profile?: ProfileInner) {
 }
 
 export function getConfirmUnfollowButton() {
-    return document.querySelector(Selectors.UF_CONFIRM) as HTMLElement | null
+    const confirmBtn = document.querySelector(
+        Selectors.UF_CONFIRM
+    ) as HTMLElement | null
+    if (!confirmBtn) {
+        throw new Error('confirm button not found')
+    }
+    return confirmBtn
 }
 
 export function getDialogCheckboxes() {
