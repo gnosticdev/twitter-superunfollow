@@ -1,14 +1,10 @@
-import {
-    $isCollecting,
-    ButtonState,
-    shouldCollect,
-} from '@/content/stores/collect-button'
+import { ButtonState, shouldCollect } from '@/content/stores/collect-button'
 import {
     $following,
     $followingCount,
     $unfollowing,
 } from '@/content/stores/persistent'
-import { $isUnfollowing } from '@/content/stores/unfollow-button'
+import { $runningState } from '@/content/stores/unfollow-button'
 import { $unfollowedProfiles } from '@/content/unfollow'
 import { createLoadingSpinner, getNoticeDiv } from '@/content/utils/ui-elements'
 
@@ -44,14 +40,15 @@ export function setNoticeLoading(notice: HTMLElement) {
     console.log('setting loading state for notice')
     const loader = createLoadingSpinner()
     notice.innerHTML = loader.outerHTML
-    if ($isCollecting.get()) {
-        notice.innerHTML +=
-            'Collecting accounts you follow. Do not navigate away from this tab until complete.'
-    } else if ($isUnfollowing.get()) {
-        notice.innerHTML +=
-            "Unfollowing accounts...Don't navigate away from this tab until complete."
+    if ($runningState.get().isCollecting) {
+        notice.innerHTML += 'Collecting accounts you follow...'
+    } else if ($runningState.get().isUnfollowing) {
+        notice.innerHTML += 'Unfollowing accounts...'
     }
-
+    notice.innerHTML += `<div class="sub-notice">
+                Don't navigate away from the page
+                </div>
+                `
     return notice
 }
 
@@ -61,10 +58,6 @@ export async function setCollectNoticeText(
     notice: HTMLDivElement | null = null
 ) {
     notice ??= getNoticeDiv()
-    if (!notice) {
-        console.error('notice div not found')
-        return
-    }
     const followingCount = $followingCount.get()
     const followingCollected = $following.get().size
     switch (state) {
@@ -94,20 +87,16 @@ export async function setCollectNoticeText(
             }
 
             break
+        default:
+            break
     }
 }
 
 export async function setUnfollowNoticeText(state: ButtonState) {
     const notice = getNoticeDiv()
-    if (!notice) {
-        console.error('notice div not found')
-        return
-    }
     const unfollowingSize = $unfollowing.get().size
     const unfollowedSize = $unfollowedProfiles.get().size
     switch (state) {
-        case 'ready':
-            break
         case 'running':
         case 'resumed':
             setNoticeLoading(notice)
@@ -129,7 +118,8 @@ export async function setUnfollowNoticeText(state: ButtonState) {
                 notice.textContent =
                     'Something went wrong... Re-run Collect Following'
             }
-
+            break
+        default:
             break
     }
 }

@@ -158,7 +158,11 @@ export function getDialogCheckboxes() {
 }
 
 export function getNoticeDiv() {
-    return document.getElementById('su-notice') as HTMLDivElement | null
+    const div = document.getElementById('su-notice') as HTMLDivElement | null
+    if (!div) {
+        throw new Error('notice div not found')
+    }
+    return div
 }
 
 export const getSuperUnfollowButton = () => {
@@ -172,7 +176,11 @@ export const getSuperUnfollowButton = () => {
 }
 
 export function getCollectButton() {
-    return document.getElementById(
+    const collectButton = document.getElementById(
         'su-collect-following-button'
     ) as HTMLButtonElement | null
+    if (!collectButton) {
+        throw new Error('collect button not found')
+    }
+    return collectButton
 }

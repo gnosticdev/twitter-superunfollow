@@ -1,15 +1,35 @@
-import { atom, computed } from 'nanostores'
+import { action, atom, onSet } from 'nanostores'
 import { collectFollowing } from '@/content/collect-following'
 import { getCollectButton, getInnerProfiles } from '@/content/utils/ui-elements'
 import { $following, $followingCount } from './persistent'
 import { getProfileDetails } from '@/content/profiles'
-import { disableStuff, enableStuff } from '@/content/utils/scroll'
 
 import { setCollectNoticeText } from '@/content/ui/metrics'
+import { disableScroll, enableScroll } from '@/content/utils/scroll'
 
 export type ButtonState = 'ready' | 'running' | 'paused' | 'resumed' | 'done'
 
 export const $collectFollowingState = atom<ButtonState>('ready')
+
+const setRunning = action($collectFollowingState, 'setRunning', (store) => {
+    store.set('running')
+})
+
+const setPaused = action($collectFollowingState, 'setPaused', (store) => {
+    store.set('paused')
+})
+
+const setResumed = action($collectFollowingState, 'setResumed', (store) => {
+    store.set('resumed')
+})
+
+export const setCollectDone = action(
+    $collectFollowingState,
+    'setDone',
+    (store) => {
+        store.set('done')
+    }
+)
 
 export function handleCollectButton() {
     const collectBtn = getCollectButton()
@@ -19,62 +39,54 @@ export function handleCollectButton() {
     switch ($collectFollowingState.get()) {
         case 'ready':
         case 'done':
-            $collectFollowingState.set('running')
+            setRunning()
             break
         case 'resumed':
         case 'running':
-            $collectFollowingState.set('paused')
+            setPaused()
             break
         case 'paused':
-            $collectFollowingState.set('resumed')
+            setResumed()
             break
         default:
             break
     }
 }
 
-$collectFollowingState.listen(async (state) => {
-    console.log('collect following button state changed:', state)
-    await updateCollectButton(state)
-})
-
-export const $isCollecting = computed($collectFollowingState, (state) =>
-    ['running', 'resumed'].includes(state)
-)
-
-export async function updateCollectButton(state: ButtonState = 'ready') {
-    const collectBtn = getCollectButton()
-    if (!collectBtn) {
-        console.error('collect button or notice div not found')
-        return
-    }
-    switch (state) {
+onSet($collectFollowingState, async ({ newValue }) => {
+    console.log('collect following button state changed:', newValue)
+    const collectButton = getCollectButton()
+    const unfollowButton = getCollectButton()
+    switch (newValue) {
         case 'ready':
-            collectBtn.innerHTML = 'Collect'
-            collectBtn.classList.remove('running')
+            collectButton.innerHTML = 'Collect'
+            collectButton.classList.remove('running')
             break
         case 'running':
         case 'resumed':
-            collectBtn.classList.add('running')
-            collectBtn.innerHTML = 'Pause'
-            disableStuff('collecting')
+            collectButton.classList.add('running')
+            collectButton.innerHTML = 'Pause'
+            unfollowButton.disabled = true
+            disableScroll()
             await collectFollowing()
             break
         case 'paused':
-            collectBtn.innerHTML = 'Resume'
-            collectBtn.classList.remove('running')
-            enableStuff('collecting')
+            collectButton.innerHTML = 'Resume'
+            collectButton.classList.remove('running')
+            unfollowButton.disabled = false
+            enableScroll()
             break
         case 'done':
-            collectBtn.innerHTML = 'Collect'
-            collectBtn.classList.remove('running')
-            enableStuff('collecting')
+            collectButton.innerHTML = 'Collect'
+            collectButton.classList.remove('running')
+            unfollowButton.disabled = false
+            enableScroll()
             break
         default:
             break
     }
-    await setCollectNoticeText(state)
-}
+    await setCollectNoticeText(newValue)
+})
 /**
  * Only run at top of the page where new profiles are loaded
  * @returns true if the user has followed any new profiles since the last time
@@ -102,12 +114,4 @@ async function followingChanged() {
     }
     console.log('no new profiles found')
     return false
-}
-
-export function disableCollectButton(unfollowing?: boolean) {
-    const collectBtn = getCollectButton()
-    if (!collectBtn) {
-        return
-    }
-    collectBtn.disabled = unfollowing ?? false
 }

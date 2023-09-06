@@ -1,8 +1,8 @@
 import { persistentAtom } from '@nanostores/persistent'
-import { enableUnfollowButton } from '@/content/stores/unfollow-button'
 import { createMetrics } from '@/content/ui/metrics'
 import { $needToCollect } from '@/content/main'
 import { action } from 'nanostores'
+import { getSuperUnfollowButton } from '@/content/utils/ui-elements'
 
 /**
  * Map of profiles that are selected to be unfollowed by the user. Can be added/removed by checking the checkbox next to the profile, or from the dialog
@@ -22,10 +22,21 @@ export const $unfollowing = persistentAtom(
 )
 
 $unfollowing.listen((unfollow) => {
-    enableUnfollowButton(unfollow.size)
+    getSuperUnfollowButton().disabled = unfollow.size === 0
     const unfollowingSize = unfollow.size
     updateMetrics({ unfollowingSize })
 })
+
+/**
+ * Disables or enables the unfollow button based on the number of profiles being unfollowed
+ */
+export function enableUnfollowButton(
+    unfollowingSize: number,
+    button?: HTMLButtonElement
+) {
+    button ??= getSuperUnfollowButton()
+    button.disabled = unfollowingSize === 0
+}
 
 /**
  * Map of profiles that are being followed by the user. The key is the user's handle, and the value is the profile details.

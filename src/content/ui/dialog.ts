@@ -6,7 +6,7 @@ import {
 } from '@/content/stores/collect-button'
 import {
     $superUnfollowButtonState,
-    handleSuperUnfollowBtn,
+    handleUnfollowButton,
     enableUnfollowButton,
 } from '@/content/stores/unfollow-button'
 import { createMetrics, createNotice } from './metrics'
@@ -135,7 +135,7 @@ export function createSuperUnfollowBtn() {
     superUnfollowBtn.textContent = 'Unfollow'
     enableUnfollowButton($unfollowing.get().size, superUnfollowBtn)
     // starting the super unfollow process
-    superUnfollowBtn.addEventListener('click', handleSuperUnfollowBtn)
+    superUnfollowBtn.addEventListener('click', handleUnfollowButton)
     superUnfollowBtn.id = 'superUnfollow-button'
 
     return superUnfollowBtn

@@ -73,8 +73,8 @@ class SessionStorage<K extends keyof SessionStorageKV> {
     }
 }
 
-export const syncStorage$ = new SyncStorage<TwitterUserData>()
-export const sessionStorage$ = new SessionStorage()
+export const $$twitterSyncStorage = new SyncStorage<TwitterUserData>()
+export const $$twitterSessionStorage = new SessionStorage()
 
 export function objectEntries<T extends { [key in keyof T]: T[key] }>(obj: T) {
     return Object.entries(obj) as Array<[keyof T, T[keyof T]]>

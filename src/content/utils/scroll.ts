@@ -1,8 +1,9 @@
-import { Selectors, getProfileTranslateY } from '@/content/utils/ui-elements'
+import {
+    Selectors,
+    getProfileTranslateY,
+    getSuperUnfollowButton,
+} from '@/content/utils/ui-elements'
 import { getLastChildHeight, randomDelay } from './ui-elements'
-import { disableCollectButton } from '@/content/stores/collect-button'
-import { enableUnfollowButton } from '@/content/stores/unfollow-button'
-import { $unfollowing } from '@/content/stores/persistent'
 
 /**
  * scrolls to the top of the page and waits for the scroll to complete
@@ -38,16 +39,13 @@ export async function scrollToLastChild() {
     // use the translate property within the profile container to get height of last profile
     const lastChildHeight = getLastChildHeight()
     const scrollHeightBefore = document.scrollingElement?.scrollTop
-
     // scroll down the page
     window.scrollTo({
         top: lastChildHeight,
         behavior: 'smooth',
     })
-
     // wait for data to load and scroll to complete
     await randomDelay(1000, 2000)
-
     const newScrollHeight = document.scrollingElement?.scrollTop
     if (newScrollHeight === scrollHeightBefore) {
         console.log(
@@ -73,7 +71,6 @@ export async function scrollToProfile(profileDetails: ProfileDetail) {
         document.querySelector(Selectors.PROFILE_CONTAINER) as ProfileContainer
     )
     const profileHeight = profileDetails.scrollHeight
-
     // if the profile is above the first child, scroll to the top of the page
     if (profileHeight < firstChildHeight) {
         await waitForScrollTo(0)
@@ -88,39 +85,34 @@ export async function scrollToProfile(profileDetails: ProfileDetail) {
     }
 }
 
-export function enableStuff(running: 'unfollowing' | 'collecting') {
+export function enableUI(running: 'unfollowing' | 'collecting') {
     if (running === 'unfollowing') {
-        disableCollectButton(false)
         enableScroll()
     } else {
-        enableUnfollowButton($unfollowing.get().size, undefined)
         enableScroll()
     }
 }
 
-export function disableStuff(running: 'unfollowing' | 'collecting') {
-    if (running === 'unfollowing') {
-        disableCollectButton(true)
-        disableScroll()
-    } else {
-        const unfollowBtn = document.getElementById(
-            'superUnfollow-button'
-        ) as HTMLButtonElement
-        unfollowBtn.disabled = true
-        disableScroll()
-    }
-}
+// export function disableUI(running: 'unfollowing' | 'collecting') {
+//     if (running === 'unfollowing') {
+//         disableScroll()
+//     } else {
+//         const unfollowBtn = getSuperUnfollowButton()
+//         unfollowBtn.disabled = true
+//         disableScroll()
+//     }
+// }
 
-function disableScroll() {
+export function disableScroll() {
     window.addEventListener('wheel', preventDefault, { passive: false })
     window.addEventListener('touchmove', preventDefault, { passive: false })
 }
 
-function enableScroll() {
+export function enableScroll() {
     window.removeEventListener('wheel', preventDefault)
     window.removeEventListener('touchmove', preventDefault)
 }
 
-function preventDefault(e: Event) {
+export function preventDefault(e: Event) {
     e.preventDefault()
 }
