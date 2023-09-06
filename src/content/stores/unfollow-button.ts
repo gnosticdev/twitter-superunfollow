@@ -1,4 +1,4 @@
-import { action, atom, computed, onSet } from 'nanostores'
+import { action, atom, onSet } from 'nanostores'
 import {
     $unfollowedProfiles,
     showUnfollowed,
@@ -9,12 +9,8 @@ import {
     getCollectButton,
     getSuperUnfollowButton,
 } from '@/content/utils/ui-elements'
-import {
-    $collectFollowingState,
-    ButtonState,
-} from '@/content/stores/collect-button'
-import { $unfollowingList } from '@/content/stores/persistent'
-import { get } from 'https'
+import { ButtonState } from '@/content/stores/collect-button'
+
 import { disableScroll, enableScroll } from '@/content/utils/scroll'
 
 // Create a new store for the button state
@@ -97,23 +93,3 @@ onSet($superUnfollowButtonState, async ({ newValue }) => {
             break
     }
 })
-
-let lastRun: 'unfollowing' | 'collecting' | 'none' = 'none'
-export const $runningState = computed(
-    [$superUnfollowButtonState, $collectFollowingState],
-    (unfollowButton, collectButton) => {
-        const unfollowing = ['running', 'resumed'].includes(unfollowButton)
-        const collecting = ['running', 'resumed'].includes(collectButton)
-        if (unfollowing) {
-            lastRun = 'unfollowing'
-        } else if (collecting) {
-            lastRun = 'collecting'
-        }
-        return {
-            running: unfollowing || collecting,
-            isUnfollowing: unfollowing,
-            isCollecting: collecting,
-            lastRun,
-        }
-    }
-)

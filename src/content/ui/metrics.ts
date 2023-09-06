@@ -4,7 +4,7 @@ import {
     $followingCount,
     $unfollowingList,
 } from '@/content/stores/persistent'
-import { $runningState } from '@/content/stores/unfollow-button'
+import { $runningState } from '../stores/running'
 import { $unfollowedProfiles } from '@/content/unfollow'
 import { createLoadingSpinner, getNoticeDiv } from '@/content/utils/ui-elements'
 
@@ -40,9 +40,9 @@ export function setNoticeLoading(notice: HTMLElement) {
     console.log('setting loading state for notice')
     const loader = createLoadingSpinner()
     notice.innerHTML = loader.outerHTML
-    if ($runningState.get().isCollecting) {
+    if ($runningState.get().collecting) {
         notice.innerHTML += 'Collecting accounts you follow...'
-    } else if ($runningState.get().isUnfollowing) {
+    } else if ($runningState.get().unfollowing) {
         notice.innerHTML += 'Unfollowing accounts...'
     }
     notice.innerHTML += `<div class="sub-notice">

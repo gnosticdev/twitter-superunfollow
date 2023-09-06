@@ -4,7 +4,7 @@ import { getInnerProfiles, randomDelay } from './utils/ui-elements'
 import { scrollToLastChild, waitForScrollTo } from './utils/scroll'
 import { atom } from 'nanostores'
 import { getProfileDetails } from './profiles'
-import { $runningState } from '@/content/stores/unfollow-button'
+import { $runningState } from './stores/running'
 
 /**
  * Check if profiles have been collected yet
@@ -18,7 +18,7 @@ export async function collectFollowing(): Promise<
     Map<string, ProfileDetail> | undefined
 > {
     try {
-        while ($runningState.get().isCollecting) {
+        while ($runningState.get()) {
             // scroll to top on first run
             if ($firstRun.get()) {
                 // reset following to 0, scroll tot top and process the profiles at the top
@@ -56,7 +56,7 @@ async function startFollowingAtTop() {
     // scroll to top and wait fo the scroll to complete
     const scrolled = await waitForScrollTo(0)
     // check if collection has been paused/finished while waiting for the profiles to load
-    if (scrolled && $runningState.get().isCollecting) {
+    if (scrolled && $runningState.get().collecting) {
         await randomDelay(2000, 2500)
     } else {
         console.log(
@@ -64,7 +64,7 @@ async function startFollowingAtTop() {
             'scrolled:',
             scrolled,
             'isCollecting:',
-            $runningState.get().isCollecting
+            $runningState.get().collecting
         )
         return
     }

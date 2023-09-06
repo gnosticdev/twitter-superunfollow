@@ -11,11 +11,10 @@ import {
     removeUnfollowing,
 } from '@/content/stores/persistent'
 import {
-    $runningState,
-    $superUnfollowButtonState,
     setUnfollowPaused,
     setUnfollowDone,
 } from '@/content/stores/unfollow-button'
+import { $runningState } from './stores/running'
 import { randomDelay } from './utils/ui-elements'
 import { prettyConsole } from './utils/console'
 import { waitForElement } from './utils/wait-promise'
@@ -51,7 +50,7 @@ export async function startSuperUnfollow() {
         // get all profiles already loaded on the page
         const profiles = getInnerProfiles()
         profiles.forEach(async (profile) => {
-            if ($runningState.get().running) {
+            if ($runningState.get()) {
                 await superUnfollow(profile)
                 await randomDelay(1000, 2000)
             }
@@ -66,7 +65,7 @@ export async function startSuperUnfollow() {
  * @returns {Promise<void>}
  */
 async function scrollUnfollow() {
-    while ($runningState.get().running) {
+    while ($runningState.get()) {
         // superUnfollow handled by MutationObserver in main.ts
         try {
             await scrollToLastChild()
@@ -96,7 +95,7 @@ export async function superUnfollow(profile: ProfileInner): Promise<void> {
     try {
         const { handle } = profile.dataset
         if (
-            $runningState.get().isUnfollowing &&
+            $runningState.get().unfollowing &&
             handle &&
             $unfollowingList.get().has(handle)
         ) {

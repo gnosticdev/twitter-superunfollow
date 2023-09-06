@@ -46,6 +46,11 @@ export const $username = atom<string | null>(null)
             )
         }
     )
+    $$twitterSyncStorage.watch('screen_name', ({ key, newValue, oldValue }) => {
+        console.log(
+            `$$twitterSyncStorage: ${key} changed from ${oldValue} to ${newValue}`
+        )
+    })
     chrome.runtime.onMessage.addListener(async (msg: FromBgToCs) => {
         try {
             if (msg.from !== 'background' || msg.to !== 'content') {

@@ -1,7 +1,6 @@
 import { persistentAtom } from '@nanostores/persistent'
 import { createMetrics } from '@/content/ui/metrics'
-import { $needToCollect } from '@/content/main'
-import { action, computed, onSet } from 'nanostores'
+import { action } from 'nanostores'
 import { getSuperUnfollowButton } from '@/content/utils/ui-elements'
 import { $$twitterSyncStorage } from '@/shared/storage'
 
@@ -72,33 +71,11 @@ export const $followingCount = persistentAtom<number>('followingCount', 0, {
     decode: (value) => parseInt(value),
 })
 
-export const $$followingCount = await $$twitterSyncStorage.getValue(
-    'friends_count'
-)
-
-const checkNewCount = computed(
-    [$followingCount, $needToCollect],
-    (newCount, needsCollect) => {
-        const oldValue = $followingCount.get()
-        if (oldValue !== newCount && newCount > 0) {
-            console.log(
-                `following count changed from ${oldValue} to ${newCount}`
-            )
-            $needToCollect.set(true)
-        }
-    }
-)
-
-const setNeedsCollect = action(
-    $needToCollect,
-    'setNeedsCollect',
-    (needs, newCount: number) => {
-        if (newCount <= 0) {
-            needs.set(true)
-        } else {
-        }
-    }
-)
+export const $$followingCount = {
+    get: () => {
+        return $$twitterSyncStorage.getValue('friends_count')
+    },
+}
 
 /**
  * Adds a profile to the $unfollowing store

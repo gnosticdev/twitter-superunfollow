@@ -10,10 +10,16 @@ class SyncStorage<T extends { [K in keyof T]: T[K] } = TwitterUserData> {
     async getValue<K extends keyof T & string>(key: K): Promise<T[K]> {
         return this.storage.get(key)
     }
+    /**
+     * Set the value. If it is a secret, it will only be set in extension storage. Returns a warning if storage capacity is almost full. Throws error if the new item will make storage full
+     * @param key
+     * @param value
+     * @returns {Promise<any>} a warning if storage capacity is almost full. Throws error if the new item will make storage full
+     */
     async setValue<K extends keyof T & string>(
         key: K,
         value: T[K]
-    ): Promise<void> {
+    ): Promise<any> {
         return this.storage.set(key, value)
     }
     async setValues(data: T): Promise<void> {
@@ -24,6 +30,11 @@ class SyncStorage<T extends { [K in keyof T]: T[K] } = TwitterUserData> {
             )
         }
     }
+    /**
+     * Watch for changes to the key's value
+     * @param key
+     * @param callback
+     */
     watch<K extends keyof T & string>(
         key: K,
         callback: (change: { newValue: T[K]; oldValue: T[K]; key: K }) => void
@@ -38,6 +49,11 @@ class SyncStorage<T extends { [K in keyof T]: T[K] } = TwitterUserData> {
             },
         })
     }
+    /**
+     * Notifies when the key's value changes and returns the new value
+     * @param key
+     * @returns {Promise<T[K]>} the value of the key
+     */
     subscribe<K extends keyof T & string>(key: K): Promise<T[K]> {
         return new Promise((resolve) => {
             this.watch(key, (change) => {

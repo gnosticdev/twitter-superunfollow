@@ -15,9 +15,13 @@ export type ButtonState = 'ready' | 'running' | 'paused' | 'resumed' | 'done'
 
 export const $collectFollowingState = atom<ButtonState>('ready')
 
-const setRunning = action($collectFollowingState, 'setRunning', (store) => {
-    store.set('running')
-})
+export const setCollectState = action(
+    $collectFollowingState,
+    'setCollectRunning',
+    (store, state: ButtonState) => {
+        store.set(state)
+    }
+)
 
 const setPaused = action($collectFollowingState, 'setPaused', (store) => {
     store.set('paused')
@@ -43,7 +47,7 @@ export function handleCollectButton() {
     switch ($collectFollowingState.get()) {
         case 'ready':
         case 'done':
-            setRunning()
+            setCollectState('running')
             break
         case 'resumed':
         case 'running':
