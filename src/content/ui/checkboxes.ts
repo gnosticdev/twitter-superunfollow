@@ -1,7 +1,7 @@
 import { Selectors } from '@/content/utils/ui-elements'
 import {
     $following,
-    $unfollowing,
+    $unfollowingList,
     addUnfollowing,
     removeUnfollowing,
 } from '@/content/stores/persistent'
@@ -26,7 +26,7 @@ export async function addCheckbox(
     const checkbox = document.createElement('input')
     checkbox.type = 'checkbox'
     checkbox.addEventListener('change', handleChange)
-    checkbox.checked = $unfollowing.get().has(handle)
+    checkbox.checked = $unfollowingList.get().has(handle)
     // put the checkbox container before the unfollow button
     const container = document.createElement('div')
     container.classList.add('superUnfollow', 'su-checkbox-container')

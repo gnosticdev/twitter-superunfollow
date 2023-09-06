@@ -1,6 +1,6 @@
 import { atom } from 'nanostores'
 import { handleChange } from './ui/checkboxes'
-import { $following, $unfollowing } from '@/content/stores/persistent'
+import { $following, $unfollowingList } from '@/content/stores/persistent'
 import { Selectors } from '@/content/utils/ui-elements'
 
 type Results = 'search' | 'unfollowing' | 'unfollowed-done' | 'none'
@@ -26,7 +26,7 @@ $viewResults.listen((view) => {
             resultsDiv.append(searchResults)
             break
         case 'unfollowing':
-            const results = showResults($unfollowing.get(), 'unfollowing')
+            const results = showResults($unfollowingList.get(), 'unfollowing')
             viewUnfollowingBtn.checked = true
             resultsDiv.append(results)
             break
@@ -135,7 +135,7 @@ export function showResults(profiles: ProfilesMap, resultType: Results) {
         checkbox.type = 'checkbox'
         checkbox.id = `su-search-${handle}`
         checkbox.value = handle
-        checkbox.checked = $unfollowing.get().has(handle)
+        checkbox.checked = $unfollowingList.get().has(handle)
         checkbox.addEventListener('change', handleChange)
         const label = document.createElement('label')
         label.innerHTML = `<div class="su-result-label">${username}&nbsp;&nbsp;<span class="su-handle">${handle}</span></div>`

@@ -1,8 +1,4 @@
-import {
-    Selectors,
-    getProfileTranslateY,
-    getSuperUnfollowButton,
-} from '@/content/utils/ui-elements'
+import { Selectors, getProfileTranslateY } from '@/content/utils/ui-elements'
 import { getLastChildHeight, randomDelay } from './ui-elements'
 
 /**
@@ -84,24 +80,6 @@ export async function scrollToProfile(profileDetails: ProfileDetail) {
         await waitForScrollTo(profileHeight)
     }
 }
-
-export function enableUI(running: 'unfollowing' | 'collecting') {
-    if (running === 'unfollowing') {
-        enableScroll()
-    } else {
-        enableScroll()
-    }
-}
-
-// export function disableUI(running: 'unfollowing' | 'collecting') {
-//     if (running === 'unfollowing') {
-//         disableScroll()
-//     } else {
-//         const unfollowBtn = getSuperUnfollowButton()
-//         unfollowBtn.disabled = true
-//         disableScroll()
-//     }
-// }
 
 export function disableScroll() {
     window.addEventListener('wheel', preventDefault, { passive: false })

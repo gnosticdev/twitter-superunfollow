@@ -8,7 +8,7 @@ import { getSuperUnfollowButton } from '@/content/utils/ui-elements'
  * Map of profiles that are selected to be unfollowed by the user. Can be added/removed by checking the checkbox next to the profile, or from the dialog
  * The key is the user's handle, and the value is the profile details.
  */
-export const $unfollowing = persistentAtom(
+export const $unfollowingList = persistentAtom(
     'unfollowing',
     new Map<string, ProfileDetail>(),
     {
@@ -21,7 +21,7 @@ export const $unfollowing = persistentAtom(
     }
 )
 
-$unfollowing.listen((unfollow) => {
+$unfollowingList.listen((unfollow) => {
     getSuperUnfollowButton().disabled = unfollow.size === 0
     const unfollowingSize = unfollow.size
     updateMetrics({ unfollowingSize })
@@ -86,7 +86,7 @@ $followingCount.listen((count) => {
  * @returns {ProfileDetail}
  */
 export function addUnfollowing(handle: string, profileData: ProfileDetail) {
-    const unfollowingMap = $unfollowing.get()
+    const unfollowingMap = $unfollowingList.get()
     if (unfollowingMap.has(handle)) {
         return
     }
@@ -94,13 +94,13 @@ export function addUnfollowing(handle: string, profileData: ProfileDetail) {
     const index = unfollowingMap.size
     // add the index to the user
     const profile = { ...profileData, index }
-    $unfollowing.set(new Map([...unfollowingMap.set(handle, profile)]))
+    $unfollowingList.set(new Map([...unfollowingMap.set(handle, profile)]))
 
-    return $unfollowing.get().get(handle)!
+    return $unfollowingList.get().get(handle)!
 }
 
 export const removeUnfollowing = action(
-    $unfollowing,
+    $unfollowingList,
     'removeUnfollowing',
     async (store, handle: string) => {
         console.log('removing unfollowing', handle)

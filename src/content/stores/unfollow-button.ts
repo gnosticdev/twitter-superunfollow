@@ -13,7 +13,7 @@ import {
     $collectFollowingState,
     ButtonState,
 } from '@/content/stores/collect-button'
-import { $unfollowing } from '@/content/stores/persistent'
+import { $unfollowingList } from '@/content/stores/persistent'
 import { get } from 'https'
 import { disableScroll, enableScroll } from '@/content/utils/scroll'
 
@@ -24,9 +24,13 @@ const setRunning = action($superUnfollowButtonState, 'setRunning', (store) => {
     store.set('running')
 })
 
-const setPaused = action($superUnfollowButtonState, 'setPaused', (store) => {
-    store.set('paused')
-})
+export const setUnfollowPaused = action(
+    $superUnfollowButtonState,
+    'setPaused',
+    (store) => {
+        store.set('paused')
+    }
+)
 
 const setResumed = action($superUnfollowButtonState, 'setResumed', (store) => {
     store.set('resumed')
@@ -50,7 +54,7 @@ export async function handleUnfollowButton() {
             break
         case 'resumed':
         case 'running':
-            setPaused()
+            setUnfollowPaused()
             break
         case 'paused':
             setResumed()

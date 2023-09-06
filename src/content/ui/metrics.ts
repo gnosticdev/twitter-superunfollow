@@ -2,7 +2,7 @@ import { ButtonState, shouldCollect } from '@/content/stores/collect-button'
 import {
     $following,
     $followingCount,
-    $unfollowing,
+    $unfollowingList,
 } from '@/content/stores/persistent'
 import { $runningState } from '@/content/stores/unfollow-button'
 import { $unfollowedProfiles } from '@/content/unfollow'
@@ -94,7 +94,7 @@ export async function setCollectNoticeText(
 
 export async function setUnfollowNoticeText(state: ButtonState) {
     const notice = getNoticeDiv()
-    const unfollowingSize = $unfollowing.get().size
+    const unfollowingSize = $unfollowingList.get().size
     const unfollowedSize = $unfollowedProfiles.get().size
     switch (state) {
         case 'running':

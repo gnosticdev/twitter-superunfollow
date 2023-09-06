@@ -6,13 +6,15 @@ import {
 import { $viewResults, createResultsContainer, getResultsDiv } from './search'
 import {
     $followingCount,
-    $unfollowing,
+    $unfollowingList,
     removeFollowing,
     removeUnfollowing,
 } from '@/content/stores/persistent'
 import {
     $runningState,
     $superUnfollowButtonState,
+    setUnfollowPaused,
+    setUnfollowDone,
 } from '@/content/stores/unfollow-button'
 import { randomDelay } from './utils/ui-elements'
 import { prettyConsole } from './utils/console'
@@ -41,7 +43,7 @@ function addUnfollowedProfile(handle: string, profile: ProfileDetail) {
 export async function startSuperUnfollow() {
     console.log('starting super unfollow')
     $viewResults.set('unfollowing')
-    const firstProfileToUnfollow = $unfollowing.get().values().next()
+    const firstProfileToUnfollow = $unfollowingList.get().values().next()
         .value as ProfileDetail
     console.log('first profile to unfollow: ', firstProfileToUnfollow)
     if (firstProfileToUnfollow) {
@@ -96,19 +98,17 @@ export async function superUnfollow(profile: ProfileInner): Promise<void> {
         if (
             $runningState.get().isUnfollowing &&
             handle &&
-            $unfollowing.get().has(handle)
+            $unfollowingList.get().has(handle)
         ) {
             const unfollowed = await unfollow(profile)
             await randomDelay(1000, 2000)
-
             if (!unfollowed) {
-                $superUnfollowButtonState.set('paused')
+                setUnfollowPaused()
                 throw new Error('unfollow failed')
             }
-
-            if ($unfollowing.get().size === 0) {
+            if ($unfollowingList.get().size === 0) {
                 prettyConsole('Unfollowed all accounts!')
-                $superUnfollowButtonState.set('done')
+                setUnfollowDone()
                 return
             }
         }
@@ -128,24 +128,24 @@ async function unfollow(profile: ProfileInner) {
         const { handle } = profile.dataset
         // click the unfollow button
         const unfollowButton = getUnfollowButton(profile)
-
         if (!unfollowButton || !handle) {
             throw new Error(
                 !handle ? 'no handle found' : 'no unfollow button for ' + handle
             )
         }
-
+        // click the unfollow button on the right side of the profile
         unfollowButton.click()
         await randomDelay(1000, 2000)
-        const confirmUnfollow = await waitForElement(Selectors.UF_CONFIRM)
-        if (!confirmUnfollow) {
+        const confirmUnfollowButton = await waitForElement(Selectors.UF_CONFIRM)
+        if (!confirmUnfollowButton) {
             throw new Error('no confirm unfollow button found')
         }
-        confirmUnfollow.click()
+        // this is the modal that pops up after clicking unfollow
+        confirmUnfollowButton.click()
         // blur and gray out unfollowed profiles
         profile.style.filter = 'blur(1px) grayscale(100%) brightness(0.5)'
         // add profile to unfollowed store
-        addUnfollowedProfile(handle, $unfollowing.get().get(handle)!)
+        addUnfollowedProfile(handle, $unfollowingList.get().get(handle)!)
         // remove profile from unfollowing store
         removeUnfollowing(handle)
         removeFollowing(handle)
@@ -170,7 +170,7 @@ export const showUnfollowed = (unfollowed: ProfilesMap) => {
     list.type = '1'
     list.classList.add('su-search-result')
     // Show the profiles to be unfollowed, then cross them off as they are unfollowed
-    Array.from($unfollowing.get()).forEach(([handle, profile]) => {
+    Array.from($unfollowingList.get()).forEach(([handle, profile]) => {
         const result = document.createElement('li')
         result.classList.add('su-list-item')
         unfollowed.has(handle) ? result.classList.add('success') : null

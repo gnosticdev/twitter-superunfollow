@@ -1,5 +1,5 @@
 import { handleSearch, handleViewButtons } from '../search'
-import { $followingCount, $unfollowing } from '@/content/stores/persistent'
+import { $followingCount, $unfollowingList } from '@/content/stores/persistent'
 import {
     $collectFollowingState,
     handleCollectButton,
@@ -86,7 +86,7 @@ export async function addDialogToDom() {
     // Create the show dialog button and attach it to the top right of the screen
     const metricsContainer = createMetrics(
         $followingCount.get(),
-        $unfollowing.get().size
+        $unfollowingList.get().size
     )
     const notice = await createNotice()
 
@@ -133,7 +133,7 @@ export function createSuperUnfollowBtn() {
     superUnfollowBtn.classList.add('su-button', 'super-unfollow')
     superUnfollowBtn.disabled = true
     superUnfollowBtn.textContent = 'Unfollow'
-    enableUnfollowButton($unfollowing.get().size, superUnfollowBtn)
+    enableUnfollowButton($unfollowingList.get().size, superUnfollowBtn)
     // starting the super unfollow process
     superUnfollowBtn.addEventListener('click', handleUnfollowButton)
     superUnfollowBtn.id = 'superUnfollow-button'
