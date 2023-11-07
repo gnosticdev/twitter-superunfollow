@@ -16,10 +16,11 @@ import {
 } from '@/content/stores/unfollow-button'
 import { $runningState } from './stores/running'
 import { randomDelay } from './utils/ui-elements'
-import { prettyConsole } from './utils/console'
 import { waitForElement } from './utils/wait-promise'
 import { scrollToLastChild, scrollToProfile } from './utils/scroll'
 import { atom } from 'nanostores'
+import { ProfilesMap, ProfileDetail, ProfileInner } from '@/shared/types'
+import { coolConsole } from '@gnosticdev/cool-console'
 
 // Track the profiles that have been unfollowed
 export const $unfollowedProfiles = atom<ProfilesMap>(new Map())
@@ -49,12 +50,12 @@ export async function startSuperUnfollow() {
         await scrollToProfile(firstProfileToUnfollow)
         // get all profiles already loaded on the page
         const profiles = getInnerProfiles()
-        profiles.forEach(async (profile) => {
-            if ($runningState.get()) {
+        for await (const profile of profiles) {
+            if ($runningState.get() === 'unfollowing') {
                 await superUnfollow(profile)
                 await randomDelay(1000, 2000)
             }
-        })
+        }
         // scroll down the page and the watcher will pick up the rest
         await scrollUnfollow()
     }
@@ -65,7 +66,7 @@ export async function startSuperUnfollow() {
  * @returns {Promise<void>}
  */
 async function scrollUnfollow() {
-    while ($runningState.get()) {
+    while ($runningState.get() === 'unfollowing') {
         // superUnfollow handled by MutationObserver in main.ts
         try {
             await scrollToLastChild()
@@ -95,7 +96,7 @@ export async function superUnfollow(profile: ProfileInner): Promise<void> {
     try {
         const { handle } = profile.dataset
         if (
-            $runningState.get().unfollowing &&
+            $runningState.get() &&
             handle &&
             $unfollowingList.get().has(handle)
         ) {
@@ -106,7 +107,7 @@ export async function superUnfollow(profile: ProfileInner): Promise<void> {
                 throw new Error('unfollow failed')
             }
             if ($unfollowingList.get().size === 0) {
-                prettyConsole('Unfollowed all accounts!')
+                coolConsole.bg('green').navy('😎 unfollowed all accounts!')
                 setUnfollowDone()
                 return
             }
@@ -135,7 +136,9 @@ async function unfollow(profile: ProfileInner) {
         // click the unfollow button on the right side of the profile
         unfollowButton.click()
         await randomDelay(1000, 2000)
-        const confirmUnfollowButton = await waitForElement(Selectors.UF_CONFIRM)
+        const confirmUnfollowButton = await waitForElement({
+            selector: Selectors.UF_CONFIRM,
+        })
         if (!confirmUnfollowButton) {
             throw new Error('no confirm unfollow button found')
         }

@@ -2,6 +2,7 @@ import { atom } from 'nanostores'
 import { handleChange } from './ui/checkboxes'
 import { $following, $unfollowingList } from '@/content/stores/persistent'
 import { Selectors } from '@/content/utils/ui-elements'
+import { ProfilesMap, ProfileDetail } from '@/shared/types'
 
 type Results = 'search' | 'unfollowing' | 'unfollowed-done' | 'none'
 
@@ -21,14 +22,14 @@ $viewResults.listen((view) => {
     resultsDiv.innerHTML = ''
     switch (view) {
         case 'search':
-            const searchResults = showResults($searchResults.get(), 'search')
             viewSearchResultsBtn.checked = true
-            resultsDiv.append(searchResults)
+            resultsDiv.append(showResults($searchResults.get(), 'search'))
             break
         case 'unfollowing':
-            const results = showResults($unfollowingList.get(), 'unfollowing')
             viewUnfollowingBtn.checked = true
-            resultsDiv.append(results)
+            resultsDiv.append(
+                showResults($unfollowingList.get(), 'unfollowing')
+            )
             break
         case 'unfollowed-done':
         case 'none':
@@ -64,7 +65,7 @@ export async function handleSearch(e: Event) {
 
 /** @param {string} searchTerm */
 export function searchFollowingList(searchTerm: string) {
-    let results = new Map<string, ProfileDetail>()
+    const results = new Map<string, ProfileDetail>()
     $following.get().forEach((entry) => {
         const { username, handle, description } = entry
         const wordRegex = new RegExp(`\\b${searchTerm}\\b`, 'i')

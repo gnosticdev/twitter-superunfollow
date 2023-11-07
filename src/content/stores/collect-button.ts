@@ -1,42 +1,25 @@
-import { action, atom, onSet } from 'nanostores'
+import { $following, $followingCount } from './persistent'
 import { collectFollowing } from '@/content/collect-following'
+import { getProfileDetails } from '@/content/profiles'
+import { setCollectNoticeText } from '@/content/ui/metrics'
+import { disableScroll, enableScroll } from '@/content/utils/scroll'
 import {
     getCollectButton,
     getInnerProfiles,
     getSuperUnfollowButton,
 } from '@/content/utils/ui-elements'
-import { $following, $followingCount } from './persistent'
-import { getProfileDetails } from '@/content/profiles'
-
-import { setCollectNoticeText } from '@/content/ui/metrics'
-import { disableScroll, enableScroll } from '@/content/utils/scroll'
+import { action, atom } from 'nanostores'
 
 export type ButtonState = 'ready' | 'running' | 'paused' | 'resumed' | 'done'
 
 export const $collectFollowingState = atom<ButtonState>('ready')
-
-export const setCollectState = action(
-    $collectFollowingState,
-    'setCollectRunning',
-    (store, state: ButtonState) => {
-        store.set(state)
-    }
-)
-
-const setPaused = action($collectFollowingState, 'setPaused', (store) => {
-    store.set('paused')
-})
-
-const setResumed = action($collectFollowingState, 'setResumed', (store) => {
-    store.set('resumed')
-})
 
 export const setCollectDone = action(
     $collectFollowingState,
     'setDone',
     (store) => {
         store.set('done')
-    }
+    },
 )
 
 export function handleCollectButton() {
@@ -47,28 +30,31 @@ export function handleCollectButton() {
     switch ($collectFollowingState.get()) {
         case 'ready':
         case 'done':
-            setCollectState('running')
+            $collectFollowingState.set('running')
             break
         case 'resumed':
         case 'running':
-            setPaused()
+            $collectFollowingState.set('paused')
             break
         case 'paused':
-            setResumed()
+            $collectFollowingState.set('resumed')
             break
         default:
             break
     }
 }
 
-onSet($collectFollowingState, async ({ newValue }) => {
-    console.log('collect following button state changed:', newValue)
+$collectFollowingState.listen(async (state) => {
+    console.log('collect following button state changed:', state)
     const collectButton = getCollectButton()
     const unfollowButton = getSuperUnfollowButton()
-    switch (newValue) {
+    switch (state) {
         case 'ready':
             collectButton.innerHTML = 'Collect'
             collectButton.classList.remove('running')
+            unfollowButton.disabled = false
+            enableScroll()
+            await setCollectNoticeText(state)
             break
         case 'running':
         case 'resumed':
@@ -76,12 +62,14 @@ onSet($collectFollowingState, async ({ newValue }) => {
             collectButton.innerHTML = 'Pause'
             unfollowButton.disabled = true
             disableScroll()
+            await setCollectNoticeText(state)
             await collectFollowing()
             break
         case 'paused':
             collectButton.innerHTML = 'Resume'
             collectButton.classList.remove('running')
             unfollowButton.disabled = false
+            await setCollectNoticeText(state)
             enableScroll()
             break
         case 'done':
@@ -89,18 +77,20 @@ onSet($collectFollowingState, async ({ newValue }) => {
             collectButton.classList.remove('running')
             unfollowButton.disabled = false
             enableScroll()
+            await setCollectNoticeText(state)
             break
         default:
             break
     }
-    await setCollectNoticeText(newValue)
 })
 /**
  * Only run at top of the page where new profiles are loaded
  * @returns true if the user has followed any new profiles since the last time
  */
 export async function shouldCollect() {
-    if ($followingCount.get() === 0) return true
+    if ($followingCount.get() === 0) {
+        return true
+    }
     if ($following.get().size !== $followingCount.get()) {
         console.log('following count mismatch, user should collect')
         return true
@@ -113,7 +103,7 @@ export async function shouldCollect() {
  */
 async function followingChanged() {
     const newProfiles = getInnerProfiles()
-    for (const profile of Array.from(newProfiles)) {
+    for await (const profile of Array.from(newProfiles)) {
         const profileDetails = await getProfileDetails(profile)
         if (!$following.get().has(profileDetails.handle)) {
             console.log('new profile found:', profileDetails.handle)

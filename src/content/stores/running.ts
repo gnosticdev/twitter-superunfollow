@@ -1,9 +1,9 @@
 import { action, atom, computed } from 'nanostores'
 import { $collectFollowingState } from '@/content/stores/collect-button'
 import { $superUnfollowButtonState } from './unfollow-button'
-import { logger } from '@nanostores/logger'
 
 export const $lastOperation = atom<'unfollowing' | 'collecting' | null>(null)
+
 const setLastOperation = action(
     $lastOperation,
     'setLastOperation',
@@ -12,30 +12,29 @@ const setLastOperation = action(
     }
 )
 
-export const $runningState = computed(
-    [$superUnfollowButtonState, $collectFollowingState],
-    (unfollowingState, collectingState) => {
-        const unfollowing =
-            unfollowingState === 'running' || unfollowingState === 'resumed'
-        const collecting =
-            collectingState === 'running' || collectingState === 'resumed'
-        const running = unfollowing || collecting
-        // keep track of the last operation to run
-        if (running) {
-            setLastOperation(unfollowing ? 'unfollowing' : 'collecting')
-        }
+export const $unfollowingRunning = computed(
+    $superUnfollowButtonState,
+    (state) => state === 'running' || state === 'resumed'
+)
+console.log('collect following state:', $collectFollowingState.get())
+export const $collectingRunning = computed(
+    $collectFollowingState,
+    (state) => state === 'running' || state === 'resumed'
+)
 
-        return {
-            unfollowing,
-            collecting,
-            running,
+export const $runningState = computed(
+    [$unfollowingRunning, $collectingRunning],
+    (unfollowingRunning, collectingRunning) => {
+        console.log('unfollowing running:', unfollowingRunning)
+        console.log('collecting running:', collectingRunning)
+        if (unfollowingRunning) {
+            setLastOperation('unfollowing')
+            return 'unfollowing'
+        } else if (collectingRunning) {
+            setLastOperation('collecting')
+            return 'collecting'
+        } else {
+            return null
         }
     }
 )
-
-const l = logger({
-    'running state': $runningState,
-    'unfollow button state': $superUnfollowButtonState,
-    'collect button state': $collectFollowingState,
-})
-l()

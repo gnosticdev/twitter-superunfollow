@@ -5,6 +5,7 @@ import { scrollToLastChild, waitForScrollTo } from './utils/scroll'
 import { atom } from 'nanostores'
 import { getProfileDetails } from './profiles'
 import { $runningState } from './stores/running'
+import { ProfileDetail } from '@/shared/types'
 
 /**
  * Check if profiles have been collected yet
@@ -56,7 +57,7 @@ async function startFollowingAtTop() {
     // scroll to top and wait fo the scroll to complete
     const scrolled = await waitForScrollTo(0)
     // check if collection has been paused/finished while waiting for the profiles to load
-    if (scrolled && $runningState.get().collecting) {
+    if (scrolled && $runningState.get() === 'collecting') {
         await randomDelay(2000, 2500)
     } else {
         console.log(
@@ -64,7 +65,7 @@ async function startFollowingAtTop() {
             'scrolled:',
             scrolled,
             'isCollecting:',
-            $runningState.get().collecting
+            $runningState.get() === 'collecting'
         )
         return
     }

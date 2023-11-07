@@ -1,4 +1,5 @@
-import { prettyConsole } from './console'
+import { Selectors } from '@/content/utils/ui-elements'
+import { coolConsole } from '@gnosticdev/cool-console'
 
 /**
  *  Wait for an element to be added to the DOM
@@ -7,18 +8,22 @@ import { prettyConsole } from './console'
  * @param label - the label to use in the console log. Default is the selector
  * @returns {Promise<HTMLElement | null>} - the element that was added to the DOM
  */
-export function waitForElement(
-    selector: string,
+export function waitForElement({
+    selector,
     timeout = 5000,
-    label = selector
-): Promise<HTMLElement | null> {
+    label = selector,
+}: {
+    selector: (typeof Selectors)[keyof typeof Selectors]
+    timeout?: number
+    label?: string
+}): Promise<HTMLElement | null> {
     return new Promise(function (resolve, reject) {
         const element = document.querySelector(selector) as HTMLElement
         if (element) {
             resolve(element)
             return
         }
-        const observer = new MutationObserver(function (records) {
+        const observer = new MutationObserver((records) => {
             records.forEach(function (mutation) {
                 const nodes = Array.from(mutation.addedNodes)
                 nodes.forEach(function (node) {
@@ -28,8 +33,7 @@ export function waitForElement(
                         ) as HTMLElement
                         // success if the element itself matches the selector, or if an inner element matches the selector
                         if (node.matches(selector) || innerElement) {
-                            prettyConsole('Found ' + label, 'green')
-
+                            coolConsole.green(`found ${label}`)
                             observer.disconnect()
                             resolve(
                                 node.matches(selector) ? node : innerElement
@@ -39,9 +43,9 @@ export function waitForElement(
                 })
             })
             // disconnect after
-            setTimeout(function () {
+            setTimeout(() => {
                 observer.disconnect()
-                reject(new Error(selector + ' -> not found after 4 seconds'))
+                reject(new Error(selector + `not found after ${timeout}ms`))
             }, timeout)
         })
 

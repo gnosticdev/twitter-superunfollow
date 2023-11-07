@@ -1,10 +1,10 @@
-import { ButtonState, shouldCollect } from '@/content/stores/collect-button'
 import {
     $following,
     $followingCount,
     $unfollowingList,
 } from '@/content/stores/persistent'
 import { $runningState } from '../stores/running'
+import { ButtonState, shouldCollect } from '@/content/stores/collect-button'
 import { $unfollowedProfiles } from '@/content/unfollow'
 import { createLoadingSpinner, getNoticeDiv } from '@/content/utils/ui-elements'
 
@@ -40,9 +40,9 @@ export function setNoticeLoading(notice: HTMLElement) {
     console.log('setting loading state for notice')
     const loader = createLoadingSpinner()
     notice.innerHTML = loader.outerHTML
-    if ($runningState.get().collecting) {
+    if ($runningState.get() === 'collecting') {
         notice.innerHTML += 'Collecting accounts you follow...'
-    } else if ($runningState.get().unfollowing) {
+    } else if ($runningState.get() === 'unfollowing') {
         notice.innerHTML += 'Unfollowing accounts...'
     }
     notice.innerHTML += `<div class="sub-notice">
@@ -85,14 +85,13 @@ export async function setCollectNoticeText(
                 notice.textContent =
                     'Something went wrong... Re-run Collect Following'
             }
-
             break
         default:
             break
     }
 }
 
-export async function setUnfollowNoticeText(state: ButtonState) {
+export function setUnfollowNoticeText(state: ButtonState) {
     const notice = getNoticeDiv()
     const unfollowingSize = $unfollowingList.get().size
     const unfollowedSize = $unfollowedProfiles.get().size

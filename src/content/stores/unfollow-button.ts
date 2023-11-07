@@ -10,7 +10,6 @@ import {
     getSuperUnfollowButton,
 } from '@/content/utils/ui-elements'
 import { ButtonState } from '@/content/stores/collect-button'
-
 import { disableScroll, enableScroll } from '@/content/utils/scroll'
 
 // Create a new store for the button state
@@ -62,11 +61,14 @@ export async function handleUnfollowButton() {
 }
 
 // Runs before new values are set
-onSet($superUnfollowButtonState, async ({ newValue }) => {
-    console.log('superunfollow button state changed:', newValue)
+onSet($superUnfollowButtonState, async ({ newValue, changed }) => {
+    console.log(
+        'superunfollow button state changed:',
+        `${changed} -> ${newValue}`
+    )
     const unfollowButton = getSuperUnfollowButton()
     const collectButton = getCollectButton()
-    await setUnfollowNoticeText(newValue)
+    setUnfollowNoticeText(newValue)
     switch (newValue) {
         case 'running':
         case 'resumed':

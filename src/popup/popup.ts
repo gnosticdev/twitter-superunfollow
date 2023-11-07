@@ -1,5 +1,9 @@
+///<reference lib="dom" />
+///<reference lib="dom.iterable" />
+
 import { sendMessageToBg } from '@/shared/messaging'
 import { $$twitterSessionStorage } from '@/shared/storage'
+import { FromBgToTab, TwitterUserData, FromTabToBg } from '@/shared/types'
 
 const POPUP_RESULT_ID = 'popup-result'
 

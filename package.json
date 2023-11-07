@@ -1,30 +1,38 @@
 {
-    "name": "twitter-superunfollow",
-    "version": "1.0.0",
-    "description": "Unfollow Twitter accounts based on keyword. Automatically.",
-    "main": "dist/content.js",
-    "scripts": {
-        "dev": "tsc && node esbuild.mjs --watch",
-        "tsc": "tsc"
-    },
-    "keywords": [
-        "twitter",
-        "unfollow",
-        "twittter mass unfollow",
-        "chrome extension"
-    ],
-    "author": "ninxadev",
-    "license": "ISC",
-    "devDependencies": {
-        "@types/chrome": "^0.0.244",
-        "@types/node": "^20.3.1",
-        "esbuild": "^0.18.4",
-        "typescript": "^5.2.2"
-    },
-    "dependencies": {
-        "@nanostores/logger": "^0.2.3",
-        "@nanostores/persistent": "^0.9.0",
-        "@plasmohq/storage": "^1.7.2",
-        "nanostores": "^0.9.2"
-    }
+  "name": "twitter-superunfollow",
+  "version": "1.0.0",
+  "description": "Unfollow Twitter accounts based on keyword. Automatically.",
+  "main": "dist/content.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsc && bun run esbuild.config.ts --watch",
+    "tsc": "tsc",
+    "bun:build": "bun run build.config.ts",
+    "lint": "eslint . "
+  },
+  "keywords": [
+    "twitter",
+    "unfollow",
+    "twittter mass unfollow",
+    "chrome extension"
+  ],
+  "author": "gnostic",
+  "license": "ISC",
+  "devDependencies": {
+    "@nanostores/logger": "^0.2.4",
+    "@trivago/prettier-plugin-sort-imports": "^4.2.1",
+    "@types/chrome": "^0.0.248",
+    "@typescript-eslint/eslint-plugin": "^6.9.1",
+    "@typescript-eslint/parser": "^6.9.1",
+    "bun-types": "^1.0.9",
+    "esbuild": "^0.19.5",
+    "eslint": "^8.53.0",
+    "eslint-plugin-simple-import-sort": "^10.0.0"
+  },
+  "dependencies": {
+    "@gnosticdev/cool-console": "link:@gnosticdev/cool-console",
+    "@nanostores/persistent": "^0.9.1",
+    "@plasmohq/storage": "^1.7.2",
+    "nanostores": "^0.9.3"
+  }
 }

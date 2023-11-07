@@ -5,6 +5,7 @@ import {
     addUnfollowing,
     removeUnfollowing,
 } from '@/content/stores/persistent'
+import { ProfileInner, ProfileDetail } from '@/shared/types'
 
 /**
  * Adds a checkbox to a profile on the /following page. When checked, the profile will be added to the $unfollowing store

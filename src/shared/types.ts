@@ -1,4 +1,4 @@
-type ProfileDetail = {
+export type ProfileDetail = {
     index: number
     handle: string
     username: string
@@ -8,89 +8,88 @@ type ProfileDetail = {
 }
 
 /** Map of profile details for the Unfollowing or Following lists */
-type ProfilesMap = Map<string, ProfileDetail>
+export type ProfilesMap = Map<string, ProfileDetail>
 
-interface ProfileContainer extends HTMLElement {
+export interface ProfileContainer extends HTMLElement {
     readonly dataset: {
         testid: 'cellInnerDiv'
     }
 }
-interface ProfileInner extends HTMLElement {
+export interface ProfileInner extends HTMLElement {
     readonly dataset: {
         testid: 'UserCell'
         handle?: string
     }
 }
-interface Window {
-    __INITIAL_STATE__: any
-}
-interface FollowingContainer extends HTMLElement {
+
+export interface FollowingContainer extends HTMLElement {
     readonly ariaLabel: 'Timeline: Following'
 }
 
 // ------- MESSAGES -------f
-type From = 'content' | 'background' | 'newTab'
-type To = 'content' | 'background' | 'newTab'
-type RequestType = 'userData' | 'addDialog' | 'removeDialog'
+export type From = 'content' | 'background' | 'newTab'
+export type To = 'content' | 'background' | 'newTab'
+export type RequestType = 'userData' | 'addDialog' | 'removeDialog'
 
-interface BaseMessage {
+export interface BaseMessage {
     from: From
     to: To
     type: RequestType
 }
 
-interface FromBgToCsData extends BaseMessage {
+export interface FromBgToCsData extends BaseMessage {
     from: 'background'
     to: 'content'
     type: 'userData'
     data: TwitterUserData
 }
 
-interface FromBgToCsStart extends BaseMessage {
+export interface FromBgToCsStart extends BaseMessage {
     from: 'background'
     to: 'content'
     type: 'addDialog'
 }
 
-interface FromBgToCsRemove extends BaseMessage {
+export interface FromBgToCsRemove extends BaseMessage {
     from: 'background'
     to: 'content'
     type: 'removeDialog'
 }
 
-type FromBgToCs = FromBgToCsData | FromBgToCsStart | FromBgToCsRemove
+export type FromBgToCs = FromBgToCsData | FromBgToCsStart | FromBgToCsRemove
 
-interface FromBgToTab extends BaseMessage {
+export interface FromBgToTab extends BaseMessage {
     from: 'background'
     to: 'newTab'
     type: 'userData'
     data: string
 }
 
-interface FromCsToBg extends BaseMessage {
+export interface FromCsToBg extends BaseMessage {
     from: 'content'
     to: 'background'
     type: 'userData'
     data: string
 }
 
-interface FromTabToBg extends BaseMessage {
+export interface FromTabToBg extends BaseMessage {
     from: 'newTab'
     to: 'background'
     type: 'userData'
     data: TwitterUserData
 }
 
-type ExtMessage = FromBgToCs | FromBgToTab | FromCsToBg | FromTabToBg
+export type ExtMessage = FromBgToCs | FromBgToTab | FromCsToBg | FromTabToBg
 
-type WindowMessage = {
+export type WindowMessage = {
     source: {
         window: WindowProxy
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data: any
 }
 
-interface TwitterUserData {
+export interface TwitterUserData {
     can_dm: boolean
     can_media_tag: boolean
     default_profile: boolean
@@ -109,6 +108,7 @@ interface TwitterUserData {
     name: string
     needs_phone_verification: boolean
     normal_followers_count: number
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     pinned_tweet_ids_str: any[]
     possibly_sensitive: boolean
     profile_banner_url: string
@@ -119,6 +119,7 @@ interface TwitterUserData {
     translator_type: string
     verified: boolean
     want_retweets: boolean
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     withheld_in_countries: any[]
     id_str: string
     is_profile_translatable: boolean
@@ -132,7 +133,7 @@ interface TwitterUserData {
     blocking: boolean
 }
 
-interface Birthdate {
+export interface Birthdate {
     day: number
     month: number
     year: number
@@ -140,10 +141,11 @@ interface Birthdate {
     year_visibility: string
 }
 
-interface Entities {
+export interface Entities {
     description: Description
 }
 
-interface Description {
+export interface Description {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     urls: any[]
 }

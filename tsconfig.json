@@ -6,7 +6,11 @@
         "declaration": false,
         "noUnusedLocals": true,
         "noUnusedParameters": true,
-        "moduleResolution": "node",
+        "skipDefaultLibCheck": true,
+        "types": ["bun-types", "chrome"],
+        "skipLibCheck": true,
+        "moduleResolution": "Bundler",
+        "moduleDetection": "force",
         "esModuleInterop": true,
         "allowJs": true,
         "allowSyntheticDefaultImports": true,
@@ -16,7 +20,5 @@
         "paths": {
             "@/*": ["./src/*"]
         }
-    },
-    "include": ["src/**/*"],
-    "exclude": ["node_modules", "dist"]
+    }
 }

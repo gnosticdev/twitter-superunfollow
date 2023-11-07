@@ -1,5 +1,6 @@
 import { Selectors, getProfileTranslateY } from '@/content/utils/ui-elements'
 import { getLastChildHeight, randomDelay } from './ui-elements'
+import { ProfileDetail, ProfileContainer } from '@/shared/types'
 
 /**
  * scrolls to the top of the page and waits for the scroll to complete

@@ -1,6 +1,15 @@
+import { TwitterUserData } from '@/shared/types'
+
+declare global {
+    interface Window {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        __INITIAL_STATE__: any
+    }
+}
+
 const SANDBOX_RESULT_ID = 'sandbox-result'
 
-export const parseInititalState = (initialStateObj: any) => {
+const parseInititalState = (initialStateObj: any) => {
     const userData = JSON.parse(JSON.stringify(initialStateObj))
 
     const key = Object.keys(userData.entities.users.entities)[0]

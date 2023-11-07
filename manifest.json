@@ -6,7 +6,7 @@
     "content_scripts": [
         {
             "matches": ["https://*.twitter.com/*", "https://*.x.com/*"],
-            "js": ["content.js"],
+            "js": ["main.js"],
             "css": ["style.css"]
         }
     ],
@@ -25,7 +25,7 @@
     "web_accessible_resources": [
         {
             "resources": [
-                "content.js.map",
+                "main.js.map",
                 "popup.js.map",
                 "service-worker.js.map",
                 "temp-tab.js.map",

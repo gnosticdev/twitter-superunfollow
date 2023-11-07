@@ -1,3 +1,11 @@
+import {
+    FromBgToCs,
+    FromBgToTab,
+    FromCsToBg,
+    FromTabToBg,
+    TwitterUserData,
+} from '@/shared/types'
+
 export async function sendMessageToCs<T extends FromBgToCs>(
     tabId: number,
     message: T

@@ -1,8 +1,10 @@
-import { persistentAtom } from '@nanostores/persistent'
 import { createMetrics } from '@/content/ui/metrics'
-import { action } from 'nanostores'
-import { getSuperUnfollowButton } from '@/content/utils/ui-elements'
+import { Selectors } from '@/content/utils/ui-elements'
+import { waitForElement } from '@/content/utils/wait-promise'
 import { $$twitterSyncStorage } from '@/shared/storage'
+import { ProfileDetail } from '@/shared/types'
+import { persistentAtom } from '@nanostores/persistent'
+import { action } from 'nanostores'
 
 /**
  * Map of profiles that are selected to be unfollowed by the user. Can be added/removed by checking the checkbox next to the profile, or from the dialog
@@ -18,25 +20,24 @@ export const $unfollowingList = persistentAtom(
         decode: (value) => {
             return new Map(JSON.parse(value))
         },
-    }
+    },
 )
 
-$unfollowingList.listen((unfollow) => {
-    getSuperUnfollowButton().disabled = unfollow.size === 0
+$unfollowingList.listen(async (unfollow) => {
+    console.log('unfollowingList changed', unfollow, 'size: ', unfollow.size)
+    const superUnfollowButton = (await waitForElement({
+        selector: Selectors.UF_BUTTON,
+    })) as HTMLButtonElement | null
+    if (!superUnfollowButton) {
+        console.log(
+            'superUnfollowButton not found while listening to $unfollowingList',
+        )
+        return
+    }
+    superUnfollowButton.disabled = unfollow.size === 0
     const unfollowingSize = unfollow.size
     updateMetrics({ unfollowingSize })
 })
-
-/**
- * Disables or enables the unfollow button based on the number of profiles being unfollowed
- */
-export function enableUnfollowButton(
-    unfollowingSize: number,
-    button?: HTMLButtonElement
-) {
-    button ??= getSuperUnfollowButton()
-    button.disabled = unfollowingSize === 0
-}
 
 /**
  * Map of profiles that are being followed by the user. The key is the user's handle, and the value is the profile details.
@@ -52,7 +53,7 @@ export const $following = persistentAtom(
         decode: (value) => {
             return new Map(JSON.parse(value))
         },
-    }
+    },
 )
 
 function updateMetrics({ unfollowingSize }: { unfollowingSize: number }) {
@@ -107,7 +108,7 @@ export const removeUnfollowing = action(
         store.set(new Map([...Array.from(currentUnfollowing)]))
 
         return store.get()
-    }
+    },
 )
 
 // export function removeUnfollowing(handle: string) {
@@ -126,7 +127,7 @@ export const removeUnfollowing = action(
  */
 export function addFollowing(
     handle: string,
-    profileData: Omit<ProfileDetail, 'index'>
+    profileData: Omit<ProfileDetail, 'index'>,
 ) {
     const followingMap = $following.get()
     if (followingMap.has(handle)) {

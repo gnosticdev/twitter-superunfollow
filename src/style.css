@@ -167,6 +167,7 @@
 
         & .su-dialog-container {
             display: flex;
+            position: relative;
             flex-direction: column;
             padding-left: 0.5rem;
 
@@ -338,15 +339,17 @@
 
             & .su-close-button {
                 position: absolute;
-                top: 2px;
-                right: 2px;
+                top: -1rem;
+                right: -1rem;
                 background: none;
                 border: none;
                 color: var(--su-powder-blue);
                 cursor: pointer;
+                position: absolute;
+                align-self: end;
 
                 &:hover {
-                    color: var(--su-indigo-hover);
+                    color: var(--su-powder-blue-hover);
                 }
             }
 

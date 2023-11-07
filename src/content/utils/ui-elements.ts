@@ -1,3 +1,9 @@
+import {
+    ProfileContainer,
+    ProfileInner,
+    FollowingContainer,
+} from '@/shared/types'
+
 /**
  * Wait a random amount of time between ms and msHigh, then and return a promise
  * If msHigh is not provided, it defaults to ms
@@ -56,8 +62,24 @@ export function getProfileTranslateY(profileContainer: ProfileContainer) {
 }
 
 export function generateSelector(context: HTMLElement) {
+    // get index for nth of type element
+    const getIndex = (node: HTMLElement) => {
+        let i = 1
+        const tagName = node.tagName
+
+        while (node.previousSibling) {
+            node = node.previousSibling as HTMLElement
+            if (
+                node.nodeType === 1 &&
+                tagName.toLowerCase() === node.tagName.toLowerCase()
+            ) {
+                i++
+            }
+        }
+        return i
+    }
     // call getIndex function
-    let index = getIndex(context)
+    const index = getIndex(context)
     let pathSelector = ''
 
     while (context.tagName) {
@@ -71,23 +93,6 @@ export function generateSelector(context: HTMLElement) {
     return pathSelector
 }
 
-// get index for nth of type element
-function getIndex(node: HTMLElement) {
-    let i = 1
-    let tagName = node.tagName
-
-    while (node.previousSibling) {
-        node = node.previousSibling as HTMLElement
-        if (
-            node.nodeType === 1 &&
-            tagName.toLowerCase() === node.tagName.toLowerCase()
-        ) {
-            i++
-        }
-    }
-    return i
-}
-
 export const Selectors = {
     /**  The inner div with the profile details */
     PROFILE_INNER:
@@ -96,7 +101,8 @@ export const Selectors = {
     PROFILE_CONTAINER:
         'div[aria-label="Timeline: Following"] [data-testid="cellInnerDiv"]',
     /**  The div that contains the profile divs */
-    FOLLOWING_CONTAINER: 'section > div[aria-label="Timeline: Following"]',
+    FOLLOWING_CONTAINER: 'div[aria-label="Timeline: Following"]',
+    FOLLOWING_CONTAINER_PREV_SIB: '#accessible-list-0',
     /** The main unfollow button - opens a confirmation window */
     UF_BUTTON: '[role="button"][data-testid $= "-unfollow"]',
     /** The confirm unfollow button in the confirmation window */

@@ -1,4 +1,5 @@
 import { sendMessageToBg } from '@/shared/messaging'
+import { FromBgToTab, TwitterUserData, FromTabToBg } from '@/shared/types'
 
 // 1) Receive the userData string from background script
 chrome.runtime.onMessage.addListener(async (msg: FromBgToTab, sender) => {

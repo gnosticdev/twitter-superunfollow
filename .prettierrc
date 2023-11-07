@@ -4,5 +4,6 @@
     "printWidth": 80,
     "singleQuote": true,
     "semi": false,
-    "bracketSameLine": false
+    "bracketSameLine": false,
+    "plugins": ["@trivago/prettier-plugin-sort-imports"]
 }

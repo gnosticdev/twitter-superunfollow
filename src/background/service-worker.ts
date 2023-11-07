@@ -1,14 +1,41 @@
-import { $$twitterSyncStorage, $$twitterSessionStorage } from '@/shared/storage'
 import { sendMessageToTab, sendMessageToCs } from '@/shared/messaging'
+import { $$twitterSyncStorage, $$twitterSessionStorage } from '@/shared/storage'
+import { ExtMessage, FromBgToCs } from '@/shared/types'
+import { coolConsole } from '@gnosticdev/cool-console'
 
-export const NEW_TAB_PAGE = 'temp-tab.html'
+// New tab used to parse userData in a sandboxed environment
+const NEW_TAB_PAGE = 'temp-tab.html'
+
+const inject = async (tab: chrome.tabs.Tab) => {
+    const { id: tabId } = tab
+    const loadedTab = await waitForTabToLoad(tabId!)
+    const tabUrl = new URL(loadedTab.url!)
+    if (
+        tabUrl.hostname !== 'twitter.com' ||
+        !tabUrl.pathname.includes('following')
+    ) {
+        return
+    }
+    chrome.action.setBadgeText({ text: 'ON' })
+    const injection = await chrome.scripting.executeScript({
+        target: {
+            tabId: loadedTab.id!,
+        },
+        injectImmediately: true,
+        files: ['main.js'],
+        world: 'MAIN',
+    })
+    if (injection.length > 0 || injection?.[0]?.result === undefined) {
+        coolConsole.pink('injection failed').obj(injection)
+    }
+}
 
 // get userData string from content and send to Tab -> does not return anything
 // Listen for messages from content script and newTab
 chrome.runtime.onMessage.addListener(listenForContentMsg)
 async function listenForContentMsg(
     msg: ExtMessage,
-    sender: chrome.runtime.MessageSender
+    sender: chrome.runtime.MessageSender,
 ) {
     const { tab: senderTab } = sender
     if (!senderTab || !senderTab.id) {
@@ -22,7 +49,9 @@ async function listenForContentMsg(
         msg.type === 'userData' &&
         msg.data
     ) {
-        console.log('background received userData from content script', msg)
+        coolConsole
+            .gold('background received userData from content script:')
+            .obj(msg)
         const newTab = await createTempTab()
         await $$twitterSessionStorage.setValue('contentTabId', senderTab.id)
         await sendMessageToTab(newTab.id!, {
@@ -41,10 +70,11 @@ async function listenForContentMsg(
 // Added in listenForContentMsg (above)
 async function listenForTabMsg(msg: ExtMessage) {
     if (msg.from === 'newTab' && msg.to === 'background' && msg.data) {
-        console.log(
-            'background received parsed userData from newTab -> adding to sync storage',
-            msg
-        )
+        coolConsole
+            .gold(
+                'background received parsed userData from newTab -> adding to sync storage',
+            )
+            .obj(msg, 'cyan')
         await $$twitterSyncStorage.setValues(msg.data)
         const bgToContentMsg: FromBgToCs = {
             from: 'background',
@@ -53,9 +83,8 @@ async function listenForTabMsg(msg: ExtMessage) {
             data: msg.data,
         }
         // send userData to content script
-        const contentTabId = await $$twitterSessionStorage.getValue(
-            'contentTabId'
-        )
+        const contentTabId =
+            await $$twitterSessionStorage.getValue('contentTabId')
         await sendMessageToCs(contentTabId, bgToContentMsg)
 
         // Remove listener after first message
@@ -109,11 +138,12 @@ chrome.tabs.onUpdated.addListener(addRemoveDialogBtn)
 async function addRemoveDialogBtn(
     tabId: number,
     changeInfo: chrome.tabs.TabChangeInfo,
-    tab: chrome.tabs.Tab
+    tab: chrome.tabs.Tab,
 ) {
     if (changeInfo.status !== 'complete' || !tab.url) {
         return
     }
+    console.log(changeInfo, tab)
     let username = await $$twitterSyncStorage.getValue('screen_name')
     if (!username) {
         console.log('no username found in storage, getting from sync storage')
@@ -126,8 +156,14 @@ async function addRemoveDialogBtn(
             to: 'content',
             type: 'addDialog',
         })
-    } else {
-        await sendMessageToCs(tabId, {
+        return
+    }
+
+    const existingTab = await chrome.tabs.query({
+        url: `https://twitter.com/${username}/following*`,
+    })
+    if (existingTab.length > 0) {
+        await sendMessageToCs(existingTab[0].id!, {
             from: 'background',
             to: 'content',
             type: 'removeDialog',
@@ -136,8 +172,7 @@ async function addRemoveDialogBtn(
 }
 
 // Go to Following Page when extension icon is clicked (no popup)
-chrome.action.onClicked.addListener(async (tab) => {
-    console.log('action clicked', tab)
+chrome.action.onClicked.addListener(async (_tab) => {
     const username = await $$twitterSyncStorage.getValue('screen_name')
     if (!username) {
         console.log('no username found in sync storage')
@@ -146,5 +181,20 @@ chrome.action.onClicked.addListener(async (tab) => {
     const url = username
         ? `https://twitter.com/${username}/following`
         : 'https://twitter.com/following'
+
+    const existingTab = await chrome.tabs.query({
+        url: url + '*',
+    })
+
+    console.log('existing tab:', existingTab)
+
+    if (existingTab.length > 0) {
+        await chrome.tabs.update(existingTab[0].id!, { active: true })
+        await chrome.tabs.reload({ bypassCache: true })
+        chrome.runtime.reload()
+        return
+    }
+
+    chrome.runtime.reload()
     await chrome.tabs.create({ url, active: true })
 })

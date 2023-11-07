@@ -2,6 +2,7 @@ import { addCheckbox } from './ui/checkboxes'
 import { Selectors } from '@/content/utils/ui-elements'
 import { addFollowing } from '@/content/stores/persistent'
 import { randomDelay, getProfileTranslateY } from './utils/ui-elements'
+import { ProfileInner, ProfileDetail, ProfileContainer } from '@/shared/types'
 
 export async function processProfile(profile: ProfileInner) {
     try {
@@ -69,9 +70,10 @@ async function waitForProfileData(
     profile: ProfileInner,
     timeout = 5_000
 ): Promise<ProfileInner> {
+    // eslint-disable-next-line no-async-promise-executor
     return new Promise(async (resolve, reject) => {
         // use a live HTMLCollection to get the links, as the profile div is updated when the profile data loads
-        let links = profile.getElementsByTagName('a')
+        const links = profile.getElementsByTagName('a')
         if (links.length < 3 || !links[2]?.textContent?.includes('@')) {
             if (timeout <= 0) {
                 reject(new Error('Timeout waiting for profile data'))

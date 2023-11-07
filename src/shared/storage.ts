@@ -1,3 +1,4 @@
+import { TwitterUserData } from '@/shared/types'
 import { Storage } from '@plasmohq/storage'
 
 class SyncStorage<T extends { [K in keyof T]: T[K] } = TwitterUserData> {

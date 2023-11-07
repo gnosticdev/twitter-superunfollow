@@ -93,8 +93,8 @@ export async function addDialogToDom() {
 
     // append elements to dialog
     dialogContainer.append(
-        headingInputContainer,
         closeButton,
+        headingInputContainer,
         metricsContainer,
         notice,
         modalButtons,
@@ -130,7 +130,7 @@ function createModalButtons() {
 export function createSuperUnfollowBtn() {
     const superUnfollowBtn = document.createElement('button')
     superUnfollowBtn.classList.add('su-button', 'super-unfollow')
-    superUnfollowBtn.disabled = true
+    superUnfollowBtn.disabled = $unfollowingList.get().size === 0
     superUnfollowBtn.textContent = 'Unfollow'
     // starting the super unfollow process
     superUnfollowBtn.addEventListener('click', handleUnfollowButton)
