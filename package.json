@@ -5,9 +5,8 @@
   "main": "dist/content.js",
   "type": "module",
   "scripts": {
-    "dev": "tsc && bun run esbuild.config.ts --watch",
+    "dev": "tsc && bun run build.config.ts",
     "tsc": "tsc",
-    "bun:build": "bun run build.config.ts",
     "lint": "eslint . "
   },
   "keywords": [
@@ -32,7 +31,7 @@
   "dependencies": {
     "@gnosticdev/cool-console": "link:@gnosticdev/cool-console",
     "@nanostores/persistent": "^0.9.1",
-    "@plasmohq/storage": "^1.7.2",
+    "@plasmohq/storage": "^1.8.1",
     "nanostores": "^0.9.3"
   }
 }

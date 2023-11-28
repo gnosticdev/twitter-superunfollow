@@ -29,14 +29,14 @@ export function waitForElement({
                 nodes.forEach(function (node) {
                     if (node instanceof HTMLElement) {
                         const innerElement = node.querySelector(
-                            selector
+                            selector,
                         ) as HTMLElement
                         // success if the element itself matches the selector, or if an inner element matches the selector
                         if (node.matches(selector) || innerElement) {
                             coolConsole.green(`found ${label}`)
                             observer.disconnect()
                             resolve(
-                                node.matches(selector) ? node : innerElement
+                                node.matches(selector) ? node : innerElement,
                             )
                         }
                     }

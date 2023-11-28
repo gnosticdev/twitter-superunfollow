@@ -13,6 +13,9 @@ dist
 # Cursor related files
 .vscode-test
 .vscode/tasks.json
+.vscode
 
 # Bun
 bun.lockb
+
+.git

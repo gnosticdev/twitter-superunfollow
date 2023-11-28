@@ -5,12 +5,13 @@ import {
     FromTabToBg,
     TwitterUserData,
 } from '@/shared/types'
+import { coolConsole } from '@gnosticdev/cool-console'
 
 export async function sendMessageToCs<T extends FromBgToCs>(
     tabId: number,
-    message: T
+    message: T,
 ) {
-    console.log('sending message to content script...', message, tabId)
+    coolConsole.orange('sending message to content script...').obj(message)
     const response = await chrome.tabs.sendMessage<
         T,
         T extends FromBgToCs ? string : never
@@ -21,9 +22,9 @@ export async function sendMessageToCs<T extends FromBgToCs>(
 
 export async function sendMessageToTab<T extends FromBgToTab>(
     tabId: number,
-    message: T
+    message: T,
 ) {
-    console.log('sending message to tab...', message, tabId)
+    coolConsole.orange('sending message to new tab...').obj(message)
     const response = await chrome.tabs.sendMessage<
         T,
         T extends FromBgToTab ? string : never
@@ -33,9 +34,9 @@ export async function sendMessageToTab<T extends FromBgToTab>(
 }
 
 export async function sendMessageToBg<T extends FromCsToBg | FromTabToBg>(
-    message: T
+    message: T,
 ) {
-    console.log('sending message to background...', message)
+    coolConsole.orange('sending message to background script...').obj(message)
     const response = await chrome.runtime.sendMessage<
         T,
         T extends FromCsToBg

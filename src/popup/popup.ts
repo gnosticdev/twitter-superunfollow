@@ -1,6 +1,5 @@
 ///<reference lib="dom" />
 ///<reference lib="dom.iterable" />
-
 import { sendMessageToBg } from '@/shared/messaging'
 import { $$twitterSessionStorage } from '@/shared/storage'
 import { FromBgToTab, TwitterUserData, FromTabToBg } from '@/shared/types'
@@ -59,7 +58,7 @@ window.addEventListener(
         } catch (e) {
             console.error(e)
         }
-    }
+    },
 )
 
 // go to the following page when the popup button is clicked

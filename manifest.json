@@ -6,8 +6,9 @@
     "content_scripts": [
         {
             "matches": ["https://*.twitter.com/*", "https://*.x.com/*"],
-            "js": ["main.js"],
-            "css": ["style.css"]
+            "css": ["style.css"],
+            "include_globs": ["*twitter.com/*/following"],
+            "js": ["main.js"]
         }
     ],
     "background": {
@@ -19,8 +20,14 @@
     "action": {
         "default_title": "Twitter SuperUnfollow"
     },
-    "permissions": ["tabs", "activeTab", "scripting", "storage", "sidePanel"],
-
+    "permissions": [
+        "tabs",
+        "activeTab",
+        "scripting",
+        "storage",
+        "sidePanel",
+        "webNavigation"
+    ],
     "host_permissions": ["https://*/*"],
     "web_accessible_resources": [
         {
@@ -34,5 +41,22 @@
             ],
             "matches": ["<all_urls>"]
         }
-    ]
+    ],
+    "commands": {
+        "reload-everything": {
+            "suggested_key": {
+                "default": "Ctrl+B",
+                "mac": "Command+B"
+            },
+            "description": "Reload the Twitter SuperUnfollow extension"
+        },
+        "_execute_action": {
+            "suggested_key": {
+                "windows": "Ctrl+B",
+                "mac": "Ctrl+B",
+                "chromeos": "Ctrl+B",
+                "linux": "Ctrl+B"
+            }
+        }
+    }
 }

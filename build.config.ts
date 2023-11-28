@@ -1,4 +1,5 @@
 import { coolConsole } from '@gnosticdev/cool-console'
+import { retainTraces } from '@gnosticdev/cool-console/plugins'
 import fs from 'fs'
 import path from 'node:path'
 
@@ -28,6 +29,7 @@ const buildScripts = async () => {
         },
         target: 'browser',
         sourcemap: 'external',
+        plugins: [retainTraces],
     })
 
     for await (const file of copyFiles) {

@@ -9,17 +9,16 @@ import { getInnerProfiles } from '@/content/utils/ui-elements'
 import { sendMessageToBg } from '@/shared/messaging'
 import { $$twitterSyncStorage } from '@/shared/storage'
 import { FromCsToBg, FromBgToCs, ProfileInner } from '@/shared/types'
-import { atom } from 'nanostores'
-
-const $needToCollect = atom<boolean>(true)
+import { coolConsole } from '@gnosticdev/cool-console'
 
 // 1) send message to background.ts -> receive the response and start init()
 // TODO: add this as an option
 // export const FOLLOWS_YOU = '[data-testid="userFollowIndicator"]'
 init().then(() => {
-    console.log('done')
+    coolConsole.bg('blue').orange('loaded SuperUnfollow content script')
 })
-// 1) send message to background.ts -> receive the response and start init()
+/*  -------- 1) send message to service worker ----------
+    -------- receive the response and start init() ---------- */
 async function init() {
     const scripts = document.querySelectorAll('script')
     const script = Array.from(scripts).find((script) =>
@@ -34,9 +33,7 @@ async function init() {
         type: 'userData',
         data: script.innerHTML,
     }
-    console.log('sending userData to background script')
-    // send the userData as a string to the backgrounds cript, which then sends it to the newTab
-    await sendMessageToBg(userDataMessage)
+
     $$twitterSyncStorage.watch(
         'friends_count',
         ({ key, newValue, oldValue }) => {
@@ -50,34 +47,37 @@ async function init() {
             `$$twitterSyncStorage: ${key} changed from ${oldValue} to ${newValue}`,
         )
     })
-    chrome.runtime.onMessage.addListener(async (msg: FromBgToCs) => {
+    // send the userData as a string to the backgrounds cript, which then sends it to the newTab
+    // need to send after we register the storage listeners
+    await sendMessageToBg(userDataMessage)
+
+    /*  -------- 2) receive the response from service worker and start init() ----------
+        -------- add listener for message from background.ts ---------- */
+    chrome.runtime.onMessage.addListener(listenForBgMessage)
+    async function listenForBgMessage(msg: FromBgToCs) {
         try {
-            if (msg.from !== 'background' || msg.to !== 'content') {
-                return
-            }
             if (msg.type === 'userData' && msg.data) {
                 // store the followingCount = friends_count, and the entire userData object for later use
                 $followingCount.set(msg.data.friends_count)
-                console.log(
+                coolConsole.violet(
                     `followingCount: ${msg.data.friends_count}, collected: ${
                         $following.get().size
-                    }, needToCollect: ${$needToCollect.get()}`,
+                    }`,
                 )
+
                 // start observer on /following page after getting message from bg script
-            } else if (msg.type === 'addDialog') {
+
                 await addDialogToDom()
                 const innerProfiles = getInnerProfiles()
                 for (const profile of Array.from(innerProfiles)) {
                     await processProfile(profile)
                 }
                 await startObserver()
-            } else if (msg.type === 'removeDialog') {
-                removeDialogButton()
             }
         } catch (e) {
             console.log(e)
         }
-    })
+    }
 }
 
 // Start the observer after the userData has been received, and we are on the /following page
@@ -116,13 +116,6 @@ async function startObserver() {
         childList: true,
         subtree: true,
     })
-}
-
-function removeDialogButton() {
-    const showDialogBtn = document.getElementById('su-show-modal-button')
-    if (showDialogBtn) {
-        showDialogBtn.remove()
-    }
 }
 
 async function getFollowingSection() {

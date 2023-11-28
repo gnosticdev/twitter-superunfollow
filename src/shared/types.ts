@@ -29,7 +29,7 @@ export interface FollowingContainer extends HTMLElement {
 // ------- MESSAGES -------f
 export type From = 'content' | 'background' | 'newTab'
 export type To = 'content' | 'background' | 'newTab'
-export type RequestType = 'userData' | 'addDialog' | 'removeDialog'
+export type RequestType = 'userData' | 'adjustDialog'
 
 export interface BaseMessage {
     from: From
@@ -47,16 +47,10 @@ export interface FromBgToCsData extends BaseMessage {
 export interface FromBgToCsStart extends BaseMessage {
     from: 'background'
     to: 'content'
-    type: 'addDialog'
+    type: 'adjustDialog'
 }
 
-export interface FromBgToCsRemove extends BaseMessage {
-    from: 'background'
-    to: 'content'
-    type: 'removeDialog'
-}
-
-export type FromBgToCs = FromBgToCsData | FromBgToCsStart | FromBgToCsRemove
+export type FromBgToCs = FromBgToCsData | FromBgToCsStart
 
 export interface FromBgToTab extends BaseMessage {
     from: 'background'
