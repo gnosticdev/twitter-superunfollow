@@ -1,37 +1,34 @@
 {
-  "name": "twitter-superunfollow",
-  "version": "1.0.0",
-  "description": "Unfollow Twitter accounts based on keyword. Automatically.",
-  "main": "dist/content.js",
-  "type": "module",
-  "scripts": {
-    "dev": "tsc && bun run build.config.ts",
-    "tsc": "tsc",
-    "lint": "eslint . "
-  },
-  "keywords": [
-    "twitter",
-    "unfollow",
-    "twittter mass unfollow",
-    "chrome extension"
-  ],
-  "author": "gnostic",
-  "license": "ISC",
-  "devDependencies": {
-    "@nanostores/logger": "^0.2.4",
-    "@trivago/prettier-plugin-sort-imports": "^4.2.1",
-    "@types/chrome": "^0.0.248",
-    "@typescript-eslint/eslint-plugin": "^6.9.1",
-    "@typescript-eslint/parser": "^6.9.1",
-    "bun-types": "^1.0.9",
-    "esbuild": "^0.19.5",
-    "eslint": "^8.53.0",
-    "eslint-plugin-simple-import-sort": "^10.0.0"
-  },
-  "dependencies": {
-    "@gnosticdev/cool-console": "link:@gnosticdev/cool-console",
-    "@nanostores/persistent": "^0.9.1",
-    "@plasmohq/storage": "^1.8.1",
-    "nanostores": "^0.9.3"
-  }
+	"name": "twitter-superunfollow",
+	"version": "1.0.0",
+	"description": "Unfollow Twitter accounts based on keyword. Automatically.",
+	"main": "dist/content.js",
+	"type": "module",
+	"scripts": {
+		"dev": "bun run tsc && bun run lint && bun run --watch build.config.ts",
+		"tsc": "tsc",
+		"lint": "biome check . --write --unsafe"
+	},
+	"keywords": [
+		"twitter",
+		"unfollow",
+		"twittter mass unfollow",
+		"chrome extension"
+	],
+	"author": "gnostic",
+	"license": "ISC",
+	"devDependencies": {
+		"@biomejs/biome": "^1.8.3",
+		"@nanostores/logger": "^0.2.4",
+		"@types/bun": "^1.1.6",
+		"@types/chrome": "^0.0.268",
+		"esbuild": "^0.19.5",
+		"kleur": "^4.1.5"
+	},
+	"dependencies": {
+		"@nanostores/persistent": "^0.9.1",
+		"@plasmohq/storage": "^1.8.1",
+		"chalk": "^5.3.0",
+		"nanostores": "^0.9.3"
+	}
 }

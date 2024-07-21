@@ -1,24 +1,23 @@
 {
-    "compilerOptions": {
-        "target": "ESNext",
-        "module": "ESNext",
-        "strict": true,
-        "declaration": false,
-        "noUnusedLocals": true,
-        "noUnusedParameters": true,
-        "skipDefaultLibCheck": true,
-        "types": ["bun-types", "chrome"],
-        "skipLibCheck": true,
-        "moduleResolution": "Bundler",
-        "moduleDetection": "force",
-        "esModuleInterop": true,
-        "allowJs": true,
-        "allowSyntheticDefaultImports": true,
-        "lib": ["ESNext", "DOM", "DOM.Iterable"],
-        "noEmit": true,
-        "baseUrl": ".",
-        "paths": {
-            "@/*": ["./src/*"]
-        }
-    }
+	"compilerOptions": {
+		"target": "ESNext",
+		"module": "ESNext",
+		"strict": true,
+		"declaration": false,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"skipDefaultLibCheck": true,
+		"skipLibCheck": true,
+		"moduleResolution": "Bundler",
+		"moduleDetection": "force",
+		"esModuleInterop": true,
+		"allowJs": true,
+		"allowSyntheticDefaultImports": true,
+		"lib": ["ESNext", "DOM", "DOM.Iterable"],
+		"noEmit": true,
+		"baseUrl": ".",
+		"paths": {
+			"@/*": ["./src/*"]
+		}
+	}
 }

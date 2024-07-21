@@ -1,9 +1,0 @@
-{
-    "tabWidth": 4,
-    "useTabs": false,
-    "printWidth": 80,
-    "singleQuote": true,
-    "semi": false,
-    "bracketSameLine": false,
-    "plugins": ["@trivago/prettier-plugin-sort-imports"]
-}

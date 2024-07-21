@@ -1,62 +1,62 @@
 {
-    "name": "Twitter SuperUnfollow",
-    "description": "Unfollow profiles autotmatically, based on keyword.",
-    "version": "0.10",
-    "manifest_version": 3,
-    "content_scripts": [
-        {
-            "matches": ["https://*.twitter.com/*", "https://*.x.com/*"],
-            "css": ["style.css"],
-            "include_globs": ["*twitter.com/*/following"],
-            "js": ["main.js"]
-        }
-    ],
-    "background": {
-        "service_worker": "service-worker.js"
-    },
-    "sandbox": {
-        "pages": ["sandbox.html"]
-    },
-    "action": {
-        "default_title": "Twitter SuperUnfollow"
-    },
-    "permissions": [
-        "tabs",
-        "activeTab",
-        "scripting",
-        "storage",
-        "sidePanel",
-        "webNavigation"
-    ],
-    "host_permissions": ["https://*/*"],
-    "web_accessible_resources": [
-        {
-            "resources": [
-                "main.js.map",
-                "popup.js.map",
-                "service-worker.js.map",
-                "temp-tab.js.map",
-                "style.css.map",
-                "sandbox.js.map"
-            ],
-            "matches": ["<all_urls>"]
-        }
-    ],
-    "commands": {
-        "reload-everything": {
-            "suggested_key": {
-                "default": "Ctrl+B",
-                "mac": "Command+B"
-            },
-            "description": "Reload the Twitter SuperUnfollow extension"
-        },
-        "_execute_action": {
-            "suggested_key": {
-                "windows": "Ctrl+B",
-                "mac": "Ctrl+B",
-                "chromeos": "Ctrl+B",
-                "linux": "Ctrl+B"
-            }
-        }
-    }
+	"action": {
+		"default_title": "Twitter SuperUnfollow"
+	},
+	"background": {
+		"service_worker": "service-worker.js"
+	},
+	"commands": {
+		"_execute_action": {
+			"suggested_key": {
+				"chromeos": "Ctrl+B",
+				"linux": "Ctrl+B",
+				"mac": "Ctrl+B",
+				"windows": "Ctrl+B"
+			}
+		},
+		"reload-everything": {
+			"description": "Reload the Twitter SuperUnfollow extension",
+			"suggested_key": {
+				"default": "Ctrl+B",
+				"mac": "Command+B"
+			}
+		}
+	},
+	"content_scripts": [
+		{
+			"css": ["style.css"],
+			"include_globs": ["*twitter.com/*/following", "*x.com/*/following"],
+			"js": ["main.js"],
+			"matches": ["https://*.twitter.com/*", "https://*.x.com/*"]
+		}
+	],
+	"description": "Unfollow profiles autotmatically, based on keyword.",
+	"host_permissions": ["https://*/*"],
+	"manifest_version": 3,
+	"name": "Twitter SuperUnfollow",
+	"permissions": [
+		"tabs",
+		"activeTab",
+		"scripting",
+		"storage",
+		"sidePanel",
+		"webNavigation"
+	],
+	"sandbox": {
+		"pages": ["sandbox.html"]
+	},
+	"version": "0.10",
+	"web_accessible_resources": [
+		{
+			"matches": ["<all_urls>"],
+			"resources": [
+				"main.js.map",
+				"popup.js.map",
+				"service-worker.js.map",
+				"temp-tab.js.map",
+				"style.css.map",
+				"sandbox.js.map"
+			]
+		}
+	]
 }

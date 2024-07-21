@@ -1,9 +1,9 @@
 {
-    "eslint.codeActionsOnSave.mode": "problems",
-    "search.exclude": {
-        "**/node_modules": true,
-        "**/dist": false
-    },
-    "css.validate": true,
-    "eslint.experimental.useFlatConfig": false
+	"eslint.codeActionsOnSave.mode": "problems",
+	"search.exclude": {
+		"**/node_modules": true,
+		"**/dist": false
+	},
+	"css.validate": true,
+	"eslint.experimental.useFlatConfig": false
 }

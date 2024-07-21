@@ -1,50 +1,54 @@
-import {
-    FromBgToCs,
-    FromBgToTab,
-    FromCsToBg,
-    FromTabToBg,
-    TwitterUserData,
+import type {
+	FromBgToCs,
+	FromBgToTab,
+	FromCsToBg,
+	FromTabToBg,
+	TwitterUserData,
 } from '@/shared/types'
-import { coolConsole } from '@gnosticdev/cool-console'
+import cc from 'kleur'
 
 export async function sendMessageToCs<T extends FromBgToCs>(
-    tabId: number,
-    message: T,
+	tabId: number,
+	message: T,
 ) {
-    coolConsole.orange('sending message to content script...').obj(message)
-    const response = await chrome.tabs.sendMessage<
-        T,
-        T extends FromBgToCs ? string : never
-    >(tabId, message)
+	console.log(cc.bgCyan('sending message to content script...'), tabId, message)
+	const tab = await chrome.tabs.get(tabId)
+	console.log('double checking that the tab exists: ', tab)
+	const response = await chrome.tabs.sendMessage<
+		T,
+		T extends FromBgToCs ? string : never
+	>(tabId, message)
 
-    return response
+	return response
 }
 
 export async function sendMessageToTab<T extends FromBgToTab>(
-    tabId: number,
-    message: T,
+	tabId: number,
+	message: T,
 ) {
-    coolConsole.orange('sending message to new tab...').obj(message)
-    const response = await chrome.tabs.sendMessage<
-        T,
-        T extends FromBgToTab ? string : never
-    >(tabId, message)
+	console.log(cc.magenta('sending message to new tab...'), message)
 
-    return response
+	const response = await chrome.tabs.sendMessage<
+		T,
+		T extends FromBgToTab ? string : never
+	>(tabId, message)
+
+	return response
 }
 
 export async function sendMessageToBg<T extends FromCsToBg | FromTabToBg>(
-    message: T,
+	message: T,
 ) {
-    coolConsole.orange('sending message to background script...').obj(message)
-    const response = await chrome.runtime.sendMessage<
-        T,
-        T extends FromCsToBg
-            ? string
-            : T extends FromTabToBg
-            ? TwitterUserData
-            : never
-    >(message)
+	console.log(cc.magenta('sending message to background script...'), message)
 
-    return response
+	const response = await chrome.runtime.sendMessage<
+		T,
+		T extends FromCsToBg
+			? string
+			: T extends FromTabToBg
+				? TwitterUserData
+				: never
+	>(message)
+
+	return response
 }

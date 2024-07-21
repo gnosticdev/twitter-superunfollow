@@ -1,21 +1,21 @@
 /** Types for the new chrome.sidePanel API  */
 // GetPanelOptions
 interface GetPanelOptions {
-    tabId?: number
+	tabId?: number
 }
 // PanelBehavior
 interface PanelBehavior {
-    openPanelOnActionClick?: boolean
+	openPanelOnActionClick?: boolean
 }
 // PanelOptions
 interface PanelOptions {
-    enabled?: boolean
-    path?: string
-    tabId?: number
+	enabled?: boolean
+	path?: string
+	tabId?: number
 }
 // SidePanel
 interface SidePanel {
-    defaultPath?: string
+	defaultPath?: string
 }
 // add these to the chrome namespace
 // Methods
@@ -32,10 +32,10 @@ declare function setOptions(options: PanelOptions): Promise<void>
 // setPanelBehavior
 declare function setPanelBehavior(behavior: PanelBehavior): Promise<void>
 declare namespace chrome {
-    namespace sidePanel {
-        function getOptions(options: GetPanelOptions): Promise<PanelOptions>
-        function getPanelBehavior(): Promise<PanelBehavior>
-        function setOptions(options: PanelOptions): Promise<void>
-        function setPanelBehavior(behavior: PanelBehavior): Promise<void>
-    }
+	namespace sidePanel {
+		function getOptions(options: GetPanelOptions): Promise<PanelOptions>
+		function getPanelBehavior(): Promise<PanelBehavior>
+		function setOptions(options: PanelOptions): Promise<void>
+		function setPanelBehavior(behavior: PanelBehavior): Promise<void>
+	}
 }

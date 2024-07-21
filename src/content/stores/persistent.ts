@@ -2,7 +2,7 @@ import { createMetrics } from '@/content/ui/metrics'
 import { Selectors } from '@/content/utils/ui-elements'
 import { waitForElement } from '@/content/utils/wait-promise'
 import { $$twitterSyncStorage } from '@/shared/storage'
-import { ProfileDetail } from '@/shared/types'
+import type { ProfileDetail } from '@/shared/types'
 import { persistentAtom } from '@nanostores/persistent'
 import { action } from 'nanostores'
 
@@ -11,32 +11,32 @@ import { action } from 'nanostores'
  * The key is the user's handle, and the value is the profile details.
  */
 export const $unfollowingList = persistentAtom(
-    'unfollowing',
-    new Map<string, ProfileDetail>(),
-    {
-        encode: (value) => {
-            return JSON.stringify(Array.from(value.entries()))
-        },
-        decode: (value) => {
-            return new Map(JSON.parse(value))
-        },
-    },
+	'unfollowing',
+	new Map<string, ProfileDetail>(),
+	{
+		encode: (value) => {
+			return JSON.stringify(Array.from(value.entries()))
+		},
+		decode: (value) => {
+			return new Map(JSON.parse(value))
+		},
+	},
 )
 
 $unfollowingList.listen(async (unfollow) => {
-    console.log('unfollowingList changed', unfollow, 'size: ', unfollow.size)
-    const superUnfollowButton = (await waitForElement({
-        selector: Selectors.UF_BUTTON,
-    })) as HTMLButtonElement | null
-    if (!superUnfollowButton) {
-        console.log(
-            'superUnfollowButton not found while listening to $unfollowingList',
-        )
-        return
-    }
-    superUnfollowButton.disabled = unfollow.size === 0
-    const unfollowingSize = unfollow.size
-    updateMetrics({ unfollowingSize })
+	console.log('unfollowingList changed', unfollow, 'size: ', unfollow.size)
+	const superUnfollowButton = (await waitForElement({
+		selector: Selectors.UF_BUTTON,
+	})) as HTMLButtonElement | null
+	if (!superUnfollowButton) {
+		console.log(
+			'superUnfollowButton not found while listening to $unfollowingList',
+		)
+		return
+	}
+	superUnfollowButton.disabled = unfollow.size === 0
+	const unfollowingSize = unfollow.size
+	updateMetrics({ unfollowingSize })
 })
 
 /**
@@ -44,38 +44,38 @@ $unfollowingList.listen(async (unfollow) => {
  * Populated as the user scrolls through down following page, and profiles are added to the DOM. Also populated by using the Collect button.
  */
 export const $following = persistentAtom(
-    'following',
-    new Map<string, ProfileDetail>(),
-    {
-        encode: (value) => {
-            return JSON.stringify(Array.from(value.entries()))
-        },
-        decode: (value) => {
-            return new Map(JSON.parse(value))
-        },
-    },
+	'following',
+	new Map<string, ProfileDetail>(),
+	{
+		encode: (value) => {
+			return JSON.stringify(Array.from(value.entries()))
+		},
+		decode: (value) => {
+			return new Map(JSON.parse(value))
+		},
+	},
 )
 
 function updateMetrics({ unfollowingSize }: { unfollowingSize: number }) {
-    const count = $followingCount.get()
-    const metricsContainer = createMetrics(count, unfollowingSize)
-    // remove the current metrics and replace with the updated metrics
-    const currentMetrics = document.getElementById('su-metrics')
-    currentMetrics?.replaceWith(metricsContainer)
+	const count = $followingCount.get()
+	const metricsContainer = createMetrics(count, unfollowingSize)
+	// remove the current metrics and replace with the updated metrics
+	const currentMetrics = document.getElementById('su-metrics')
+	currentMetrics?.replaceWith(metricsContainer)
 }
 
 /**
  * the total number of accounts that are being followed by the user, according to the Twitter __INITIAL_STATE__ object, recorded at page load.
  */
 export const $followingCount = persistentAtom<number>('followingCount', 0, {
-    encode: (value) => value.toString(),
-    decode: (value) => parseInt(value),
+	encode: (value) => value.toString(),
+	decode: (value) => Number.parseInt(value),
 })
 
 export const $$followingCount = {
-    get: () => {
-        return $$twitterSyncStorage.getValue('friends_count')
-    },
+	get: () => {
+		return $$twitterSyncStorage.getValue('friends_count')
+	},
 }
 
 /**
@@ -85,30 +85,30 @@ export const $$followingCount = {
  * @returns {ProfileDetail}
  */
 export function addUnfollowing(handle: string, profileData: ProfileDetail) {
-    const unfollowingMap = $unfollowingList.get()
-    if (unfollowingMap.has(handle)) {
-        return
-    }
-    // get the index from the length of the map
-    const index = unfollowingMap.size
-    // add the index to the user
-    const profile = { ...profileData, index }
-    $unfollowingList.set(new Map([...unfollowingMap.set(handle, profile)]))
+	const unfollowingMap = $unfollowingList.get()
+	if (unfollowingMap.has(handle)) {
+		return
+	}
+	// get the index from the length of the map
+	const index = unfollowingMap.size
+	// add the index to the user
+	const profile = { ...profileData, index }
+	$unfollowingList.set(new Map([...unfollowingMap.set(handle, profile)]))
 
-    return $unfollowingList.get().get(handle)!
+	return $unfollowingList.get().get(handle)!
 }
 
 export const removeUnfollowing = action(
-    $unfollowingList,
-    'removeUnfollowing',
-    async (store, handle: string) => {
-        console.log('removing unfollowing', handle)
-        const currentUnfollowing = store.get()
-        currentUnfollowing.delete(handle)
-        store.set(new Map([...Array.from(currentUnfollowing)]))
+	$unfollowingList,
+	'removeUnfollowing',
+	async (store, handle: string) => {
+		console.log('removing unfollowing', handle)
+		const currentUnfollowing = store.get()
+		currentUnfollowing.delete(handle)
+		store.set(new Map([...Array.from(currentUnfollowing)]))
 
-        return store.get()
-    },
+		return store.get()
+	},
 )
 
 // export function removeUnfollowing(handle: string) {
@@ -126,20 +126,20 @@ export const removeUnfollowing = action(
  * @returns {ProfileDetail}
  */
 export function addFollowing(
-    handle: string,
-    profileData: Omit<ProfileDetail, 'index'>,
+	handle: string,
+	profileData: Omit<ProfileDetail, 'index'>,
 ) {
-    const followingMap = $following.get()
-    if (followingMap.has(handle)) {
-        return followingMap.get(handle)!
-    }
-    // get the index from the length of the map
-    const index = followingMap.size
-    // add the index to the user
-    const profile = { ...profileData, index }
-    $following.set(new Map([...followingMap.set(handle, profile)]))
+	const followingMap = $following.get()
+	if (followingMap.has(handle)) {
+		return followingMap.get(handle)!
+	}
+	// get the index from the length of the map
+	const index = followingMap.size
+	// add the index to the user
+	const profile = { ...profileData, index }
+	$following.set(new Map([...followingMap.set(handle, profile)]))
 
-    return followingMap.get(handle)!
+	return followingMap.get(handle)!
 }
 
 /**
@@ -148,9 +148,9 @@ export function addFollowing(
  * @returns {Map<string, ProfileDetail>}
  */
 export function removeFollowing(handle: string) {
-    const following = $following.get()
-    following.delete(handle)
-    $following.set(new Map([...Array.from(following)]))
+	const following = $following.get()
+	following.delete(handle)
+	$following.set(new Map([...Array.from(following)]))
 
-    return $following.get()
+	return $following.get()
 }
