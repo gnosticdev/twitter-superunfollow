@@ -31,7 +31,7 @@ export function waitForElement({
 						const innerElement = node.querySelector(selector) as HTMLElement
 						// success if the element itself matches the selector, or if an inner element matches the selector
 						if (node.matches(selector) || innerElement) {
-							console.log(console.log(coolConsole.green(`found ${label}`)))
+							console.log(coolConsole.green(`found ${label}`))
 							observer.disconnect()
 							resolve(node.matches(selector) ? node : innerElement)
 						}

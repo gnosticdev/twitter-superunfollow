@@ -2,7 +2,7 @@ import {
 	$collectFollowingState,
 	handleCollectButton,
 } from '@/content/stores/collect-button'
-import { $followingCount, $unfollowingList } from '@/content/stores/persistent'
+import { $unfollowingList } from '@/content/stores/persistent'
 import {
 	$superUnfollowButtonState,
 	handleUnfollowButton,
@@ -11,6 +11,11 @@ import { handleSearch, handleViewButtons } from '../search'
 import { createMetrics, createNotice } from './metrics'
 
 export async function addDialogToDom() {
+	// if already added, remove it
+	const existingDialog = document.getElementById('su-dialog')
+	if (existingDialog) {
+		existingDialog.remove()
+	}
 	// Create the dialog and the input and submit elements
 	const dialog = document.createElement('dialog')
 	dialog.id = 'su-dialog'
@@ -83,10 +88,7 @@ export async function addDialogToDom() {
 	resultsContainer.classList.add('superUnfollow', 'su-results')
 
 	// Create the show dialog button and attach it to the top right of the screen
-	const metricsContainer = createMetrics(
-		$followingCount.get(),
-		$unfollowingList.get().size,
-	)
+	const metricsContainer = await createMetrics()
 	const notice = await createNotice()
 
 	const modalButtons = createModalButtons()

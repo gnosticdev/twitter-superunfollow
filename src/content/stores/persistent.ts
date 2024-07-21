@@ -1,4 +1,3 @@
-import { createMetrics } from '@/content/ui/metrics'
 import { Selectors } from '@/content/utils/ui-elements'
 import { waitForElement } from '@/content/utils/wait-promise'
 import { $$twitterSyncStorage } from '@/shared/storage'
@@ -35,8 +34,6 @@ $unfollowingList.listen(async (unfollow) => {
 		return
 	}
 	superUnfollowButton.disabled = unfollow.size === 0
-	const unfollowingSize = unfollow.size
-	updateMetrics({ unfollowingSize })
 })
 
 /**
@@ -55,14 +52,6 @@ export const $following = persistentAtom(
 		},
 	},
 )
-
-function updateMetrics({ unfollowingSize }: { unfollowingSize: number }) {
-	const count = $followingCount.get()
-	const metricsContainer = createMetrics(count, unfollowingSize)
-	// remove the current metrics and replace with the updated metrics
-	const currentMetrics = document.getElementById('su-metrics')
-	currentMetrics?.replaceWith(metricsContainer)
-}
 
 /**
  * the total number of accounts that are being followed by the user, according to the Twitter __INITIAL_STATE__ object, recorded at page load.

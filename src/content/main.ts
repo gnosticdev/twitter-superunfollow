@@ -1,5 +1,4 @@
 import { processProfile } from '@/content/profiles'
-import { $following, $followingCount } from '@/content/stores/persistent'
 import { $superUnfollowButtonState } from '@/content/stores/unfollow-button'
 import { addDialogToDom } from '@/content/ui/dialog'
 import { superUnfollow } from '@/content/unfollow'
@@ -21,7 +20,7 @@ async function init() {
 	const script = Array.from(scripts).find((script) =>
 		script.innerHTML.includes('__INITIAL_STATE__'),
 	)
-	console.log('script:', script)
+
 	if (!script) {
 		throw 'script has not loaded yet'
 	}
@@ -31,7 +30,11 @@ async function init() {
 		type: 'userData',
 		data: script.innerHTML,
 	}
-	console.log('sending userData message to background')
+
+	console.log(
+		'$$twitterSessionStorage in content script: friends_count -> ',
+		await $$twitterSyncStorage.getValue('friends_count'),
+	)
 
 	$$twitterSyncStorage.watch('friends_count', ({ key, newValue, oldValue }) => {
 		console.log(
@@ -53,14 +56,14 @@ async function init() {
 	async function listenForBgMessage(msg: FromBgToCs) {
 		try {
 			if (msg.type === 'userData' && msg.data) {
-				// store the followingCount = friends_count, and the entire userData object for later use
-				$followingCount.set(msg.data.friends_count)
+				// // store the followingCount = friends_count, and the entire userData object for later use
+				// $followingCount.set(msg.data.friends_count)
 
-				console.log(
-					`followingCount: ${msg.data.friends_count}, collected: ${
-						$following.get().size
-					}`,
-				)
+				// console.log(
+				// 	`followingCount: ${msg.data.friends_count}, collected: ${
+				// 		$following.get().size
+				// 	}`,
+				// )
 
 				// start observer on /following page after getting message from bg script
 

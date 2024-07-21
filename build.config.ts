@@ -19,6 +19,9 @@ const copyFiles = [
 ].map((file) => path.join(process.cwd(), file))
 
 const buildScripts = async () => {
+	// remove the dist folder
+	await Bun.$`rm -rf ./dist && echo 'removed dist dir'`.nothrow()
+
 	const buildOutput = await Bun.build({
 		entrypoints,
 		outdir: './dist',
@@ -52,7 +55,10 @@ const buildScripts = async () => {
 }
 
 if (import.meta.main) {
-	// run the build script once
+	console.log(coolConsole.green('Building scripts'))
+	await buildScripts()
+} else {
+	console.log(coolConsole.green('rebuilding scripts'))
 	await buildScripts()
 }
 
@@ -61,16 +67,11 @@ const watcher = fs.watch(process.cwd(), { recursive: true })
 watcher.addListener('change', async (_event, filename) => {
 	if (typeof filename !== 'string') return
 	const absolutePath = path.join(process.cwd(), filename)
-	if (
-		entrypoints
-			.map((entry) => path.dirname(entry))
-			.includes(path.dirname(absolutePath)) ||
-		filename === 'build.config.ts' ||
-		copyFiles.includes(absolutePath)
-	) {
-		console.log(coolConsole.blue(`File ${filename} changed`))
-		await buildScripts()
-	}
+	if (absolutePath.includes('dist')) return
+	if (absolutePath.includes('node_modules')) return
+	if (absolutePath.includes('.git')) return
+	if (absolutePath.includes('.vscode')) return
+	await buildScripts()
 })
 
 process.on('SIGINT', () => {

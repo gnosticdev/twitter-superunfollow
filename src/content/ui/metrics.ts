@@ -9,21 +9,38 @@ import {
 } from '@/content/stores/persistent'
 import { $unfollowedProfiles } from '@/content/unfollow'
 import { createLoadingSpinner, getNoticeDiv } from '@/content/utils/ui-elements'
+import { $$twitterSyncStorage } from '@/shared/storage'
+import cc from 'kleur'
 import { $runningState } from '../stores/running'
 
-export function createMetrics(followingCount: number, unfollowingSize: number) {
+export async function createMetrics() {
+	// if already exists, remove it
+	const existingMetrics = document.getElementById('su-metrics')
+	if (existingMetrics) {
+		existingMetrics.remove()
+	}
+
 	// section that tells user that they should collect their following list. Shown when $followingCount > $following.get().size
 	const metrics = document.createElement('div')
 	metrics.classList.add('su-metrics')
 	metrics.id = 'su-metrics'
-	const followingNumber = document.createElement('span')
-	followingNumber.classList.add('su-highlight')
-	followingNumber.textContent = followingCount.toString()
+	const followingNumber = await $$twitterSyncStorage.getValue('friends_count')
+	console.log(cc.bgBlue(`followingNumber -> ${followingNumber}`))
+
+	const followingSpan = document.createElement('span')
+	followingSpan.classList.add('su-highlight')
+	followingSpan.textContent = `${followingNumber}`
+
+	$$twitterSyncStorage.watch('friends_count', ({ newValue }) => {
+		console.log(cc.cyan(`friends_count changed to ${newValue}`))
+		followingSpan.textContent = newValue.toString()
+	})
+
 	const unfollowing = document.createElement('span')
 	unfollowing.classList.add('su-highlight')
-	unfollowing.textContent = unfollowingSize.toString()
+	unfollowing.textContent = $unfollowingList.get().size.toString()
 	metrics.innerHTML = `
-    <div>Following: ${followingNumber.outerHTML}</div>
+    <div>Following: ${followingSpan.outerHTML}</div>
     <div>Unfollowing: ${unfollowing.outerHTML}</div>
     `
 	// only show notice if collectFollowing has been run on the current session
@@ -62,7 +79,7 @@ export async function setCollectNoticeText(
 ) {
 	// biome-ignore lint: confusing but works
 	notice ??= getNoticeDiv()
-	const followingCount = $followingCount.get()
+	const followingCount = await $$twitterSyncStorage.getValue('friends_count')
 	const followingCollected = $following.get().size
 	switch (state) {
 		case 'ready':

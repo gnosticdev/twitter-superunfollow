@@ -7,8 +7,9 @@ import {
 	getInnerProfiles,
 	getSuperUnfollowButton,
 } from '@/content/utils/ui-elements'
+import { $$twitterSyncStorage } from '@/shared/storage'
 import { action, atom, computed } from 'nanostores'
-import { $following, $followingCount } from './persistent'
+import { $following } from './persistent'
 
 export type ButtonState = 'ready' | 'running' | 'paused' | 'resumed' | 'done'
 
@@ -93,10 +94,11 @@ export const $collectingRunning = computed(
  * @returns true if the user has followed any new profiles since the last time
  */
 export async function shouldCollect() {
-	if ($followingCount.get() === 0) {
+	const $followingCount = await $$twitterSyncStorage.getValue('friends_count')
+	if ($followingCount === 0) {
 		return true
 	}
-	if ($following.get().size !== $followingCount.get()) {
+	if ($following.get().size !== $followingCount) {
 		console.log('following count mismatch, user should collect')
 		return true
 	}

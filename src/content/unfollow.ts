@@ -1,5 +1,4 @@
 import {
-	$followingCount,
 	$unfollowingList,
 	removeFollowing,
 	removeUnfollowing,
@@ -13,6 +12,7 @@ import {
 	getInnerProfiles,
 	getProfileUnfollowButton,
 } from '@/content/utils/ui-elements'
+import { $$twitterSyncStorage } from '@/shared/storage'
 import type { ProfileDetail, ProfileInner, ProfilesMap } from '@/shared/types'
 import coolConsole from 'kleur'
 import { atom } from 'nanostores'
@@ -66,6 +66,7 @@ export async function startSuperUnfollow() {
  * @returns {Promise<void>}
  */
 async function scrollUnfollow() {
+	console.log('scrolling to unfollow', `runningState: ${$runningState()}`)
 	while ($runningState() === 'unfollowing') {
 		// superUnfollow handled by MutationObserver in main.ts
 		try {
@@ -135,7 +136,7 @@ async function unfollow(profile: ProfileInner) {
 		}
 		// click the unfollow button on the right side of the profile
 		unfollowButton.click()
-		await randomDelay(1000, 2000)
+		await randomDelay(500, 2000)
 		const confirmUnfollowButton = await waitForElement({
 			selector: Selectors.UF_CONFIRM,
 		})
@@ -151,7 +152,11 @@ async function unfollow(profile: ProfileInner) {
 		// remove profile from unfollowing store
 		removeUnfollowing(handle)
 		removeFollowing(handle)
-		$followingCount.set($followingCount.get() - 1)
+		const prevCount = await $$twitterSyncStorage.getValue('friends_count')
+		$$twitterSyncStorage.setValue(
+			'friends_count',
+			prevCount ? prevCount - 1 : 0,
+		)
 
 		return true
 	} catch (error) {

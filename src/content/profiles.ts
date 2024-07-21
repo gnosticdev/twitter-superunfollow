@@ -46,7 +46,7 @@ export async function getProfileDetails(
 		)
 		?.textContent?.trim()
 	if (!handle) {
-		throw new Error('missing handle for profile')
+		throw new Error('missing handle for profile data')
 	}
 	if (!username) {
 		username = links[1].innerHTML
