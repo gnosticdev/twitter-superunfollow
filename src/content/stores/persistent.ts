@@ -1,6 +1,4 @@
-import { Selectors } from '@/content/utils/ui-elements'
-import { waitForElement } from '@/content/utils/wait-promise'
-import { $$twitterSyncStorage } from '@/shared/storage'
+import { $syncStorage } from '@/shared/storage'
 import type { ProfileDetail } from '@/shared/types'
 import { persistentAtom } from '@nanostores/persistent'
 import { action } from 'nanostores'
@@ -22,25 +20,12 @@ export const $unfollowingList = persistentAtom(
 	},
 )
 
-$unfollowingList.listen(async (unfollow) => {
-	console.log('unfollowingList changed', unfollow, 'size: ', unfollow.size)
-	const superUnfollowButton = (await waitForElement({
-		selector: Selectors.UF_BUTTON,
-	})) as HTMLButtonElement | null
-	if (!superUnfollowButton) {
-		console.log(
-			'superUnfollowButton not found while listening to $unfollowingList',
-		)
-		return
-	}
-	superUnfollowButton.disabled = unfollow.size === 0
-})
-
 /**
  * Map of profiles that are being followed by the user. The key is the user's handle, and the value is the profile details.
  * Populated as the user scrolls through down following page, and profiles are added to the DOM. Also populated by using the Collect button.
  */
-export const $following = persistentAtom(
+
+export const $collectedFollowing = persistentAtom(
 	'following',
 	new Map<string, ProfileDetail>(),
 	{
@@ -56,27 +41,21 @@ export const $following = persistentAtom(
 /**
  * the total number of accounts that are being followed by the user, according to the Twitter __INITIAL_STATE__ object, recorded at page load.
  */
-export const $followingCount = persistentAtom<number>('followingCount', 0, {
-	encode: (value) => value.toString(),
-	decode: (value) => Number.parseInt(value),
-})
-
-export const $$followingCount = {
-	get: () => {
-		return $$twitterSyncStorage.getValue('friends_count')
-	},
-}
+export const $followingCount = async () =>
+	await $syncStorage.getValue('friends_count')
 
 /**
  * Adds a profile to the $unfollowing store
  * @param handle
  * @param profileData
- * @returns {ProfileDetail}
  */
-export function addUnfollowing(handle: string, profileData: ProfileDetail) {
+export function addUnfollowing(
+	handle: string,
+	profileData: ProfileDetail,
+): ProfileDetail {
 	const unfollowingMap = $unfollowingList.get()
 	if (unfollowingMap.has(handle)) {
-		return
+		return unfollowingMap.get(handle)!
 	}
 	// get the index from the length of the map
 	const index = unfollowingMap.size
@@ -100,25 +79,16 @@ export const removeUnfollowing = action(
 	},
 )
 
-// export function removeUnfollowing(handle: string) {
-//     const unfollowing = $unfollowing.get()
-//     unfollowing.delete(handle)
-//     $unfollowing.set(new Map([...Array.from(unfollowing)]))
-
-//     return $unfollowing.get()
-// }
-
 /**
- * Adds a profile to the $following store
+ * Adds a profile to the `$collectedFollowing` store
  * @param handle
  * @param profileData
- * @returns {ProfileDetail}
  */
-export function addFollowing(
+export function addToCollectedFollowing(
 	handle: string,
 	profileData: Omit<ProfileDetail, 'index'>,
-) {
-	const followingMap = $following.get()
+): ProfileDetail {
+	const followingMap = $collectedFollowing.get()
 	if (followingMap.has(handle)) {
 		return followingMap.get(handle)!
 	}
@@ -126,7 +96,7 @@ export function addFollowing(
 	const index = followingMap.size
 	// add the index to the user
 	const profile = { ...profileData, index }
-	$following.set(new Map([...followingMap.set(handle, profile)]))
+	$collectedFollowing.set(new Map([...followingMap.set(handle, profile)]))
 
 	return followingMap.get(handle)!
 }
@@ -134,12 +104,11 @@ export function addFollowing(
 /**
  * Removes a profile from the $following store
  * @param handle
- * @returns {Map<string, ProfileDetail>}
  */
-export function removeFollowing(handle: string) {
-	const following = $following.get()
+export function removeFollowing(handle: string): Map<string, ProfileDetail> {
+	const following = $collectedFollowing.get()
 	following.delete(handle)
-	$following.set(new Map([...Array.from(following)]))
+	$collectedFollowing.set(new Map([...Array.from(following)]))
 
-	return $following.get()
+	return $collectedFollowing.get()
 }

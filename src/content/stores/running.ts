@@ -1,15 +1,15 @@
-import { $collectingRunning } from '@/content/stores/collect-button'
-import { $unfollowingRunning } from '@/content/stores/unfollow-button'
+import { isCollecting } from '@/content/stores/collect-button'
+import { isUnfollowing } from '@/content/stores/unfollow-button'
 
 import { atom } from 'nanostores'
 
 export const $lastOperation = atom<'unfollowing' | 'collecting' | null>(null)
 
-export const $runningState = () => {
-	if ($collectingRunning.get()) {
+export const runningState = () => {
+	if (isCollecting()) {
 		return 'collecting'
 	}
-	if ($unfollowingRunning.get()) {
+	if (isUnfollowing()) {
 		return 'unfollowing'
 	}
 	return null

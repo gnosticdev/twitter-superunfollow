@@ -1,19 +1,18 @@
 import type { ButtonState } from '@/content/stores/collect-button'
 import { setUnfollowNoticeText } from '@/content/ui/metrics'
-import {
-	$unfollowedProfiles,
-	showUnfollowed,
-	startSuperUnfollow,
-} from '@/content/unfollow'
+import { showUnfollowed, startSuperUnfollow } from '@/content/unfollow'
 import { disableScroll, enableScroll } from '@/content/utils/scroll'
 import {
 	getCollectButton,
 	getSuperUnfollowButton,
 } from '@/content/utils/ui-elements'
-import { action, atom, computed, onSet } from 'nanostores'
+import { logger, buildLogger } from '@nanostores/logger'
+import { action, atom, onSet } from 'nanostores'
 
 // Create a new store for the button state
 export const $superUnfollowButtonState = atom<ButtonState>('ready')
+
+const _log = buildLogger($superUnfollowButtonState, 'superunfollow-button', {})
 
 const setRunning = action($superUnfollowButtonState, 'setRunning', (store) => {
 	store.set('running')
@@ -42,7 +41,9 @@ export const setUnfollowDone = action(
 // start superunfollow process
 export async function handleUnfollowButton() {
 	console.log('superunfollow button clicked')
-	switch ($superUnfollowButtonState.get()) {
+	const state = $superUnfollowButtonState.get()
+	console.log('superunfollow button state:', state)
+	switch (state) {
 		case 'done':
 		case 'ready':
 			setRunning()
@@ -68,7 +69,7 @@ onSet($superUnfollowButtonState, async ({ newValue, changed }) => {
 	)
 	const unfollowButton = getSuperUnfollowButton()
 	const collectButton = getCollectButton()
-	setUnfollowNoticeText(newValue)
+	await setUnfollowNoticeText(newValue)
 	switch (newValue) {
 		case 'running':
 		case 'resumed':
@@ -76,7 +77,7 @@ onSet($superUnfollowButtonState, async ({ newValue, changed }) => {
 			unfollowButton.classList.add('running')
 			collectButton.disabled = true
 			disableScroll()
-			showUnfollowed($unfollowedProfiles.get())
+			showUnfollowed()
 			await startSuperUnfollow()
 			break
 		case 'paused':
@@ -96,7 +97,9 @@ onSet($superUnfollowButtonState, async ({ newValue, changed }) => {
 	}
 })
 
-export const $unfollowingRunning = computed(
-	$superUnfollowButtonState,
-	(state) => state === 'running' || state === 'resumed',
-)
+export const isUnfollowing = () => {
+	const state = $superUnfollowButtonState.get()
+	return state === 'running' || state === 'resumed'
+}
+
+const stopLogging = logger({ $superUnfollowButtonState })

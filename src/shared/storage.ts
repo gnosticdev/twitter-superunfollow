@@ -5,7 +5,9 @@ class SyncStorage<T extends { [K in keyof T]: T[K] } = TwitterUserData> {
 	namespace = 'SuperUnfollow_'
 	private storage: Storage
 	constructor() {
-		this.storage = new Storage({ copiedKeyList: ['screen_name'] })
+		this.storage = new Storage({
+			copiedKeyList: ['screen_name', 'friends_count'],
+		})
 		this.storage.setNamespace(this.namespace)
 	}
 	async getValue<K extends keyof T & string>(key: K): Promise<T[K]> {
@@ -83,8 +85,8 @@ class SessionStorage<K extends keyof SessionStorageKV> {
 	}
 }
 
-export const $$twitterSyncStorage = new SyncStorage<TwitterUserData>()
-export const $$twitterSessionStorage = new SessionStorage()
+export const $syncStorage = new SyncStorage<TwitterUserData>()
+export const $sessionStorage = new SessionStorage()
 
 export function objectEntries<T extends { [key in keyof T]: T[key] }>(obj: T) {
 	return Object.entries(obj) as Array<[keyof T, T[keyof T]]>

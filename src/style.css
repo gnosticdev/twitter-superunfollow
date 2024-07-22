@@ -7,6 +7,7 @@
 	--su-ice: rgb(97 214 255);
 	--su-ice-hover: rgb(52, 175, 220);
 	--su-ice-bg: rgb(0 94 159);
+	--su-ice-border: hsl(205, 100%, 51%);
 	--su-ice-bg-hover: rgb(0 75 126);
 	--su-indigo-lightest: rgb(188, 183, 241);
 	--su-bright-blue: rgb(4 158 252);
@@ -23,7 +24,7 @@
 	--su-dark-green-bg-hover: rgb(31 73 90);
 	--su-dark-green-foreground: rgb(0 228 227);
 	--su-dark-green-foreground-hover: rgb(0 208 207);
-	--su-gray-blue: lightsteelblue;
+	--su-muted-gray: lightsteelblue;
 	--su-gray-blue-opaque: rgb(176 196 222 / 38%);
 	--su-error: rgb(255 87 182);
 	--su-red: rgb(208, 65, 96);
@@ -33,6 +34,8 @@
 	--su-font-sans: 'TwitterChirp', sans-serif;
 	--su-font-alt-serif: Lora, serif;
 	--su-font-size: 16px;
+	--radius-lg: 0.75rem;
+	--radius-md: 0.5rem;
 }
 
 .superUnfollow,
@@ -62,7 +65,7 @@
 	&.su-button {
 		background-color: var(--su-indigo);
 		color: var(--su-green);
-		border-radius: 0.5rem;
+		border-radius: var(--radius-md);
 		padding: 0.5rem 1rem;
 		border: none;
 		font-size: 0.85rem;
@@ -147,15 +150,13 @@
 	&.su-dialog {
 		width: 24rem;
 		background-color: var(--su-dark-bg);
-		border-radius: 0.5rem;
-		padding-inline: 1.5rem;
+		border-radius: var(--radius-lg);
+		border: none;
 		opacity: 0.9;
 		inset-block-start: 25%;
 		inset-block-end: unset;
-		padding-block-start: 2rem;
-		padding-block-end: 1rem;
+		padding: 0;
 		max-height: 70vh;
-		overflow-y: scroll;
 		flex-direction: column;
 		justify-content: center;
 		align-items: center;
@@ -169,11 +170,12 @@
 			display: flex;
 			position: relative;
 			flex-direction: column;
-			padding-left: 0.5rem;
+			gap: 1rem;
+			padding: 1rem;
 
 			& .su-heading {
 				color: var(--su-white);
-				font-size: 1.2rem;
+				font-size: 1.1rem;
 				font-weight: 500;
 				margin-block: 0;
 			}
@@ -181,9 +183,8 @@
 			& .su-heading-input-container {
 				display: flex;
 				flex-direction: column;
-				gap: 0em;
-				align-items: center;
-				justify-content: center;
+				align-items: start;
+				justify-content: start;
 
 				& .su-sub-heading {
 					color: var(--su-powder-blue);
@@ -206,7 +207,7 @@
 						flex-grow: 1;
 						padding: 0.5rem;
 						color: white;
-						border-radius: 0.5rem;
+						border-radius: var(--radius-md);
 
 						&::placeholder {
 							color: var(--su-gray-blue-opaque);
@@ -219,7 +220,7 @@
 
 					& .su-search-button {
 						padding: 0.5rem;
-						border-radius: 0.5rem;
+						border-radius: var(--radius-md);
 						color: var(--su-ice);
 						flex-grow: 1;
 						flex-basis: 0;
@@ -228,6 +229,7 @@
 						font-weight: 500;
 						cursor: pointer;
 						margin-left: 0.5rem;
+						text-align: center;
 
 						&:hover {
 							background-color: var(--su-ice-bg-hover);
@@ -250,7 +252,7 @@
 				& label:has(input:checked) {
 					background-color: var(--su-ice-bg);
 					color: var(--su-ice);
-					border-color: var(--su-ice-bg);
+					border-color: var(--su-ice-border);
 				}
 
 				& label.su-view-button {
@@ -261,7 +263,7 @@
 					color: var(--su-ice);
 					padding: 0.25rem 0.5rem;
 					text-align: center;
-					border: 1px solid var(--su-ice-bg);
+					border: 1px solid var(--su-ice-border);
 					cursor: pointer;
 
 					&:first-child {
@@ -275,21 +277,19 @@
 
 					&:hover {
 						color: var(--su-ice-hover);
-						border-color: var(--su-ice-bg-hover);
 					}
 				}
 			}
 
 			& .su-modal-buttons-container {
-				border-radius: 0.5rem;
-				margin-top: 1rem;
-				display: flex;
-				justify-content: space-between;
-				gap: 0.25rem;
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 0.5rem;
 				align-items: center;
 
 				& > button {
 					display: flex;
+					flex: 1 1 0;
 					justify-content: center;
 					align-items: center;
 					gap: 0.25rem;
@@ -307,7 +307,6 @@
 			& .su-metrics {
 				color: var(--su-white);
 				justify-content: center;
-				margin-block-start: 1rem;
 				margin-inline: auto;
 				font-size: 0.9rem;
 				display: flex;
@@ -325,12 +324,11 @@
 				color: var(--su-powder-blue);
 				font-size: 0.9rem;
 				display: flex;
-				align-items: center;
-				justify-content: center;
-				align-content: center;
+				align-items: start;
+				justify-content: start;
 				flex-wrap: wrap;
 				line-height: 1.25rem;
-				margin-block: 1rem;
+				margin-block: 0;
 
 				&.complete {
 					color: var(--su-green);
@@ -339,8 +337,8 @@
 
 			& .su-close-button {
 				position: absolute;
-				top: -1rem;
-				right: -1rem;
+				top: 0.5rem;
+				right: 0.5rem;
 				background: none;
 				border: none;
 				color: var(--su-powder-blue);
@@ -374,6 +372,12 @@
 						gap: 0.5rem;
 						font-size: 0.9rem;
 
+						& .unfollowed {
+							pointer-events: none;
+							text-decoration: line-through;
+							color: var(--su-muted-gray);
+						}
+
 						& .su-result-label {
 							display: flex;
 							align-items: baseline;
@@ -381,7 +385,7 @@
 							flex-wrap: wrap;
 
 							& .su-handle {
-								color: var(--su-gray-blue);
+								color: var(--su-muted-gray);
 								font-weight: 400;
 							}
 						}
@@ -393,12 +397,12 @@
 							flex-wrap: wrap;
 
 							& .success {
-								color: var(--su-gray-blue);
+								color: var(--su-muted-gray);
 								text-decoration: line-through;
 							}
 
 							& .su-handle {
-								color: var(--su-gray-blue);
+								color: var(--su-muted-gray);
 								font-weight: 400;
 							}
 						}
@@ -426,7 +430,6 @@
 					& p {
 						font-size: 0.75rem;
 						font-weight: 300;
-						text-transform: uppercase;
 						color: var(--su-powder-blue);
 						margin-block: 0;
 
@@ -477,7 +480,7 @@ dialog.su-dialog {
 
 	&::-webkit-scrollbar-thumb {
 		background-color: var(--su-ice-bg);
-		border-radius: 0.5rem;
+		border-radius: var(--radius-lg);
 	}
 }
 
@@ -495,5 +498,5 @@ dialog.su-dialog {
 
 ::-webkit-scrollbar-thumb {
 	background-color: var(--su-ice-bg);
-	border-radius: 0.5rem;
+	border-radius: var(--radius-md);
 }

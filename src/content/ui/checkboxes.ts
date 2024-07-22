@@ -1,5 +1,5 @@
 import {
-	$following,
+	$collectedFollowing,
 	$unfollowingList,
 	addUnfollowing,
 	removeUnfollowing,
@@ -7,10 +7,16 @@ import {
 import { Selectors } from '@/content/utils/ui-elements'
 import type { ProfileDetail, ProfileInner } from '@/shared/types'
 
+export type ProcessedProfile = ProfileInner & {
+	__processed: boolean
+}
+
 /**
- * Adds a checkbox to a profile on the /following page. When checked, the profile will be added to the $unfollowing store
+ * Adds a checkbox to a profile on the `/following` page, and sets the `data-unfollow` and `data-handle` properties.
+ *
+ * When checked, the profile will be added to the $unfollowing store
  */
-export async function addCheckbox(
+export async function addCustomProperties(
 	profileInner: ProfileInner,
 	profileDetails: ProfileDetail,
 ) {
@@ -36,9 +42,10 @@ export async function addCheckbox(
 
 	profileInner.setAttribute('data-unfollow', checkbox.checked.toString())
 	profileInner.setAttribute('data-handle', handle)
+
 	checkbox.value = handle
 
-	return profileDetails
+	return profileInner as ProcessedProfile
 }
 
 // handles selecting a single checkbox either in the search dialog or on the following page
@@ -53,7 +60,7 @@ export const handleChange = (event: Event) => {
 		throw 'no handle found for profile'
 	}
 
-	const profileDetails = $following.get().get(handle)
+	const profileDetails = $collectedFollowing.get().get(handle)
 	if (!profileDetails) {
 		throw `no profile details found for ${handle}`
 	}

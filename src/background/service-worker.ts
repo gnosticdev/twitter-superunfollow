@@ -1,5 +1,5 @@
 import { sendMessageToCs, sendMessageToTab } from '@/shared/messaging'
-import { $$twitterSessionStorage, $$twitterSyncStorage } from '@/shared/storage'
+import { $sessionStorage, $syncStorage } from '@/shared/storage'
 import type { ExtMessage, FromBgToCs } from '@/shared/types'
 import cc from 'kleur'
 
@@ -35,7 +35,7 @@ async function listenForContentMsg(
 		)
 		console.trace('background received userData from content script')
 		const newTab = await createTempTab()
-		await $$twitterSessionStorage.setValue('contentTabId', senderTab.id)
+		await $sessionStorage.setValue('contentTabId', senderTab.id)
 		await sendMessageToTab(newTab.id!, {
 			from: 'background',
 			to: 'newTab',
@@ -58,7 +58,7 @@ async function listenForUserData(msg: ExtMessage) {
 			msg,
 		)
 
-		await $$twitterSyncStorage.setValues(msg.data)
+		await $syncStorage.setValues(msg.data)
 		const bgToContentMsg: FromBgToCs = {
 			from: 'background',
 			to: 'content',
@@ -66,14 +66,14 @@ async function listenForUserData(msg: ExtMessage) {
 			data: msg.data,
 		}
 		// send userData to content script
-		const contentTabId = await $$twitterSessionStorage.getValue('contentTabId')
+		const contentTabId = await $sessionStorage.getValue('contentTabId')
 		await sendMessageToCs(contentTabId, bgToContentMsg)
 
 		// Remove listener after first message
 		chrome.runtime.onMessage.removeListener(listenForUserData)
 
 		// delete the new tab
-		const newTabId = await $$twitterSessionStorage.getValue('newTabId')
+		const newTabId = await $sessionStorage.getValue('newTabId')
 		await chrome.tabs.remove(newTabId)
 	}
 }
@@ -90,11 +90,11 @@ async function handleDialogButton(
 		await waitForTabToLoad(tabId)
 	}
 	const tabUrl = new URL(tab.url!)
-	let username = await $$twitterSyncStorage.getValue('screen_name')
+	let username = await $syncStorage.getValue('screen_name')
 	console.log(cc.bgMagenta(`username: ${username}`))
 	if (!username) {
 		console.log('no username found in storage, getting from sync storage')
-		username = await $$twitterSyncStorage.subscribe('screen_name')
+		username = await $syncStorage.subscribe('screen_name')
 		console.log('got username from sync storage', username)
 	}
 	if (tabUrl.pathname.includes(`${username}/following`)) {
@@ -122,7 +122,7 @@ async function handleDialogButton(
 // Go to Following Page when extension icon is clicked (no popup)
 chrome.action.onClicked.addListener(reloadEverything)
 async function reloadEverything(_tab?: chrome.tabs.Tab) {
-	const username = await $$twitterSyncStorage.getValue('screen_name')
+	const username = await $syncStorage.getValue('screen_name')
 
 	const url = username
 		? `https://x.com/${username}/following`
@@ -180,6 +180,6 @@ async function createTempTab() {
 		throw 'no new tab id found'
 	}
 	const tab = await waitForTabToLoad(newTabId)
-	await $$twitterSessionStorage.setValue('newTabId', tab.id!)
+	await $sessionStorage.setValue('newTabId', tab.id!)
 	return tab
 }

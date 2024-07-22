@@ -1,7 +1,7 @@
 ///<reference lib="dom" />
 ///<reference lib="dom.iterable" />
 import { sendMessageToBg } from '@/shared/messaging'
-import { $$twitterSessionStorage } from '@/shared/storage'
+import { $sessionStorage } from '@/shared/storage'
 import type { FromBgToTab, FromTabToBg, TwitterUserData } from '@/shared/types'
 
 const POPUP_RESULT_ID = 'popup-result'
@@ -63,7 +63,7 @@ window.addEventListener(
 
 // go to the following page when the popup button is clicked
 document.getElementById('popup-button')!.addEventListener('click', async () => {
-	const twitterTab = await $$twitterSessionStorage.getValue('contentTabId')
+	const twitterTab = await $sessionStorage.getValue('contentTabId')
 	if (twitterTab) {
 		chrome.tabs.create({ url: 'https://x.com/following' })
 	} else {

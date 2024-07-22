@@ -1,23 +1,26 @@
-import { addFollowing } from '@/content/stores/persistent'
+import { addToCollectedFollowing } from '@/content/stores/persistent'
 import { Selectors } from '@/content/utils/ui-elements'
 import type {
 	ProfileContainer,
 	ProfileDetail,
 	ProfileInner,
 } from '@/shared/types'
-import { addCheckbox } from './ui/checkboxes'
+import { addCustomProperties, type ProcessedProfile } from './ui/checkboxes'
 import { getProfileTranslateY, randomDelay } from './utils/ui-elements'
 
 export async function processProfile(profile: ProfileInner) {
 	try {
 		if (profile.hasAttribute('data-unfollow')) {
-			return profile
+			return profile as ProcessedProfile
 		}
 		const profileDetails = await getProfileDetails(profile)
-		const fullProfileData = addFollowing(profileDetails.handle, profileDetails)
-		await addCheckbox(profile, fullProfileData)
+		const fullProfileData = addToCollectedFollowing(
+			profileDetails.handle,
+			profileDetails,
+		)
+		const processedProfile = await addCustomProperties(profile, fullProfileData)
 
-		return profile
+		return processedProfile
 	} catch (error) {
 		console.error(error)
 	}
@@ -64,9 +67,8 @@ export async function getProfileDetails(
 
 // TODO: convert to waitForElement function
 /**
- * @param {HTMLElement} profile - the profile div from the following page
- * @param {number} timeout - the number of milliseconds to wait for the profile data to load
- * @returns {Promise<HTMLElement>} - the profile div from the following page
+ * @param {HTMLElement} profile - the profile div from the `/following` page
+ * @returns {Promise<HTMLElement>} the profile div from the `/following` page
  */
 async function waitForProfileData(
 	profile: ProfileInner,

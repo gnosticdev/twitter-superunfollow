@@ -57,9 +57,6 @@ const buildScripts = async () => {
 if (import.meta.main) {
 	console.log(coolConsole.green('Building scripts'))
 	await buildScripts()
-} else {
-	console.log(coolConsole.green('rebuilding scripts'))
-	await buildScripts()
 }
 
 const watcher = fs.watch(process.cwd(), { recursive: true })

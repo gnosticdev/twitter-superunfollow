@@ -1,4 +1,7 @@
-import { $following, $unfollowingList } from '@/content/stores/persistent'
+import {
+	$collectedFollowing,
+	$unfollowingList,
+} from '@/content/stores/persistent'
 import { Selectors } from '@/content/utils/ui-elements'
 import type { ProfileDetail, ProfilesMap } from '@/shared/types'
 import { atom } from 'nanostores'
@@ -64,7 +67,7 @@ export async function handleSearch(e: Event) {
 /** @param {string} searchTerm */
 export function searchFollowingList(searchTerm: string) {
 	const results = new Map<string, ProfileDetail>()
-	$following.get().forEach((entry) => {
+	$collectedFollowing.get().forEach((entry) => {
 		const { username, handle, description } = entry
 		const wordRegex = new RegExp(`\\b${searchTerm}\\b`, 'i')
 		const allRegex = new RegExp(searchTerm, 'i')
@@ -83,9 +86,8 @@ export function searchFollowingList(searchTerm: string) {
 
 /**
  * Toggles between the search results and the unfollowing list
- * @returns {void}
  */
-export function handleViewButtons(e: Event) {
+export function handleViewButtons(e: Event): void {
 	const searchResultsBtn = document.getElementById(
 		'su-view-search-results',
 	) as HTMLInputElement
@@ -197,10 +199,10 @@ function handleSelectAll() {
 		Selectors.DIALOG_CHECKBOXES,
 	) as NodeListOf<HTMLInputElement>
 
-	checkboxes.forEach((checkbox) => {
+	for (const checkbox of checkboxes) {
 		checkbox.checked = selectAll.checked
 		checkbox.dispatchEvent(new Event('change'))
-	})
+	}
 }
 
 export function getResultsDiv() {

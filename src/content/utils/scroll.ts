@@ -1,23 +1,25 @@
 import { Selectors, getProfileTranslateY } from '@/content/utils/ui-elements'
 import type { ProfileContainer, ProfileDetail } from '@/shared/types'
+import cc from 'kleur'
 import { getLastChildHeight, randomDelay } from './ui-elements'
 
 /**
- * scrolls to the top of the page and waits for the scroll to complete
+ * scrolls to a position on the page waits for the scroll to complete. If left blank scrolls to top of page.
  * @param {number} top - the top distance to scroll to
- * @returns {Promise<boolean>} true if the top has been reached
+ * @default 0
  */
-export async function waitForScrollTo(top: number) {
+export async function waitForScrollTo(top = 0): Promise<boolean> {
 	return new Promise<boolean>((resolve) => {
 		window.scrollTo({
 			top,
 			behavior: 'smooth',
 		})
-		const MAX_WAIT = 5_000
+		const MAX_WAIT = 5000
 		const INTERVAL = 100
+		const THRESHOLD = 100 // Define a threshold
 		let waited = 0
 		const interval = setInterval(() => {
-			if (window.scrollY === top) {
+			if (Math.abs(window.scrollY - top) <= THRESHOLD) {
 				clearInterval(interval)
 				resolve(true)
 			} else if (waited >= MAX_WAIT) {
@@ -30,9 +32,9 @@ export async function waitForScrollTo(top: number) {
 }
 /**
  * Brings the last child to the top of the page, triggering the loading of the next section of profiles
- * @returns {boolean} - returns true if the end of the following section has been reached, false if not
+ * @returns true if the end of the following section has been reached, false if not
  */
-export async function scrollToLastChild() {
+export async function scrollToLastChild(): Promise<boolean> {
 	// use the translate property within the profile container to get height of last profile
 	const lastChildHeight = getLastChildHeight()
 	const scrollHeightBefore = document.scrollingElement?.scrollTop
@@ -41,6 +43,7 @@ export async function scrollToLastChild() {
 		top: lastChildHeight,
 		behavior: 'smooth',
 	})
+	console.log('scrolled to last child', lastChildHeight)
 	// wait for data to load and scroll to complete
 	await randomDelay(1000, 2000)
 	const newScrollHeight = document.scrollingElement?.scrollTop
@@ -66,7 +69,15 @@ export async function scrollToProfile(profileDetails: ProfileDetail) {
 	const firstChildHeight = getProfileTranslateY(
 		document.querySelector(Selectors.PROFILE_CONTAINER) as ProfileContainer,
 	)
+
 	const profileHeight = profileDetails.scrollHeight
+
+	console.log(
+		cc.cyan(
+			`scrolling to profile: ${profileDetails.handle} -> ${profileHeight}`,
+		),
+	)
+
 	// if the profile is above the first child, scroll to the top of the page
 	if (profileHeight < firstChildHeight) {
 		await waitForScrollTo(0)

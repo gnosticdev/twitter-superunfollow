@@ -7,9 +7,9 @@ import {
 	getInnerProfiles,
 	getSuperUnfollowButton,
 } from '@/content/utils/ui-elements'
-import { $$twitterSyncStorage } from '@/shared/storage'
-import { action, atom, computed } from 'nanostores'
-import { $following } from './persistent'
+import { $syncStorage } from '@/shared/storage'
+import { action, atom } from 'nanostores'
+import { $collectedFollowing } from './persistent'
 
 export type ButtonState = 'ready' | 'running' | 'paused' | 'resumed' | 'done'
 
@@ -85,20 +85,20 @@ $collectFollowingState.listen(async (state) => {
 	}
 })
 
-export const $collectingRunning = computed(
-	$collectFollowingState,
-	(state) => state === 'running' || state === 'resumed',
-)
+export const isCollecting = () => {
+	const state = $collectFollowingState.get()
+	return state === 'running' || state === 'resumed'
+}
 /**
  * Only run at top of the page where new profiles are loaded
  * @returns true if the user has followed any new profiles since the last time
  */
 export async function shouldCollect() {
-	const $followingCount = await $$twitterSyncStorage.getValue('friends_count')
+	const $followingCount = await $syncStorage.getValue('friends_count')
 	if ($followingCount === 0) {
 		return true
 	}
-	if ($following.get().size !== $followingCount) {
+	if ($collectedFollowing.get().size !== $followingCount) {
 		console.log('following count mismatch, user should collect')
 		return true
 	}
@@ -112,7 +112,7 @@ async function followingChanged() {
 	const newProfiles = getInnerProfiles()
 	for await (const profile of Array.from(newProfiles)) {
 		const profileDetails = await getProfileDetails(profile)
-		if (!$following.get().has(profileDetails.handle)) {
+		if (!$collectedFollowing.get().has(profileDetails.handle)) {
 			console.log('new profile found:', profileDetails.handle)
 			return true
 		}

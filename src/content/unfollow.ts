@@ -12,12 +12,12 @@ import {
 	getInnerProfiles,
 	getProfileUnfollowButton,
 } from '@/content/utils/ui-elements'
-import { $$twitterSyncStorage } from '@/shared/storage'
+import { $syncStorage } from '@/shared/storage'
 import type { ProfileDetail, ProfileInner, ProfilesMap } from '@/shared/types'
-import coolConsole from 'kleur'
+import { default as cc, default as coolConsole } from 'kleur'
 import { atom } from 'nanostores'
 import { $viewResults, createResultsContainer, getResultsDiv } from './search'
-import { $runningState } from './stores/running'
+import { runningState } from './stores/running'
 import { scrollToLastChild, scrollToProfile } from './utils/scroll'
 import { randomDelay } from './utils/ui-elements'
 import { waitForElement } from './utils/wait-promise'
@@ -41,17 +41,20 @@ function addUnfollowedProfile(handle: string, profile: ProfileDetail) {
  * Then scrolls down the page and unfollows the rest
  */
 export async function startSuperUnfollow() {
-	console.log('starting super unfollow')
+	console.log(cc.bgYellow('starting super unfollow'))
 	$viewResults.set('unfollowing')
 	const firstProfileToUnfollow = $unfollowingList.get().values().next()
 		.value as ProfileDetail
-	console.log('first profile to unfollow: ', firstProfileToUnfollow)
-	if (firstProfileToUnfollow) {
+	console.log(
+		cc.bgYellow(cc.blue('first profile to unfollow: ')),
+		firstProfileToUnfollow,
+	)
+	if (firstProfileToUnfollow?.handle) {
 		await scrollToProfile(firstProfileToUnfollow)
 		// get all profiles already loaded on the page
 		const profiles = getInnerProfiles()
-		for await (const profile of profiles) {
-			if ($runningState() === 'unfollowing') {
+		for (const profile of profiles) {
+			if (runningState() === 'unfollowing') {
 				await superUnfollow(profile)
 				await randomDelay(1000, 2000)
 			}
@@ -66,8 +69,8 @@ export async function startSuperUnfollow() {
  * @returns {Promise<void>}
  */
 async function scrollUnfollow() {
-	console.log('scrolling to unfollow', `runningState: ${$runningState()}`)
-	while ($runningState() === 'unfollowing') {
+	console.log('scrolling to unfollow', `runningState: ${runningState()}`)
+	if (runningState() === 'unfollowing') {
 		// superUnfollow handled by MutationObserver in main.ts
 		try {
 			await scrollToLastChild()
@@ -96,7 +99,7 @@ async function scrollUnfollow() {
 export async function superUnfollow(profile: ProfileInner): Promise<void> {
 	try {
 		const { handle } = profile.dataset
-		if ($runningState() && handle && $unfollowingList.get().has(handle)) {
+		if (runningState() && handle && $unfollowingList.get().has(handle)) {
 			const unfollowed = await unfollow(profile)
 			await randomDelay(1000, 2000)
 			if (!unfollowed) {
@@ -122,9 +125,8 @@ export async function superUnfollow(profile: ProfileInner): Promise<void> {
 /**
  * Unfollows a profile as selected by the user.
  * @param {HTMLElement} profile - profile to unfollow
- * @returns {Promise<void>}
  */
-async function unfollow(profile: ProfileInner) {
+async function unfollow(profile: ProfileInner): Promise<boolean> {
 	try {
 		const { handle } = profile.dataset
 		// click the unfollow button
@@ -152,11 +154,8 @@ async function unfollow(profile: ProfileInner) {
 		// remove profile from unfollowing store
 		removeUnfollowing(handle)
 		removeFollowing(handle)
-		const prevCount = await $$twitterSyncStorage.getValue('friends_count')
-		$$twitterSyncStorage.setValue(
-			'friends_count',
-			prevCount ? prevCount - 1 : 0,
-		)
+		const prevCount = await $syncStorage.getValue('friends_count')
+		$syncStorage.setValue('friends_count', prevCount ? prevCount - 1 : 0)
 
 		return true
 	} catch (error) {
@@ -168,7 +167,8 @@ async function unfollow(profile: ProfileInner) {
 /* display the unfollowed handles in the results section of the dialog while superUnfollow is running
  * @param {ProfilesMap} unfollowed - the profiles that have been unfollowed
  * */
-export const showUnfollowed = (unfollowed: ProfilesMap) => {
+export const showUnfollowed = () => {
+	const unfollowed = $unfollowingList.get()
 	console.log('displaying unfollowed', unfollowed)
 	$viewResults.set('unfollowed-done')
 	const resultsDiv = getResultsDiv()

@@ -1,10 +1,11 @@
 import { processProfile } from '@/content/profiles'
+import { $collectedFollowing } from '@/content/stores/persistent'
 import { $superUnfollowButtonState } from '@/content/stores/unfollow-button'
 import { addDialogToDom } from '@/content/ui/dialog'
 import { superUnfollow } from '@/content/unfollow'
 import { Selectors, getInnerProfiles } from '@/content/utils/ui-elements'
 import { sendMessageToBg } from '@/shared/messaging'
-import { $$twitterSyncStorage } from '@/shared/storage'
+import { $syncStorage } from '@/shared/storage'
 import type { FromBgToCs, FromCsToBg, ProfileInner } from '@/shared/types'
 
 // 1) send message to background.ts -> receive the response and start init()
@@ -33,15 +34,15 @@ async function init() {
 
 	console.log(
 		'$$twitterSessionStorage in content script: friends_count -> ',
-		await $$twitterSyncStorage.getValue('friends_count'),
+		await $syncStorage.getValue('friends_count'),
 	)
 
-	$$twitterSyncStorage.watch('friends_count', ({ key, newValue, oldValue }) => {
+	$syncStorage.watch('friends_count', ({ key, newValue, oldValue }) => {
 		console.log(
 			`$$twitterSyncStorage: ${key} changed from ${oldValue} to ${newValue}`,
 		)
 	})
-	$$twitterSyncStorage.watch('screen_name', ({ key, newValue, oldValue }) => {
+	$syncStorage.watch('screen_name', ({ key, newValue, oldValue }) => {
 		console.log(
 			`$$twitterSyncStorage: ${key} changed from ${oldValue} to ${newValue}`,
 		)
@@ -56,14 +57,11 @@ async function init() {
 	async function listenForBgMessage(msg: FromBgToCs) {
 		try {
 			if (msg.type === 'userData' && msg.data) {
-				// // store the followingCount = friends_count, and the entire userData object for later use
-				// $followingCount.set(msg.data.friends_count)
-
-				// console.log(
-				// 	`followingCount: ${msg.data.friends_count}, collected: ${
-				// 		$following.get().size
-				// 	}`,
-				// )
+				console.log(
+					`followingCount: ${msg.data.friends_count}, collected: ${
+						$collectedFollowing.get().size
+					}`,
+				)
 
 				// start observer on /following page after getting message from bg script
 
@@ -89,9 +87,9 @@ async function startObserver() {
 			}
 			for (const node of Array.from(mutation.addedNodes)) {
 				if (node instanceof HTMLElement) {
-					const profileInner = node.querySelector(
+					const profileInner = node.querySelector<ProfileInner>(
 						Selectors.PROFILE_INNER,
-					) as ProfileInner | null
+					)
 					if (node.matches(Selectors.PROFILE_CONTAINER) && profileInner) {
 						const processedProfile = await processProfile(profileInner)
 						if (

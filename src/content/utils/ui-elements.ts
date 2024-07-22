@@ -24,7 +24,6 @@ export function randomDelay(ms: number, msHigh = ms): Promise<void> {
 
 /**
  * Creates a loading spinner element
- * @returns {HTMLElement} - a loading spinner element
  */
 export function createLoadingSpinner() {
 	const loader = document.createElement('span')
@@ -36,7 +35,9 @@ export function createLoadingSpinner() {
 }
 
 /**
- * Gets the scroll height of the last profile div on the following page, which is used to determine how far down the page to scroll and trigger the loading of more profiles
+ * Gets the scroll height of the last profile div on the `/following` page.
+ *
+ * Used to determine how far down the page to scroll and trigger the loading of more profiles
  */
 export function getLastChildHeight() {
 	const lastChild = document.querySelector(
@@ -52,7 +53,9 @@ export function getLastChildHeight() {
  * @param profileContainer  - the profile div from the following page
  * @returns {number} - the scroll height (distance down the page) of the profile div
  */
-export function getProfileTranslateY(profileContainer: ProfileContainer) {
+export function getProfileTranslateY(
+	profileContainer: ProfileContainer,
+): number {
 	const translateYString = profileContainer.style.transform
 	const translateYRegex = /translateY\((\d+(\.\d+)?)px\)/
 	const match = translateYRegex.exec(translateYString)
@@ -173,11 +176,11 @@ export function getDialogCheckboxes() {
 }
 
 export function getNoticeDiv() {
-	const div = document.getElementById('su-notice') as HTMLDivElement | null
+	const div = document.getElementById('su-notice')
 	if (!div) {
 		throw new Error('notice div not found')
 	}
-	return div
+	return div as HTMLDivElement
 }
 
 export const getSuperUnfollowButton = () => {

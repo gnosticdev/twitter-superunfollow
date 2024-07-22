@@ -46,12 +46,8 @@ export async function addDialogToDom() {
 	subHeading.classList.add('superUnfollow', 'su-sub-heading')
 	subHeading.textContent =
 		'Enter a keyword to search usernames, handles, and bios of accounts you follow'
-	const headingContainer = document.createElement('div')
-	headingContainer.classList.add(
-		'su-heading-container',
-		'su-search-heading-container',
-	)
-	headingContainer.append(heading, subHeading)
+	// const headingContainer = document.createElement('div')
+	// headingContainer.append(heading, subHeading)
 	// Create the input and submit search elements
 	const input = document.createElement('input')
 	input.type = 'text'
@@ -76,11 +72,8 @@ export async function addDialogToDom() {
 	// when user clicks 'search' - any partial match of username or handle are returned, or any full word match of description. The search results are appended to the dialog or replace the previous results.
 
 	const headingInputContainer = document.createElement('div')
-	headingInputContainer.classList.add(
-		'superUnfollow',
-		'su-heading-input-container',
-	)
-	headingInputContainer.append(headingContainer, searchContainer)
+	headingInputContainer.classList.add('su-heading-input-container')
+	headingInputContainer.append(heading, subHeading, searchContainer)
 
 	// add a results div that gets cleared when the search button is clicked
 	const resultsContainer = document.createElement('div')
@@ -92,6 +85,11 @@ export async function addDialogToDom() {
 	const notice = await createNotice()
 
 	const modalButtons = createModalButtons()
+	const viewButtons = createViewButtons()
+	const viewResultsContainer = document.createElement('div')
+	viewResultsContainer.id = 'su-view-results-container'
+	viewResultsContainer.classList.add('su-view-results-container')
+	viewResultsContainer.append(viewButtons, resultsContainer)
 
 	// append elements to dialog
 	dialogContainer.append(
@@ -100,7 +98,7 @@ export async function addDialogToDom() {
 		metricsContainer,
 		notice,
 		modalButtons,
-		resultsContainer,
+		viewResultsContainer,
 	)
 	// append the container to the dialog
 	dialog.appendChild(dialogContainer)
@@ -118,13 +116,7 @@ function createModalButtons() {
 
 	const collectButton = createCollectBtn()
 	const startButton = createSuperUnfollowBtn()
-	const collectUnfollowContainer = document.createElement('div')
-	collectUnfollowContainer.classList.add('su-collect-superunfollow-container')
-	collectUnfollowContainer.append(collectButton, startButton)
-
-	const viewButtons = createViewButtons()
-
-	modalBtnsContainer.append(viewButtons, collectUnfollowContainer)
+	modalBtnsContainer.append(collectButton, startButton)
 
 	return modalBtnsContainer
 }
@@ -133,7 +125,7 @@ export function createSuperUnfollowBtn() {
 	const superUnfollowBtn = document.createElement('button')
 	superUnfollowBtn.classList.add('su-button', 'super-unfollow')
 	superUnfollowBtn.disabled = $unfollowingList.get().size === 0
-	superUnfollowBtn.textContent = 'Unfollow'
+	superUnfollowBtn.textContent = 'Start Unfollow'
 	// starting the super unfollow process
 	superUnfollowBtn.addEventListener('click', handleUnfollowButton)
 	superUnfollowBtn.id = 'superUnfollow-button'
@@ -158,7 +150,7 @@ export function createCollectBtn() {
 	const collectBtn = document.createElement('button')
 	collectBtn.classList.add('su-button', 'alt')
 	collectBtn.id = 'su-collect-following-button'
-	collectBtn.textContent = 'Collect'
+	collectBtn.textContent = 'Collect Following'
 	collectBtn.addEventListener('click', handleCollectButton)
 
 	return collectBtn
@@ -175,18 +167,18 @@ export function createViewButtons() {
 }
 
 export function createViewUnfollowingBtn() {
-	const input = document.createElement('input')
-	input.type = 'checkbox'
-	input.id = 'su-view-unfollowing'
-	input.classList.add('su-view-button')
-	input.addEventListener('change', handleViewButtons)
+	const cb = document.createElement('input')
+	cb.type = 'checkbox'
+	cb.id = 'su-view-unfollowing'
+	cb.classList.add('su-view-button')
+	cb.addEventListener('change', handleViewButtons)
 
 	const label = document.createElement('label')
-	label.htmlFor = 'su-view-unfollowing'
+	label.htmlFor = cb.id
 	label.classList.add('su-view-button')
 	label.textContent = 'List'
 
-	label.appendChild(input)
+	label.appendChild(cb)
 
 	return label
 }
