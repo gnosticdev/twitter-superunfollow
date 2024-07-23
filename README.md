@@ -6,7 +6,7 @@ There are other extensions out there that do similar things, but they require yo
 
 Script to be used in Chrome Extension or Arc Boost:
 
-### Features
+## Features
 
 - Programmatically unfollow accounts without expensive API calls.
 - Unfollows people slowly so as to not trigger captchas.
