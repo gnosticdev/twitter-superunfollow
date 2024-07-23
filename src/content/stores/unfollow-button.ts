@@ -6,73 +6,21 @@ import {
 	getCollectButton,
 	getSuperUnfollowButton,
 } from '@/content/utils/ui-elements'
-import { logger, buildLogger } from '@nanostores/logger'
-import { action, atom, onSet } from 'nanostores'
+import { atom } from 'nanostores'
 
 // Create a new store for the button state
 export const $superUnfollowButtonState = atom<ButtonState>('ready')
 
-const _log = buildLogger($superUnfollowButtonState, 'superunfollow-button', {})
-
-const setRunning = action($superUnfollowButtonState, 'setRunning', (store) => {
-	store.set('running')
-})
-
-export const setUnfollowPaused = action(
-	$superUnfollowButtonState,
-	'setPaused',
-	(store) => {
-		store.set('paused')
-	},
-)
-
-const setResumed = action($superUnfollowButtonState, 'setResumed', (store) => {
-	store.set('resumed')
-})
-
-export const setUnfollowDone = action(
-	$superUnfollowButtonState,
-	'setDone',
-	(store) => {
-		store.set('done')
-	},
-)
-
-// start superunfollow process
-export async function handleUnfollowButton() {
-	console.log('superunfollow button clicked')
-	const state = $superUnfollowButtonState.get()
-	console.log('superunfollow button state:', state)
-	switch (state) {
-		case 'done':
-		case 'ready':
-			setRunning()
-			break
-		case 'resumed':
-		case 'running':
-			setUnfollowPaused()
-			break
-		case 'paused':
-			setResumed()
-			break
-		// 'done' doesnt get set by the button click, use a computed store for that...
-		default:
-			break
-	}
-}
-
 // Runs before new values are set
-onSet($superUnfollowButtonState, async ({ newValue, changed }) => {
-	console.log(
-		'superunfollow button state changed:',
-		`${changed} -> ${newValue}`,
-	)
+$superUnfollowButtonState.listen(async (newValue) => {
+	console.log('superunfollow button state changed:', ` -> ${newValue}`)
 	const unfollowButton = getSuperUnfollowButton()
+
 	const collectButton = getCollectButton()
 	await setUnfollowNoticeText(newValue)
 	switch (newValue) {
 		case 'running':
-		case 'resumed':
+			if (!unfollowButton) return
 			unfollowButton.innerText = 'Pause'
 			unfollowButton.classList.add('running')
 			collectButton.disabled = true
@@ -81,12 +29,14 @@ onSet($superUnfollowButtonState, async ({ newValue, changed }) => {
 			await startSuperUnfollow()
 			break
 		case 'paused':
+			if (!unfollowButton) return
 			unfollowButton.innerText = 'Resume'
 			unfollowButton.classList.remove('running')
 			collectButton.disabled = false
 			enableScroll()
 			break
 		case 'done':
+			if (!unfollowButton) return
 			unfollowButton.innerText = 'Unfollow'
 			unfollowButton.classList.remove('running')
 			collectButton.disabled = false
@@ -97,9 +47,4 @@ onSet($superUnfollowButtonState, async ({ newValue, changed }) => {
 	}
 })
 
-export const isUnfollowing = () => {
-	const state = $superUnfollowButtonState.get()
-	return state === 'running' || state === 'resumed'
-}
-
-const stopLogging = logger({ $superUnfollowButtonState })
+export const isUnfollowing = () => $superUnfollowButtonState.get() === 'running'

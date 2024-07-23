@@ -7,48 +7,19 @@ import {
 	getInnerProfiles,
 	getSuperUnfollowButton,
 } from '@/content/utils/ui-elements'
-import { $syncStorage } from '@/shared/storage'
-import { action, atom } from 'nanostores'
-import { $collectedFollowing } from './persistent'
+import { atom } from 'nanostores'
+import { $collectedFollowing, $followingCount } from './persistent'
 
-export type ButtonState = 'ready' | 'running' | 'paused' | 'resumed' | 'done'
+export type ButtonState = 'ready' | 'running' | 'paused' | 'done'
 
 export const $collectFollowingState = atom<ButtonState>('ready')
 
-export const setCollectDone = action(
-	$collectFollowingState,
-	'setDone',
-	(store) => {
-		store.set('done')
-	},
-)
-
-export function handleCollectButton() {
-	const collectBtn = getCollectButton()
-	if (!collectBtn) {
-		throw new Error('collect button or notice div not found')
-	}
-	switch ($collectFollowingState.get()) {
-		case 'ready':
-		case 'done':
-			$collectFollowingState.set('running')
-			break
-		case 'resumed':
-		case 'running':
-			$collectFollowingState.set('paused')
-			break
-		case 'paused':
-			$collectFollowingState.set('resumed')
-			break
-		default:
-			break
-	}
-}
-
+// gotta use `listen` bc `subscribe` will call before the elements are connected to DOM
 $collectFollowingState.listen(async (state) => {
 	console.log('collect following button state changed:', state)
 	const collectButton = getCollectButton()
 	const unfollowButton = getSuperUnfollowButton()
+	if (!unfollowButton) return
 	switch (state) {
 		case 'ready':
 			collectButton.innerHTML = 'Collect'
@@ -58,7 +29,6 @@ $collectFollowingState.listen(async (state) => {
 			await setCollectNoticeText(state)
 			break
 		case 'running':
-		case 'resumed':
 			collectButton.classList.add('running')
 			collectButton.innerHTML = 'Pause'
 			unfollowButton.disabled = true
@@ -87,18 +57,18 @@ $collectFollowingState.listen(async (state) => {
 
 export const isCollecting = () => {
 	const state = $collectFollowingState.get()
-	return state === 'running' || state === 'resumed'
+	return state === 'running'
 }
 /**
  * Only run at top of the page where new profiles are loaded
  * @returns true if the user has followed any new profiles since the last time
  */
 export async function shouldCollect() {
-	const $followingCount = await $syncStorage.getValue('friends_count')
-	if ($followingCount === 0) {
+	const followingCount = await $followingCount()
+	if (followingCount === 0) {
 		return true
 	}
-	if ($collectedFollowing.get().size !== $followingCount) {
+	if ($collectedFollowing.get().size !== followingCount) {
 		console.log('following count mismatch, user should collect')
 		return true
 	}

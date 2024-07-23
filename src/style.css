@@ -55,6 +55,19 @@
 		margin-block: 0;
 	}
 
+	&.su-show-modal-container {
+		width: 100%;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		padding-block: 1rem;
+		background-color: var(--su-dark-bg);
+		position: sticky;
+		top: 0;
+		z-index: 99999;
+		border-bottom: var(--su-dark-bg) 1px solid;
+	}
+
 	&.su-checkbox-container {
 		display: flex;
 		flex-grow: 1;
@@ -131,9 +144,6 @@
 
 		&.su-show-modal {
 			border-radius: 0.5rem 0 0.5rem;
-			position: fixed;
-			top: 10px;
-			right: 10px;
 			padding: 0.5rem 1rem;
 			font-size: 1rem;
 			background-color: var(--su-indigo);
@@ -372,7 +382,7 @@
 						gap: 0.5rem;
 						font-size: 0.9rem;
 
-						& .unfollowed {
+						&.unfollowed {
 							pointer-events: none;
 							text-decoration: line-through;
 							color: var(--su-muted-gray);

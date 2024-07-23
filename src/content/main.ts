@@ -1,12 +1,14 @@
 import { processProfile } from '@/content/profiles'
-import { $collectedFollowing } from '@/content/stores/persistent'
-import { $superUnfollowButtonState } from '@/content/stores/unfollow-button'
+import {
+	$collectedFollowing,
+	$followingCount,
+} from '@/content/stores/persistent'
 import { addDialogToDom } from '@/content/ui/dialog'
-import { superUnfollow } from '@/content/unfollow'
 import { Selectors, getInnerProfiles } from '@/content/utils/ui-elements'
 import { sendMessageToBg } from '@/shared/messaging'
 import { $syncStorage } from '@/shared/storage'
 import type { FromBgToCs, FromCsToBg, ProfileInner } from '@/shared/types'
+import cc from 'kleur'
 
 // 1) send message to background.ts -> receive the response and start init()
 // TODO: add this as an option
@@ -32,10 +34,7 @@ async function init() {
 		data: script.innerHTML,
 	}
 
-	console.log(
-		'$$twitterSessionStorage in content script: friends_count -> ',
-		await $syncStorage.getValue('friends_count'),
-	)
+	console.log('$syncStorage: friends_count -> ', await $followingCount())
 
 	$syncStorage.watch('friends_count', ({ key, newValue, oldValue }) => {
 		console.log(
@@ -58,19 +57,17 @@ async function init() {
 		try {
 			if (msg.type === 'userData' && msg.data) {
 				console.log(
-					`followingCount: ${msg.data.friends_count}, collected: ${
-						$collectedFollowing.get().size
-					}`,
+					cc.cyan(
+						`message from bg: followingCount: ${msg.data.friends_count}, collected: ${
+							$collectedFollowing.get().size
+						}`,
+					),
 				)
 
 				// start observer on /following page after getting message from bg script
-
-				await addDialogToDom()
-				const innerProfiles = getInnerProfiles()
-				for (const profile of Array.from(innerProfiles)) {
-					await processProfile(profile)
-				}
-				await startObserver()
+				const followingSection = (await getFollowingSection()) as HTMLElement
+				await addDialogToDom(followingSection)
+				await startObserver(followingSection)
 			}
 		} catch (e) {
 			console.log(e)
@@ -79,7 +76,7 @@ async function init() {
 }
 
 // Start the observer after the userData has been received, and we are on the /following page
-async function startObserver() {
+async function startObserver(followingSection: HTMLElement) {
 	const profileObserver = new MutationObserver(async (mutations) => {
 		for (const mutation of mutations) {
 			if (mutation.addedNodes.length === 0) {
@@ -91,22 +88,19 @@ async function startObserver() {
 						Selectors.PROFILE_INNER,
 					)
 					if (node.matches(Selectors.PROFILE_CONTAINER) && profileInner) {
-						const processedProfile = await processProfile(profileInner)
-						if (
-							$superUnfollowButtonState.get() === 'running' &&
-							processedProfile
-						) {
-							await superUnfollow(processedProfile)
-						}
+						await processProfile(profileInner)
 					}
 				}
 			}
 		}
 	})
 	// first make sure the following section is in the DOM, then observe for new profiles added to it
-	const section = (await getFollowingSection()) as HTMLElement
-	console.log('following section:', section)
-	profileObserver.observe(section, {
+
+	const innerProfiles = getInnerProfiles()
+	for await (const profile of innerProfiles) {
+		await processProfile(profile)
+	}
+	profileObserver.observe(followingSection, {
 		childList: true,
 		subtree: true,
 	})
@@ -118,7 +112,7 @@ async function getFollowingSection() {
 			'[aria-label="Timeline: Following"]',
 		) as HTMLElement | null
 
-	if (!section()) {
+	if (!section() || !section()?.firstElementChild) {
 		return new Promise((resolve) => {
 			let tries = 0
 			const interval = setInterval(() => {

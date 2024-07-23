@@ -130,8 +130,8 @@ export function showResults(profiles: ProfilesMap, resultType: Results) {
 	const selectAllContainer = createSelectAll()
 	resultsContainer.append(selectAllContainer)
 	// create the checkboxes for each result
-	profiles.forEach((result) => {
-		const { handle, username } = result
+	for (const [handle, profile] of profiles) {
+		const { username } = profile
 		const checkbox = document.createElement('input')
 		checkbox.type = 'checkbox'
 		checkbox.id = `su-search-${handle}`
@@ -140,14 +140,21 @@ export function showResults(profiles: ProfilesMap, resultType: Results) {
 		checkbox.addEventListener('change', handleChange)
 		const label = document.createElement('label')
 		label.innerHTML = `<div class="su-result-label">${username}&nbsp;&nbsp;<span class="su-handle">${handle}</span></div>`
-		label.htmlFor = `su-search-${handle}`
+		label.htmlFor = checkbox.id
 		const container = document.createElement('div')
 		container.classList.add('su-search-result')
+		container.id = `su-search-result-${handle}`
 		label.appendChild(checkbox)
 		container.appendChild(label)
 		resultsContainer.appendChild(container)
-	})
+	}
 	return resultsContainer
+}
+
+export function getProfileSearchCheckbox(handle: string) {
+	return document.getElementById(
+		`su-search-result-${handle}`,
+	) as HTMLInputElement
 }
 
 export function createResultsContainer(resultType: Results) {

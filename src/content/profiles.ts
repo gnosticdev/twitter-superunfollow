@@ -5,7 +5,7 @@ import type {
 	ProfileDetail,
 	ProfileInner,
 } from '@/shared/types'
-import { addCustomProperties, type ProcessedProfile } from './ui/checkboxes'
+import { type ProcessedProfile, addCustomAttributes } from './ui/checkboxes'
 import { getProfileTranslateY, randomDelay } from './utils/ui-elements'
 
 export async function processProfile(profile: ProfileInner) {
@@ -18,12 +18,16 @@ export async function processProfile(profile: ProfileInner) {
 			profileDetails.handle,
 			profileDetails,
 		)
-		const processedProfile = await addCustomProperties(profile, fullProfileData)
+		const processedProfile = await addCustomAttributes(profile, fullProfileData)
 
 		return processedProfile
 	} catch (error) {
 		console.error(error)
 	}
+}
+
+export function getProfileByHandle(handle: string): ProfileInner | null {
+	return document.querySelector<ProfileInner>(`[data-handle="${handle}"]`)
 }
 
 /**

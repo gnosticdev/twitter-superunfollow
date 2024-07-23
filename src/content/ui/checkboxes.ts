@@ -1,3 +1,4 @@
+import { getProfileByHandle } from '@/content/profiles'
 import {
 	$collectedFollowing,
 	$unfollowingList,
@@ -8,15 +9,23 @@ import { Selectors } from '@/content/utils/ui-elements'
 import type { ProfileDetail, ProfileInner } from '@/shared/types'
 
 export type ProcessedProfile = ProfileInner & {
-	__processed: boolean
+	dataset: {
+		handle: string
+		unfollow: string
+	}
 }
 
+export function isProcessProfile(
+	profile: ProfileInner,
+): profile is ProcessedProfile {
+	return profile.hasAttribute('data-handle')
+}
 /**
  * Adds a checkbox to a profile on the `/following` page, and sets the `data-unfollow` and `data-handle` properties.
  *
  * When checked, the profile will be added to the $unfollowing store
  */
-export async function addCustomProperties(
+export async function addCustomAttributes(
 	profileInner: ProfileInner,
 	profileDetails: ProfileDetail,
 ) {
@@ -71,7 +80,7 @@ export const handleChange = (event: Event) => {
 		removeUnfollowing(handle)
 	}
 
-	const profile = document.querySelector(`[data-handle="${handle}"]`)
+	const profile = getProfileByHandle(handle)
 	// if no profile is found, it's probably because the user scrolled down and the profile was removed from the DOM
 	if (profile) {
 		const cb = profile.querySelector(

@@ -49,7 +49,12 @@ export function getLastChildHeight() {
 }
 
 /**
- * Each profile container has a 'transform: translateY()' inline style applied to it. This function extracts the scroll height from that style and returns it
+ * Looks up the 'transform: translateY()' inline style applied to a profileContainer
+ *
+ * Indicates its position in the DOM if all elements were shown together.
+ *
+ * Converts to a number and returns the value
+ *
  * @param profileContainer  - the profile div from the following page
  * @returns {number} - the scroll height (distance down the page) of the profile div
  */
@@ -187,9 +192,7 @@ export const getSuperUnfollowButton = () => {
 	const unfollowButton = document.getElementById(
 		'superUnfollow-button',
 	) as HTMLButtonElement | null
-	if (!unfollowButton) {
-		throw new Error('superunfollow button not found')
-	}
+
 	return unfollowButton
 }
 

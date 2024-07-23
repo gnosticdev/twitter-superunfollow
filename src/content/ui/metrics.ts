@@ -1,4 +1,5 @@
 import {
+	isCollecting,
 	shouldCollect,
 	type ButtonState,
 } from '@/content/stores/collect-button'
@@ -8,11 +9,38 @@ import {
 	// $followingCount,
 	$unfollowingList,
 } from '@/content/stores/persistent'
+import { isUnfollowing } from '@/content/stores/unfollow-button'
 import { $unfollowedProfiles } from '@/content/unfollow'
-import { createLoadingSpinner, getNoticeDiv } from '@/content/utils/ui-elements'
+import {
+	createLoadingSpinner,
+	getNoticeDiv,
+	getSuperUnfollowButton,
+} from '@/content/utils/ui-elements'
 import { $syncStorage } from '@/shared/storage'
 import cc from 'kleur'
-import { runningState } from '../stores/running'
+
+export function updateTotalFollowingText(number: number) {
+	const followingSpan = document.getElementById('su-following-count')
+	if (followingSpan) {
+		followingSpan.textContent = number.toString()
+	}
+}
+
+$collectedFollowing.listen((collected) => {
+	const followingSpan = document.getElementById('su-collected-count')
+	if (!followingSpan) return
+
+	followingSpan.textContent = collected.size.toString()
+})
+
+$unfollowingList.listen((unfollowing) => {
+	const unfollowingSpan = document.getElementById('su-unfollowing-count')
+	if (unfollowingSpan) unfollowingSpan.textContent = unfollowing.size.toString()
+	const superUnfollowButton = getSuperUnfollowButton()
+	if (superUnfollowButton) {
+		superUnfollowButton.disabled = unfollowing.size === 0
+	}
+})
 
 export async function createMetrics() {
 	// if already exists, remove it
@@ -29,6 +57,7 @@ export async function createMetrics() {
 	console.log(cc.bgBlue(`followingNumber -> ${totalFollowing}`))
 
 	const followingSpan = document.createElement('span')
+	followingSpan.id = 'su-following-count'
 	followingSpan.classList.add('su-highlight')
 	followingSpan.textContent = `${totalFollowing}`
 
@@ -36,14 +65,12 @@ export async function createMetrics() {
 	const collectedSize = collectedFollowing.size
 	console.log(cc.bgBlue(`collectedSize -> ${collectedSize}`))
 	const collectedSpan = document.createElement('span')
+	collectedSpan.id = 'su-collected-count'
 	collectedSpan.classList.add('su-highlight')
 	collectedSpan.textContent = collectedSize.toString()
 
-	$collectedFollowing.listen((collected) => {
-		followingSpan.textContent = collected.size.toString()
-	})
-
 	const unfollowing = document.createElement('span')
+	unfollowing.id = 'su-unfollowing-count'
 	unfollowing.classList.add('su-highlight')
 	unfollowing.textContent = $unfollowingList.get().size.toString()
 	metrics.innerHTML = `
@@ -68,12 +95,12 @@ export function setNoticeLoading(notice: HTMLElement) {
 	console.log('setting loading state for notice')
 	const loader = createLoadingSpinner()
 	notice.innerHTML = loader.outerHTML
-	if (runningState() === 'collecting') {
+	if (isCollecting()) {
 		notice.innerHTML += 'Collecting accounts you follow...'
-	} else if (runningState() === 'unfollowing') {
+	} else if (isUnfollowing()) {
 		notice.innerHTML += 'Unfollowing accounts...'
 	}
-	notice.innerHTML += `<div class="sub-notice">
+	notice.innerHTML += `<div style="margin-block: 0.5rem;">
                 Don't navigate away from the page
                 </div>
                 `
@@ -87,6 +114,10 @@ export async function setCollectNoticeText(
 	// biome-ignore lint: confusing but works
 	notice ??= getNoticeDiv()
 	const followingCount = await $syncStorage.getValue('friends_count')
+	if (!followingCount) {
+		notice.textContent = 'No accounts to collect'
+		return
+	}
 	const followingCollected = $collectedFollowing.get().size
 	switch (state) {
 		case 'ready':
@@ -96,7 +127,6 @@ export async function setCollectNoticeText(
 				: 'You have no new accounts to collect'
 			break
 		case 'running':
-		case 'resumed':
 			setNoticeLoading(notice)
 			break
 		case 'paused':
@@ -124,7 +154,6 @@ export async function setUnfollowNoticeText(state: ButtonState) {
 	const unfollowedSize = $unfollowedProfiles.get().size
 	switch (state) {
 		case 'running':
-		case 'resumed':
 			setNoticeLoading(notice)
 			break
 		case 'paused':
@@ -133,16 +162,16 @@ export async function setUnfollowNoticeText(state: ButtonState) {
 			} profiles left to unfollow`
 			break
 		case 'done': {
-			const followingCount = await $syncStorage.getValue('friends_count')
+			const followingCount = await $followingCount()
 			if (
 				followingCount === 0 ||
 				$collectedFollowing.get().size === followingCount
 			) {
 				notice.classList.add('complete')
-				notice.textContent = 'Collected all accounts you follow!'
+				notice.textContent = `Unfollowed ${unfollowedSize} accounts!`
 			} else {
 				notice.classList.add('error')
-				notice.textContent = 'Something went wrong... Re-run Collect Following'
+				notice.textContent = 'Might want to re-run Collect Following'
 			}
 			break
 		}

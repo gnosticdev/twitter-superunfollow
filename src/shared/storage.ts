@@ -10,7 +10,9 @@ class SyncStorage<T extends { [K in keyof T]: T[K] } = TwitterUserData> {
 		})
 		this.storage.setNamespace(this.namespace)
 	}
-	async getValue<K extends keyof T & string>(key: K): Promise<T[K]> {
+	async getValue<K extends keyof T & string>(
+		key: K,
+	): Promise<T[K] | undefined> {
 		return this.storage.get(key)
 	}
 	/**
@@ -22,9 +24,9 @@ class SyncStorage<T extends { [K in keyof T]: T[K] } = TwitterUserData> {
 	async setValue<K extends keyof T & string>(
 		key: K,
 		value: T[K],
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-	): Promise<any> {
-		return this.storage.set(key, value)
+	): Promise<T[K]> {
+		await this.storage.set(key, value)
+		return value
 	}
 	async setValues(data: T): Promise<void> {
 		for (const [key, value] of objectEntries(data)) {
@@ -78,6 +80,7 @@ class SessionStorage<K extends keyof SessionStorageKV> {
 	}
 	async getValue(key: K): Promise<SessionStorageKV[K]> {
 		const value = await this.storage.get(key.toString())
+		if (!value) return 0
 		return Number.parseInt(value) satisfies SessionStorageKV[K]
 	}
 	async setValue(key: K, value: SessionStorageKV[K]) {

@@ -1,16 +1,9 @@
-import {
-	$collectFollowingState,
-	handleCollectButton,
-} from '@/content/stores/collect-button'
-import { $unfollowingList } from '@/content/stores/persistent'
-import {
-	$superUnfollowButtonState,
-	handleUnfollowButton,
-} from '@/content/stores/unfollow-button'
+import { $collectFollowingState } from '@/content/stores/collect-button'
+import { $superUnfollowButtonState } from '@/content/stores/unfollow-button'
 import { handleSearch, handleViewButtons } from '../search'
 import { createMetrics, createNotice } from './metrics'
 
-export async function addDialogToDom() {
+export async function addDialogToDom(followingSection: HTMLElement) {
 	// if already added, remove it
 	const existingDialog = document.getElementById('su-dialog')
 	if (existingDialog) {
@@ -46,8 +39,6 @@ export async function addDialogToDom() {
 	subHeading.classList.add('superUnfollow', 'su-sub-heading')
 	subHeading.textContent =
 		'Enter a keyword to search usernames, handles, and bios of accounts you follow'
-	// const headingContainer = document.createElement('div')
-	// headingContainer.append(heading, subHeading)
 	// Create the input and submit search elements
 	const input = document.createElement('input')
 	input.type = 'text'
@@ -102,10 +93,13 @@ export async function addDialogToDom() {
 	)
 	// append the container to the dialog
 	dialog.appendChild(dialogContainer)
-	// dont forget to create the button that shows the dialog!
-	const showDialogButton = createShowModalButton(dialog)
-	// append the dialog and the button to the body
-	document.body.append(dialog, showDialogButton)
+
+	// create the show modal button
+	const showModalContainer = createShowModalButton(dialog)
+
+	// append the button to the top of the Following section
+	followingSection.firstElementChild!.prepend(showModalContainer)
+	followingSection.prepend(dialog)
 
 	return dialog
 }
@@ -124,9 +118,28 @@ function createModalButtons() {
 export function createSuperUnfollowBtn() {
 	const superUnfollowBtn = document.createElement('button')
 	superUnfollowBtn.classList.add('su-button', 'super-unfollow')
-	superUnfollowBtn.disabled = $unfollowingList.get().size === 0
 	superUnfollowBtn.textContent = 'Start Unfollow'
 	// starting the super unfollow process
+	// start superunfollow process
+	const handleUnfollowButton = () => {
+		const state = $superUnfollowButtonState.get()
+		console.log('superunfollow button state:', state)
+		switch (state) {
+			case 'done':
+			case 'ready':
+				$superUnfollowButtonState.set('running')
+				break
+			case 'running':
+				$superUnfollowButtonState.set('paused')
+				break
+			case 'paused':
+				$superUnfollowButtonState.set('running')
+				break
+			// 'done' doesnt get set by the button click, use a computed store for that...
+			default:
+				break
+		}
+	}
 	superUnfollowBtn.addEventListener('click', handleUnfollowButton)
 	superUnfollowBtn.id = 'superUnfollow-button'
 
@@ -143,7 +156,27 @@ export function createShowModalButton(dialog: HTMLDialogElement) {
 		dialog.showModal()
 	})
 
-	return modalButton
+	const showModalContainer = document.createElement('div')
+	showModalContainer.classList.add('su-show-modal-container', 'superUnfollow')
+	// append the show modal button to the container
+	showModalContainer.append(modalButton)
+
+	// Adjust the button's position based on the header height
+	const adjustButtonPosition = () => {
+		const header = document.querySelector(
+			'[aria-label="Home timeline"] > div',
+		) as HTMLElement
+		if (header) {
+			const headerHeight = header.offsetHeight
+			showModalContainer.style.top = `${headerHeight}px`
+		}
+	}
+
+	// Call the function initially and on window resize
+	adjustButtonPosition()
+	window.addEventListener('resize', adjustButtonPosition)
+
+	return showModalContainer
 }
 
 export function createCollectBtn() {
@@ -151,6 +184,22 @@ export function createCollectBtn() {
 	collectBtn.classList.add('su-button', 'alt')
 	collectBtn.id = 'su-collect-following-button'
 	collectBtn.textContent = 'Collect Following'
+	const handleCollectButton = () => {
+		switch ($collectFollowingState.get()) {
+			case 'ready':
+			case 'done':
+				$collectFollowingState.set('running')
+				break
+			case 'running':
+				$collectFollowingState.set('paused')
+				break
+			case 'paused':
+				$collectFollowingState.set('running')
+				break
+			default:
+				break
+		}
+	}
 	collectBtn.addEventListener('click', handleCollectButton)
 
 	return collectBtn
@@ -206,7 +255,6 @@ function closeDialog(
 ) {
 	if (
 		$collectFollowingState.get() === 'running' ||
-		$collectFollowingState.get() === 'resumed' ||
 		$superUnfollowButtonState.get() === 'running'
 	)
 		return

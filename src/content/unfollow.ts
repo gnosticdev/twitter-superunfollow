@@ -1,30 +1,45 @@
 import {
+	$followingCount,
 	$unfollowingList,
-	removeFollowing,
+	$updateFollowingCount,
+	removeFromCollectedFollowing,
 	removeUnfollowing,
 } from '@/content/stores/persistent'
 import {
-	setUnfollowDone,
-	setUnfollowPaused,
+	$superUnfollowButtonState,
+	isUnfollowing,
 } from '@/content/stores/unfollow-button'
+import {
+	isProcessProfile,
+	type ProcessedProfile,
+} from '@/content/ui/checkboxes'
+import { updateTotalFollowingText } from '@/content/ui/metrics'
 import {
 	Selectors,
 	getInnerProfiles,
 	getProfileUnfollowButton,
 } from '@/content/utils/ui-elements'
-import { $syncStorage } from '@/shared/storage'
 import type { ProfileDetail, ProfileInner, ProfilesMap } from '@/shared/types'
-import { default as cc, default as coolConsole } from 'kleur'
+import cc from 'kleur'
 import { atom } from 'nanostores'
-import { $viewResults, createResultsContainer, getResultsDiv } from './search'
-import { runningState } from './stores/running'
-import { scrollToLastChild, scrollToProfile } from './utils/scroll'
+import {
+	$viewResults,
+	createResultsContainer,
+	getProfileSearchCheckbox,
+	getResultsDiv,
+} from './search'
+import { scrollToInfiniteBottom, waitForSmoothScroll } from './utils/scroll'
 import { randomDelay } from './utils/ui-elements'
 import { waitForElement } from './utils/wait-promise'
 
 // Track the profiles that have been unfollowed
 export const $unfollowedProfiles = atom<ProfilesMap>(new Map())
 
+/**
+ * Adds a profile to the unfollowed store
+ * @param handle
+ * @param profile
+ */
 function addUnfollowedProfile(handle: string, profile: ProfileDetail) {
 	const unfollowedProfiles = $unfollowedProfiles.get()
 	console.log('unfollowed profile', profile)
@@ -36,55 +51,104 @@ function addUnfollowedProfile(handle: string, profile: ProfileDetail) {
 	return profile
 }
 
+// adds a line-through and gray filter to the unfollowed profiles
+$unfollowedProfiles.listen((value) => {
+	const profiles = Array.from(value.entries())
+	for (const [handle, _profile] of profiles) {
+		const searchCheckbox = getProfileSearchCheckbox(handle)
+		if (searchCheckbox) {
+			searchCheckbox.classList.add('unfollowed')
+		}
+	}
+})
+
 /**
  * Unfollows the first section of profiles loaded on the page (if any)
  * Then scrolls down the page and unfollows the rest
  */
 export async function startSuperUnfollow() {
-	console.log(cc.bgYellow('starting super unfollow'))
+	console.log(cc.yellow('starting super unfollow'))
 	$viewResults.set('unfollowing')
-	const firstProfileToUnfollow = $unfollowingList.get().values().next()
-		.value as ProfileDetail
-	console.log(
-		cc.bgYellow(cc.blue('first profile to unfollow: ')),
-		firstProfileToUnfollow,
-	)
-	if (firstProfileToUnfollow?.handle) {
-		await scrollToProfile(firstProfileToUnfollow)
-		// get all profiles already loaded on the page
-		const profiles = getInnerProfiles()
-		for (const profile of profiles) {
-			if (runningState() === 'unfollowing') {
-				await superUnfollow(profile)
-				await randomDelay(1000, 2000)
-			}
+	await waitForSmoothScroll(0)
+
+	// get all profiles already loaded on the page
+	const profiles = getInnerProfiles()
+	for await (const profile of profiles) {
+		const processed = await processUnfollow(profile)
+		if (processed) {
+			console.log('processed profile:', profile.dataset.handle)
+			await randomDelay(1000, 2000)
 		}
-		// scroll down the page and the watcher will pick up the rest
-		await scrollUnfollow()
 	}
+
+	// scroll down the page and the watcher will pick up the rest
+	await scrollAndUnfollow()
 }
 
 /**
- * Scrolls down the page and unfollows the profiles loaded on the page.
- * @returns {Promise<void>}
+ * Checks if a profile is in the unfollowing store, then unfollows it if it is
  */
-async function scrollUnfollow() {
-	console.log('scrolling to unfollow', `runningState: ${runningState()}`)
-	if (runningState() === 'unfollowing') {
-		// superUnfollow handled by MutationObserver in main.ts
-		try {
-			await scrollToLastChild()
-			// delay a random number from 1500 - 3000 ms
-			await randomDelay(1500, 3000)
-			// continue scrolling
-			await scrollUnfollow()
-		} catch (error) {
-			console.error(error)
-			return
+export async function processUnfollow(profile: ProfileInner) {
+	if (!isUnfollowing()) return false
+	if (!isProcessProfile(profile)) return false
+
+	const { handle } = profile.dataset
+	if (!handle) return false
+
+	if (!$unfollowingList.get().has(handle)) return false
+
+	const unfollowed = await superUnfollow(profile)
+	if (!unfollowed) {
+		$superUnfollowButtonState.set('paused')
+		return false
+	}
+	if ($unfollowingList.get().size === 0) {
+		console.log(cc.bgGreen().blue('😎 unfollowed all accounts!'))
+		$superUnfollowButtonState.set('done')
+		return false
+	}
+	console.log(cc.red(`finished processing ${handle}`))
+	return true
+}
+/**
+ * Scrolls down the page and unfollows the profiles loaded on the page.
+ */
+async function scrollAndUnfollow() {
+	console.log(cc.bgGreen().bold('scrolling and unfollowing...'))
+	try {
+		if (isUnfollowing()) {
+			const isAtBottom = await scrollToInfiniteBottom()
+
+			if (isAtBottom) {
+				console.log('done unfollowing')
+				$superUnfollowButtonState.set('done')
+				return
+			}
+
+			// look for next profile to unfollow
+			const profiles = getInnerProfiles()
+			for await (const profile of profiles) {
+				const processed = await processUnfollow(profile)
+				if (processed) {
+					console.log(
+						cc
+							.bgGreen()
+							.black(`processed next profile: ${profile.dataset.handle}`),
+					)
+					await randomDelay(1000, 2000)
+				}
+			}
+
+			await randomDelay(1000, 2000)
+
+			console.log('continuing unfollowing...')
+			return await scrollAndUnfollow()
 		}
+	} catch (error) {
+		console.error(error)
+		// Instead of returning, we'll continue the loop
 	}
 }
-
 /**
  * - Unfollows a profile
  * - removes from unfollowing store
@@ -96,39 +160,11 @@ async function scrollUnfollow() {
  * @param {ProfileInner} profile - profile to unfollow
  * @returns {Promise<void>}
  */
-export async function superUnfollow(profile: ProfileInner): Promise<void> {
+async function superUnfollow(profile: ProcessedProfile): Promise<boolean> {
+	console.log(cc.green(`unfollowing ${profile.dataset.handle}`))
 	try {
 		const { handle } = profile.dataset
-		if (runningState() && handle && $unfollowingList.get().has(handle)) {
-			const unfollowed = await unfollow(profile)
-			await randomDelay(1000, 2000)
-			if (!unfollowed) {
-				setUnfollowPaused()
-				throw new Error('unfollow failed')
-			}
-			if ($unfollowingList.get().size === 0) {
-				console.log(
-					console.log(
-						coolConsole.bgGreen().blue('😎 unfollowed all accounts!'),
-					),
-				)
-				setUnfollowDone()
-				return
-			}
-		}
-	} catch (error) {
-		console.error(error)
-		return
-	}
-}
 
-/**
- * Unfollows a profile as selected by the user.
- * @param {HTMLElement} profile - profile to unfollow
- */
-async function unfollow(profile: ProfileInner): Promise<boolean> {
-	try {
-		const { handle } = profile.dataset
 		// click the unfollow button
 		const unfollowButton = getProfileUnfollowButton(profile)
 		if (!unfollowButton || !handle) {
@@ -136,6 +172,7 @@ async function unfollow(profile: ProfileInner): Promise<boolean> {
 				!handle ? 'no handle found' : `no unfollow button for ${handle}`,
 			)
 		}
+
 		// click the unfollow button on the right side of the profile
 		unfollowButton.click()
 		await randomDelay(500, 2000)
@@ -153,9 +190,10 @@ async function unfollow(profile: ProfileInner): Promise<boolean> {
 		addUnfollowedProfile(handle, $unfollowingList.get().get(handle)!)
 		// remove profile from unfollowing store
 		removeUnfollowing(handle)
-		removeFollowing(handle)
-		const prevCount = await $syncStorage.getValue('friends_count')
-		$syncStorage.setValue('friends_count', prevCount ? prevCount - 1 : 0)
+		removeFromCollectedFollowing(handle)
+		const prevCount = await $followingCount()
+		const newValue = await $updateFollowingCount(prevCount ? prevCount - 1 : 0)
+		updateTotalFollowingText(newValue)
 
 		return true
 	} catch (error) {
@@ -168,7 +206,7 @@ async function unfollow(profile: ProfileInner): Promise<boolean> {
  * @param {ProfilesMap} unfollowed - the profiles that have been unfollowed
  * */
 export const showUnfollowed = () => {
-	const unfollowed = $unfollowingList.get()
+	const unfollowed = $unfollowedProfiles.get()
 	console.log('displaying unfollowed', unfollowed)
 	$viewResults.set('unfollowed-done')
 	const resultsDiv = getResultsDiv()
@@ -192,5 +230,4 @@ export const showUnfollowed = () => {
 	unfollowedContainer.appendChild(list)
 
 	resultsDiv.appendChild(unfollowedContainer)
-	console.log('unfollowed container', unfollowedContainer)
 }

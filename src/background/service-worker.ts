@@ -85,7 +85,6 @@ async function handleDialogButton(
 	changeInfo: chrome.tabs.TabChangeInfo,
 	tab: chrome.tabs.Tab,
 ) {
-	console.log(cc.bgMagenta('tab updated'), tabId, changeInfo, tab)
 	if (changeInfo.status !== 'complete') {
 		await waitForTabToLoad(tabId)
 	}

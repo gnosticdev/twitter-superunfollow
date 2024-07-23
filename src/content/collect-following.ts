@@ -1,4 +1,7 @@
-import { $collectFollowingState } from '@/content/stores/collect-button'
+import {
+	$collectFollowingState,
+	isCollecting,
+} from '@/content/stores/collect-button'
 import {
 	$collectedFollowing,
 	addToCollectedFollowing,
@@ -6,8 +9,7 @@ import {
 import type { ProfileDetail } from '@/shared/types'
 import { atom } from 'nanostores'
 import { getProfileDetails } from './profiles'
-import { runningState } from './stores/running'
-import { scrollToLastChild, waitForScrollTo } from './utils/scroll'
+import { scrollToInfiniteBottom, waitForSmoothScroll } from './utils/scroll'
 import { getInnerProfiles, randomDelay } from './utils/ui-elements'
 
 /**
@@ -22,7 +24,7 @@ export async function collectFollowing(): Promise<
 	Map<string, ProfileDetail> | undefined
 > {
 	try {
-		while (runningState()) {
+		while (isCollecting()) {
 			// scroll to top on first run
 			if ($firstRun.get()) {
 				// reset following to 0, scroll tot top and process the profiles at the top
@@ -33,12 +35,12 @@ export async function collectFollowing(): Promise<
 			if ($collectFollowingState.get() === 'resumed') {
 				await scrollToLastEntry()
 				$collectFollowingState.set('running')
-				await randomDelay(3000, 3500)
+				await randomDelay(1500, 3500)
 			}
 			// will only return true if the end of the following section has been reached
-			const isDone = await scrollToLastChild()
+			const isAtBottom = await scrollToInfiniteBottom()
 
-			if (isDone) {
+			if (isAtBottom) {
 				console.log('done collecting following')
 				console.log('following:', $collectedFollowing.get())
 				$collectFollowingState.set('done')
@@ -53,13 +55,14 @@ export async function collectFollowing(): Promise<
 }
 
 async function startFollowingAtTop() {
+	const _isCollecting = isCollecting()
 	console.log('starting following at top')
 	// reset the persistent store then reprocess the visible profiles while at the top of the page:
 	$collectedFollowing.set(new Map())
 	// scroll to top and wait fo the scroll to complete
-	const scrolled = await waitForScrollTo(0)
+	const scrolled = await waitForSmoothScroll(0)
 	// check if collection has been paused/finished while waiting for the profiles to load
-	if (scrolled && runningState() === 'collecting') {
+	if (scrolled && _isCollecting) {
 		await randomDelay(2000, 2500)
 	} else {
 		console.log(
@@ -67,7 +70,7 @@ async function startFollowingAtTop() {
 			'scrolled:',
 			scrolled,
 			'isCollecting:',
-			runningState() === 'collecting',
+			_isCollecting,
 		)
 		return
 	}
@@ -83,5 +86,5 @@ async function scrollToLastEntry() {
 	const lastEntry = [...$collectedFollowing.get().entries()].pop()
 	const scrollHeight = lastEntry?.[1].scrollHeight ?? 0
 	console.log(`scrolling to last entry: ${lastEntry?.[0]}: ${scrollHeight}`)
-	await waitForScrollTo(scrollHeight)
+	await waitForSmoothScroll(scrollHeight)
 }
