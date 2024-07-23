@@ -18,4 +18,5 @@ dist
 # Bun
 bun.lockb
 
-.git
+# chrome webstore creds
+key.json

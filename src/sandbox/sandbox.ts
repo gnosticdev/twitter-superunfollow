@@ -2,14 +2,14 @@ import type { TwitterUserData } from '@/shared/types'
 
 declare global {
 	interface Window {
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+		// biome-ignore lint/suspicious/noExplicitAny: too long to type
 		__INITIAL_STATE__: any
 	}
 }
 
 const SANDBOX_RESULT_ID = 'sandbox-result'
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: large object
 const parseInititalState = (initialStateObj: any) => {
 	const userData = JSON.parse(JSON.stringify(initialStateObj))
 

@@ -6,7 +6,7 @@ import {
 import { addDialogToDom } from '@/content/ui/dialog'
 import { Selectors, getInnerProfiles } from '@/content/utils/ui-elements'
 import { sendMessageToBg } from '@/shared/messaging'
-import { $syncStorage } from '@/shared/storage'
+import { $userData } from '@/shared/storage'
 import type { FromBgToCs, FromCsToBg, ProfileInner } from '@/shared/types'
 import cc from 'kleur'
 
@@ -36,12 +36,12 @@ async function init() {
 
 	console.log('$syncStorage: friends_count -> ', await $followingCount())
 
-	$syncStorage.watch('friends_count', ({ key, newValue, oldValue }) => {
+	$userData.watch('friends_count', ({ key, newValue, oldValue }) => {
 		console.log(
 			`$$twitterSyncStorage: ${key} changed from ${oldValue} to ${newValue}`,
 		)
 	})
-	$syncStorage.watch('screen_name', ({ key, newValue, oldValue }) => {
+	$userData.watch('screen_name', ({ key, newValue, oldValue }) => {
 		console.log(
 			`$$twitterSyncStorage: ${key} changed from ${oldValue} to ${newValue}`,
 		)

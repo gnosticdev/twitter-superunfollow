@@ -10,8 +10,8 @@ import {
 	isUnfollowing,
 } from '@/content/stores/unfollow-button'
 import {
-	isProcessProfile,
 	type ProcessedProfile,
+	isProcessProfile,
 } from '@/content/ui/checkboxes'
 import { updateTotalFollowingText } from '@/content/ui/metrics'
 import {
@@ -22,15 +22,15 @@ import {
 import type { ProfileDetail, ProfileInner, ProfilesMap } from '@/shared/types'
 import cc from 'kleur'
 import { atom } from 'nanostores'
+import { scrollToInfiniteBottom, waitForSmoothScroll } from './utils/scroll'
+import { randomDelay } from './utils/ui-elements'
+import { waitForElement } from './utils/wait-promise'
 import {
 	$viewResults,
 	createResultsContainer,
 	getProfileSearchCheckbox,
 	getResultsDiv,
-} from './search'
-import { scrollToInfiniteBottom, waitForSmoothScroll } from './utils/scroll'
-import { randomDelay } from './utils/ui-elements'
-import { waitForElement } from './utils/wait-promise'
+} from './views'
 
 // Track the profiles that have been unfollowed
 export const $unfollowedProfiles = atom<ProfilesMap>(new Map())
@@ -208,9 +208,8 @@ async function superUnfollow(profile: ProcessedProfile): Promise<boolean> {
 export const showUnfollowed = () => {
 	const unfollowed = $unfollowedProfiles.get()
 	console.log('displaying unfollowed', unfollowed)
-	$viewResults.set('unfollowed-done')
 	const resultsDiv = getResultsDiv()
-	const unfollowedContainer = createResultsContainer('unfollowed-done')
+	const unfollowedContainer = createResultsContainer('unfollowing')
 	const list = document.createElement('ol')
 	list.type = '1'
 	list.classList.add('su-search-result')

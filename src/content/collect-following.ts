@@ -31,12 +31,7 @@ export async function collectFollowing(): Promise<
 				await startFollowingAtTop()
 				$firstRun.set(false)
 			}
-			// scroll to the last entry only if collect following is resuming from a paused state
-			if ($collectFollowingState.get() === 'resumed') {
-				await scrollToLastEntry()
-				$collectFollowingState.set('running')
-				await randomDelay(1500, 3500)
-			}
+
 			// will only return true if the end of the following section has been reached
 			const isAtBottom = await scrollToInfiniteBottom()
 
@@ -82,9 +77,9 @@ async function startFollowingAtTop() {
 	}
 }
 
-async function scrollToLastEntry() {
-	const lastEntry = [...$collectedFollowing.get().entries()].pop()
-	const scrollHeight = lastEntry?.[1].scrollHeight ?? 0
-	console.log(`scrolling to last entry: ${lastEntry?.[0]}: ${scrollHeight}`)
-	await waitForSmoothScroll(scrollHeight)
-}
+// async function scrollToLastEntry() {
+// 	const lastEntry = [...$collectedFollowing.get().entries()].pop()
+// 	const scrollHeight = lastEntry?.[1].scrollHeight ?? 0
+// 	console.log(`scrolling to last entry: ${lastEntry?.[0]}: ${scrollHeight}`)
+// 	await waitForSmoothScroll(scrollHeight)
+// }

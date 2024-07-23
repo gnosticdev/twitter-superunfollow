@@ -12,8 +12,6 @@ export async function sendMessageToCs<T extends FromBgToCs>(
 	message: T,
 ) {
 	console.log(cc.bgCyan('sending message to content script...'), tabId, message)
-	const tab = await chrome.tabs.get(tabId)
-	console.log('double checking that the tab exists: ', tab)
 	const response = await chrome.tabs.sendMessage<
 		T,
 		T extends FromBgToCs ? string : never

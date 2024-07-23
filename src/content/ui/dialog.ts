@@ -1,6 +1,6 @@
 import { $collectFollowingState } from '@/content/stores/collect-button'
 import { $superUnfollowButtonState } from '@/content/stores/unfollow-button'
-import { handleSearch, handleViewButtons } from '../search'
+import { handleSearch, handleViewButtons } from '../views'
 import { createMetrics, createNotice } from './metrics'
 
 export async function addDialogToDom(followingSection: HTMLElement) {
@@ -210,41 +210,66 @@ export function createViewButtons() {
 	viewButtonsContainer.classList.add('su-view-buttons-container')
 	const viewUnfollowingBtn = createViewUnfollowingBtn()
 	const viewSearchResultsBtn = createViewSearchResultsBtn()
-	viewButtonsContainer.append(viewUnfollowingBtn, viewSearchResultsBtn)
+	const statsButton = createStatsButton()
+	viewButtonsContainer.append(
+		viewUnfollowingBtn,
+		viewSearchResultsBtn,
+		statsButton,
+	)
 
 	return viewButtonsContainer
 }
 
 export function createViewUnfollowingBtn() {
-	const cb = document.createElement('input')
-	cb.type = 'checkbox'
-	cb.id = 'su-view-unfollowing'
-	cb.classList.add('su-view-button')
-	cb.addEventListener('change', handleViewButtons)
+	const radio = document.createElement('input')
+	radio.type = 'radio'
+	radio.id = 'su-view-unfollowing'
+	radio.name = 'su-view-radio-group'
+	radio.classList.add('su-view-button')
+	radio.addEventListener('change', handleViewButtons)
 
 	const label = document.createElement('label')
-	label.htmlFor = cb.id
+	label.htmlFor = radio.id
 	label.classList.add('su-view-button')
-	label.textContent = 'List'
+	label.textContent = 'Unfollow List'
 
-	label.appendChild(cb)
+	label.appendChild(radio)
 
 	return label
 }
 
 export function createViewSearchResultsBtn() {
-	const input = document.createElement('input')
-	input.type = 'checkbox'
-	input.id = 'su-view-search-results'
-	input.classList.add('su-view-button')
-	input.addEventListener('change', handleViewButtons)
+	const radio = document.createElement('input')
+	radio.type = 'radio'
+	radio.name = 'su-view-radio-group'
+	radio.id = 'su-view-search-results'
+	radio.classList.add('su-view-button')
+	radio.addEventListener('change', handleViewButtons)
 
 	const label = document.createElement('label')
-	label.htmlFor = 'su-view-search-results'
+	label.htmlFor = radio.id
 	label.classList.add('su-view-button')
-	label.textContent = 'Results'
+	label.textContent = 'Search Results'
 
-	label.appendChild(input)
+	label.appendChild(radio)
+
+	return label
+}
+
+export function createStatsButton() {
+	const radio = document.createElement('input')
+	radio.type = 'radio'
+	radio.name = 'su-view-radio-group'
+	radio.id = 'su-view-stats'
+	radio.classList.add('su-view-button')
+	radio.addEventListener('change', handleViewButtons)
+
+	const label = document.createElement('label')
+	label.htmlFor = radio.id
+	label.classList.add('su-view-button')
+	label.textContent = 'Profile Stats'
+
+	label.appendChild(radio)
 
 	return label
 }

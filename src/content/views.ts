@@ -3,11 +3,12 @@ import {
 	$unfollowingList,
 } from '@/content/stores/persistent'
 import { Selectors } from '@/content/utils/ui-elements'
+import { $userData } from '@/shared/storage'
 import type { ProfileDetail, ProfilesMap } from '@/shared/types'
 import { atom } from 'nanostores'
 import { handleChange } from './ui/checkboxes'
 
-type Results = 'search' | 'unfollowing' | 'unfollowed-done' | 'none'
+type Results = 'search' | 'unfollowing' | 'stats' | 'none'
 
 export const $searchResults = atom<ProfilesMap>(new Map())
 export const $viewResults = atom<Results>('none')
@@ -15,33 +16,77 @@ export const $searchInput = atom<string>('')
 
 $viewResults.listen((view) => {
 	const resultsDiv = getResultsDiv()
-	const viewUnfollowingBtn = document.getElementById(
-		'su-view-unfollowing',
-	) as HTMLInputElement
-	const viewSearchResultsBtn = document.getElementById(
-		'su-view-search-results',
-	) as HTMLInputElement
 	// clear the results div
 	resultsDiv.innerHTML = ''
 	switch (view) {
 		case 'search':
-			viewSearchResultsBtn.checked = true
 			resultsDiv.append(showResults($searchResults.get(), 'search'))
 			break
 		case 'unfollowing':
-			viewUnfollowingBtn.checked = true
 			resultsDiv.append(showResults($unfollowingList.get(), 'unfollowing'))
 			break
-		case 'unfollowed-done':
+		case 'stats':
+			displayTwitterStats().then((statsContainer) => {
+				resultsDiv.append(statsContainer)
+			})
+			break
 		case 'none':
-			// uncheck the view buttons
-			viewUnfollowingBtn.checked = false
-			viewSearchResultsBtn.checked = false
+			// Do nothing, keep the results div empty
 			break
 		default:
 			break
 	}
 })
+
+/**
+ * Handles the radio button change for view tabs
+ */
+export function handleViewTabs(e: Event): void {
+	const currentTarget = e.currentTarget as HTMLInputElement
+	$viewResults.set(currentTarget.value as Results)
+}
+
+// Add this new function to fetch and display stats
+async function displayTwitterStats() {
+	const statsContainer = document.createElement('div')
+	statsContainer.classList.add('su-stats-container')
+
+	const table = document.createElement('table')
+	table.classList.add('su-stats-table')
+
+	const thead = document.createElement('thead')
+	const headerRow = document.createElement('tr')
+	const thStat = document.createElement('th')
+	thStat.textContent = 'Statistic'
+	const thValue = document.createElement('th')
+	thValue.textContent = 'Value'
+	headerRow.appendChild(thStat)
+	headerRow.appendChild(thValue)
+	thead.appendChild(headerRow)
+	table.appendChild(thead)
+
+	const tbody = document.createElement('tbody')
+	const entries = await $userData.getEntries()
+	for (const [key, value] of entries) {
+		const row = document.createElement('tr')
+		const tdStat = document.createElement('td')
+		tdStat.textContent = key.replace(/_/g, ' ')
+		const tdValue = document.createElement('td')
+		tdValue.textContent = value.toString()
+		row.appendChild(tdStat)
+		row.appendChild(tdValue)
+		tbody.appendChild(row)
+	}
+	table.appendChild(tbody)
+
+	statsContainer.appendChild(table)
+	const resultsContainer = createResultsContainer('stats')
+	resultsContainer.append(statsContainer)
+
+	return resultsContainer
+}
+
+// ... rest of the existing code ...
 /**
  * - creates a new div to hold the search results
  * - searches the $following store for the search term
@@ -94,6 +139,9 @@ export function handleViewButtons(e: Event): void {
 	const viewUnfollowingBtn = document.getElementById(
 		'su-view-unfollowing',
 	) as HTMLInputElement
+	const statsButton = document.getElementById(
+		'su-view-stats',
+	) as HTMLInputElement
 
 	const currentTarget = e.currentTarget as HTMLInputElement
 
@@ -107,12 +155,19 @@ export function handleViewButtons(e: Event): void {
 		currentTarget.checked
 			? $viewResults.set('search')
 			: $viewResults.set('none')
+	} else if (currentTarget.isSameNode(statsButton)) {
+		searchResultsBtn.checked = false
+		viewUnfollowingBtn.checked = false
+		currentTarget.checked ? $viewResults.set('stats') : $viewResults.set('none')
 	}
 }
 
-// display search results as a checkbox list with the option to select all
+/**
+ * Displays the search results or unfollowing list in the dialog
+ */
 export function showResults(profiles: ProfilesMap, resultType: Results) {
 	const resultsContainer = createResultsContainer(resultType)
+
 	// if no results, display a message
 	if (profiles.size === 0) {
 		const noResults = document.createElement('p')
@@ -157,19 +212,27 @@ export function getProfileSearchCheckbox(handle: string) {
 	) as HTMLInputElement
 }
 
+// Update createResultsContainer function
 export function createResultsContainer(resultType: Results) {
 	const title = document.createElement('h4')
 	title.classList.add('su-results-title')
 
-	if (resultType === 'search') {
-		const searchInput = $searchInput.get()
-		title.innerHTML = `Search results for: <span class="su-highlight">${
-			searchInput === '.*' ? 'all profiles' : searchInput
-		}</span>`
-	} else if (resultType === 'unfollowing') {
-		title.textContent = 'Unfollowing List'
-	} else if (resultType === 'unfollowed-done') {
-		title.textContent = 'Unfollowed Profiles'
+	switch (resultType) {
+		case 'search': {
+			const searchInput = $searchInput.get()
+			title.innerHTML = `Search results for: <span class="su-highlight">${
+				searchInput === '.*' ? 'all profiles' : searchInput
+			}</span>`
+			break
+		}
+		case 'unfollowing':
+			title.textContent = 'Unfollowing List'
+			break
+		case 'stats':
+			title.textContent = 'Twitter Stats'
+			break
+		default:
+			break
 	}
 
 	const resultsContainer = document.createElement('div')

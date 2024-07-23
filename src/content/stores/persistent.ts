@@ -1,4 +1,4 @@
-import { $syncStorage } from '@/shared/storage'
+import { $userData } from '@/shared/storage'
 import type { ProfileDetail } from '@/shared/types'
 import { persistentAtom } from '@nanostores/persistent'
 import { computed } from 'nanostores'
@@ -94,10 +94,10 @@ export function addToCollectedFollowing(
  * the total number of accounts that are being followed by the user, according to the Twitter __INITIAL_STATE__ object, recorded at page load.
  */
 export const $followingCount = async () =>
-	(await $syncStorage.getValue('friends_count')) ?? 0
+	(await $userData.getValue('friends_count')) ?? 0
 
 export const $updateFollowingCount = async (count: number) => {
-	return await $syncStorage.setValue('friends_count', count)
+	return await $userData.setValue('friends_count', count)
 }
 
 /**

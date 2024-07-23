@@ -1,5 +1,11 @@
 {
 	"action": {
+		"default_icon": {
+			"16": "assets/icon16.png",
+			"24": "assets/icon24.png",
+			"48": "assets/icon48.png",
+			"128": "assets/icon128.png"
+		},
 		"default_title": "Twitter SuperUnfollow"
 	},
 	"background": {
@@ -25,13 +31,18 @@
 	"content_scripts": [
 		{
 			"css": ["style.css"],
-			"include_globs": ["*twitter.com/*/following", "*x.com/*/following"],
+			"include_globs": ["*/following"],
 			"js": ["main.js"],
 			"matches": ["https://*.twitter.com/*", "https://*.x.com/*"]
 		}
 	],
 	"description": "Unfollow profiles autotmatically, based on keyword.",
 	"host_permissions": ["https://*/*"],
+	"icons": {
+		"16": "assets/icon16.png",
+		"48": "assets/icon48.png",
+		"128": "assets/icon128.png"
+	},
 	"manifest_version": 3,
 	"name": "Twitter SuperUnfollow",
 	"permissions": [

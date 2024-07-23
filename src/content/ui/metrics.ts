@@ -1,7 +1,7 @@
 import {
+	type ButtonState,
 	isCollecting,
 	shouldCollect,
-	type ButtonState,
 } from '@/content/stores/collect-button'
 import {
 	$collectedFollowing,
@@ -16,7 +16,7 @@ import {
 	getNoticeDiv,
 	getSuperUnfollowButton,
 } from '@/content/utils/ui-elements'
-import { $syncStorage } from '@/shared/storage'
+import { $userData } from '@/shared/storage'
 import cc from 'kleur'
 
 export function updateTotalFollowingText(number: number) {
@@ -113,7 +113,7 @@ export async function setCollectNoticeText(
 ) {
 	// biome-ignore lint: confusing but works
 	notice ??= getNoticeDiv()
-	const followingCount = await $syncStorage.getValue('friends_count')
+	const followingCount = await $userData.getValue('friends_count')
 	if (!followingCount) {
 		notice.textContent = 'No accounts to collect'
 		return

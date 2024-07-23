@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twitter SuperUnfollow Temp Tab</title>
+    <style>
+        iframe {
+            border: 1px solid dimgray;
+            border-radius: 0.5rem;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            background-color: hsl(0, 10%, 10%);
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <h1>Twitter SuperUnfollow</h1>
+        <p>Use the 'SuperUnfollow' button in the upper right of Twitter/X to start.</p>
+        <button id="temp-tab-button">View Following</button>
+        <p id="temp-tab-result"></p>
+        <iframe src="sandbox.html"></iframe>
+    </main>
+</body>
+<script src="temp-tab.js"></script>
+
+</html>

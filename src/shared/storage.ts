@@ -1,12 +1,14 @@
 import type { TwitterUserData } from '@/shared/types'
 import { Storage } from '@plasmohq/storage'
 
-class SyncStorage<T extends { [K in keyof T]: T[K] } = TwitterUserData> {
+class SyncStorage<
+	T extends { [K in keyof T & string]: T[K] } = TwitterUserData,
+> {
 	namespace = 'SuperUnfollow_'
 	private storage: Storage
-	constructor() {
+	constructor(copyList?: Array<keyof T & string>) {
 		this.storage = new Storage({
-			copiedKeyList: ['screen_name', 'friends_count'],
+			copiedKeyList: copyList,
 		})
 		this.storage.setNamespace(this.namespace)
 	}
@@ -14,6 +16,10 @@ class SyncStorage<T extends { [K in keyof T]: T[K] } = TwitterUserData> {
 		key: K,
 	): Promise<T[K] | undefined> {
 		return this.storage.get(key)
+	}
+
+	async getEntries(): Promise<[keyof T, T[keyof T]][]> {
+		return objectEntries((await this.storage.getAll()) as T)
 	}
 	/**
 	 * Set the value. If it is a secret, it will only be set in extension storage. Returns a warning if storage capacity is almost full. Throws error if the new item will make storage full
@@ -87,8 +93,21 @@ class SessionStorage<K extends keyof SessionStorageKV> {
 		return this.storage.set(key, value)
 	}
 }
-
-export const $syncStorage = new SyncStorage<TwitterUserData>()
+/**
+ * SyncStorage for TwitterUserData
+ */
+export const $userData = new SyncStorage<TwitterUserData>([
+	'screen_name',
+	'friends_count',
+	'blocked_by',
+	'blocking',
+	'can_media_tag',
+	'followers_count',
+	'listed_count',
+	'muting',
+	'withheld_in_countries',
+	'statuses_count',
+])
 export const $sessionStorage = new SessionStorage()
 
 export function objectEntries<T extends { [key in keyof T]: T[key] }>(obj: T) {

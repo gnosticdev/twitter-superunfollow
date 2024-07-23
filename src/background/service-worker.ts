@@ -1,5 +1,5 @@
 import { sendMessageToCs, sendMessageToTab } from '@/shared/messaging'
-import { $sessionStorage, $syncStorage } from '@/shared/storage'
+import { $sessionStorage, $userData } from '@/shared/storage'
 import type { ExtMessage, FromBgToCs } from '@/shared/types'
 import cc from 'kleur'
 
@@ -58,7 +58,7 @@ async function listenForUserData(msg: ExtMessage) {
 			msg,
 		)
 
-		await $syncStorage.setValues(msg.data)
+		await $userData.setValues(msg.data)
 		const bgToContentMsg: FromBgToCs = {
 			from: 'background',
 			to: 'content',
@@ -85,15 +85,16 @@ async function handleDialogButton(
 	changeInfo: chrome.tabs.TabChangeInfo,
 	tab: chrome.tabs.Tab,
 ) {
+	if (!tab?.url?.includes('x.com')) return
 	if (changeInfo.status !== 'complete') {
 		await waitForTabToLoad(tabId)
 	}
 	const tabUrl = new URL(tab.url!)
-	let username = await $syncStorage.getValue('screen_name')
+	let username = await $userData.getValue('screen_name')
 	console.log(cc.bgMagenta(`username: ${username}`))
 	if (!username) {
 		console.log('no username found in storage, getting from sync storage')
-		username = await $syncStorage.subscribe('screen_name')
+		username = await $userData.subscribe('screen_name')
 		console.log('got username from sync storage', username)
 	}
 	if (tabUrl.pathname.includes(`${username}/following`)) {
@@ -121,7 +122,7 @@ async function handleDialogButton(
 // Go to Following Page when extension icon is clicked (no popup)
 chrome.action.onClicked.addListener(reloadEverything)
 async function reloadEverything(_tab?: chrome.tabs.Tab) {
-	const username = await $syncStorage.getValue('screen_name')
+	const username = await $userData.getValue('screen_name')
 
 	const url = username
 		? `https://x.com/${username}/following`
@@ -145,18 +146,24 @@ async function reloadEverything(_tab?: chrome.tabs.Tab) {
 	chrome.runtime.reload()
 }
 
-function waitForTabToLoad(newTabId: number): Promise<chrome.tabs.Tab> {
+type ListenerCallback = (
+	tabId: number,
+	changeInfo: chrome.tabs.TabChangeInfo,
+	tab: chrome.tabs.Tab,
+) => void
+
+/**
+ * Wait for the tab to complete loading
+ */
+function waitForTabToLoad(tabId: number): Promise<chrome.tabs.Tab> {
 	return new Promise((resolve) => {
-		chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-			if (
-				(changeInfo.status === 'complete' &&
-					tabId === newTabId &&
-					tab.url?.includes(NEW_TAB_PAGE)) ||
-				tab.url?.includes('x.com')
-			) {
+		const callback: ListenerCallback = (id, changeInfo, tab) => {
+			if (changeInfo.status === 'complete' && id === tabId) {
 				resolve(tab)
+				chrome.tabs.onUpdated.removeListener(callback)
 			}
-		})
+		}
+		chrome.tabs.onUpdated.addListener(callback)
 	})
 }
 
@@ -167,9 +174,10 @@ async function createTempTab() {
 		url: chrome.runtime.getURL(NEW_TAB_PAGE),
 	})
 	if (existingTabs.length > 0) {
-		console.log('existing tab found', existingTabs[0])
+		console.log(cc.green('existing temp tab found'), existingTabs[0])
 		return existingTabs[0]
 	}
+	console.log(cc.red('no existing temp tab found, creating new tab'))
 	const newTab = await chrome.tabs.create({
 		url: chrome.runtime.getURL(NEW_TAB_PAGE),
 		active: false,
@@ -178,7 +186,7 @@ async function createTempTab() {
 	if (!newTabId) {
 		throw 'no new tab id found'
 	}
-	const tab = await waitForTabToLoad(newTabId)
-	await $sessionStorage.setValue('newTabId', tab.id!)
-	return tab
+	const loadedTab = await waitForTabToLoad(newTabId)
+	await $sessionStorage.setValue('newTabId', loadedTab.id!)
+	return loadedTab
 }

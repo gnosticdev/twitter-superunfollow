@@ -16,7 +16,8 @@ const copyFiles = [
 	'src/popup/popup.html',
 	'src/temp-tab/temp-tab.html',
 	'src/style.css',
-].map((file) => path.join(process.cwd(), file))
+	'assets',
+]
 
 const buildScripts = async () => {
 	// remove the dist folder
@@ -38,12 +39,18 @@ const buildScripts = async () => {
 		throw new Error('build failed')
 	}
 
-	for await (const file of copyFiles) {
-		// only use the file name
-		const dest = path.join(process.cwd(), 'dist', path.basename(file))
-		fs.cp(file, dest, (err) => {
-			if (err) console.log(err)
-		})
+	for (const file of copyFiles) {
+		const isDir = fs.statSync(file).isDirectory()
+		if (isDir) {
+			const dest = path.join('dist', file)
+			console.log(`copying directory ${file} to ${dest}`)
+			fs.mkdirSync(dest, { recursive: true })
+			fs.cpSync(file, dest, { recursive: true })
+		} else {
+			const dest = path.join('dist', path.basename(file))
+			console.log(`copying file ${file} to ${dest}`)
+			fs.copyFileSync(file, dest)
+		}
 	}
 
 	console.log(coolConsole.blue('build complete'))
