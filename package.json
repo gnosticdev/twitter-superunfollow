@@ -9,7 +9,7 @@
 		"build": "bun run tsc && bun run lint && bun build.config.ts",
 		"tsc": "tsc",
 		"lint": "biome check . --write --unsafe",
-		"bundle": "bun run build && zip -r dist.zip dist"
+		"bundle": "bun run build && zip -r extension.zip dist"
 	},
 	"keywords": [
 		"twitter",

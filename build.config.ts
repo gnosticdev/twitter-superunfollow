@@ -1,6 +1,6 @@
+import coolConsole from 'kleur'
 import fs from 'node:fs'
 import path from 'node:path'
-import coolConsole from 'kleur'
 
 const entrypoints = [
 	'src/content/main.ts',
@@ -21,7 +21,7 @@ const copyFiles = [
 
 const buildScripts = async () => {
 	// remove the dist folder
-	await Bun.$`rm -rf ./dist && rm -rf dist.zip && echo 'removed dist dir'`.nothrow()
+	await Bun.$`rm -rf ./dist && rm -rf extension.zip && echo 'removed dist dir and extension.zip'`.nothrow()
 
 	const buildOutput = await Bun.build({
 		entrypoints,
