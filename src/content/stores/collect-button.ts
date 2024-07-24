@@ -9,7 +9,11 @@ import {
 	getSuperUnfollowButton,
 } from '@/content/utils/ui-elements'
 import { atom } from 'nanostores'
-import { $collectedFollowing, $followingCount } from './persistent'
+import {
+	$collectedFollowing,
+	$followingCount,
+	$unfollowingList,
+} from './persistent'
 
 export type ButtonState = 'ready' | 'running' | 'paused' | 'done'
 
@@ -20,6 +24,7 @@ $collectFollowingState.listen(async (state) => {
 	console.log('collect following button state changed:', state)
 	const collectButton = getCollectButton()
 	const unfollowButton = getSuperUnfollowButton()
+	if (!unfollowButton) return
 	const totalFollowingCount = await $followingCount()
 
 	const notice = getNoticeDiv()
@@ -27,12 +32,11 @@ $collectFollowingState.listen(async (state) => {
 		notice.textContent = 'No accounts to collect'
 		return
 	}
-	if (!unfollowButton) return
 	switch (state) {
 		case 'ready':
 			collectButton.innerHTML = 'Collect'
 			collectButton.classList.remove('running')
-			unfollowButton.disabled = false
+			unfollowButton.disabled = $unfollowingList.get().size > 0
 			enableScroll()
 			notice.textContent = (await shouldCollect())
 				? 'Run Collect Following to get started'
@@ -42,11 +46,7 @@ $collectFollowingState.listen(async (state) => {
 			collectButton.classList.add('running')
 			collectButton.innerHTML = 'Pause'
 			unfollowButton.disabled = true
-			notice.innerHTML += `${createLoadingSpinner().outerHTML} Collecting accounts you follow...
-			<div style="margin-block: 0.5rem;">
-                Don't navigate away from the page
-                </div>
-                `
+			notice.innerHTML = `${createLoadingSpinner().outerHTML} Collecting accounts you follow...`
 			disableScroll()
 			await collectFollowing()
 			break
@@ -54,10 +54,10 @@ $collectFollowingState.listen(async (state) => {
 		case 'paused': {
 			collectButton.innerHTML = 'Resume'
 			collectButton.classList.remove('running')
-			unfollowButton.disabled = false
-			const followingCount = await $followingCount()
+			unfollowButton.disabled = $unfollowingList.get().size > 0
+			const totalFollowingCount = await $followingCount()
 			notice.textContent = `${
-				followingCount - $collectedFollowing.get().size
+				totalFollowingCount - $collectedFollowing.get().size
 			} profiles left to collect`
 			enableScroll()
 			break
@@ -65,7 +65,7 @@ $collectFollowingState.listen(async (state) => {
 		case 'done': {
 			collectButton.innerHTML = 'Collect'
 			collectButton.classList.remove('running')
-			unfollowButton.disabled = false
+			unfollowButton.disabled = $unfollowingList.get().size > 0
 			enableScroll()
 			const followingCollected = $collectedFollowing.get().size
 			if (

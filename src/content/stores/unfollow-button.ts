@@ -31,7 +31,7 @@ $superUnfollowButtonState.listen(async (newValue) => {
 	switch (newValue) {
 		case 'running': {
 			if (!unfollowButton) return
-			notice.innerHTML += `${createLoadingSpinner().outerHTML} Unfollowing accounts...
+			notice.innerHTML = `${createLoadingSpinner().outerHTML} Unfollowing accounts...
 			<div style="margin-block: 0.5rem;">
                 Don't navigate away from the page
                 </div>

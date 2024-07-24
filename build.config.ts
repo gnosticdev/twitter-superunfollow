@@ -21,7 +21,7 @@ const copyFiles = [
 
 const buildScripts = async () => {
 	// remove the dist folder
-	await Bun.$`rm -rf ./dist && echo 'removed dist dir'`.nothrow()
+	await Bun.$`rm -rf ./dist && rm -rf dist.zip && echo 'removed dist dir'`.nothrow()
 
 	const buildOutput = await Bun.build({
 		entrypoints,

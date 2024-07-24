@@ -75,6 +75,7 @@ class SyncStorage<
 interface SessionStorageKV {
 	contentTabId: number
 	newTabId: number
+	showedDialog: boolean
 }
 
 class SessionStorage<K extends keyof SessionStorageKV> {
@@ -84,10 +85,9 @@ class SessionStorage<K extends keyof SessionStorageKV> {
 		this.storage = new Storage({ area: 'session' })
 		this.storage.setNamespace(this.namespace)
 	}
-	async getValue(key: K): Promise<SessionStorageKV[K]> {
-		const value = await this.storage.get(key.toString())
-		if (!value) return 0
-		return Number.parseInt(value) satisfies SessionStorageKV[K]
+
+	async getValue(key: K): Promise<SessionStorageKV[K] | undefined> {
+		return this.storage.get(key)
 	}
 	async setValue(key: K, value: SessionStorageKV[K]) {
 		return this.storage.set(key, value)

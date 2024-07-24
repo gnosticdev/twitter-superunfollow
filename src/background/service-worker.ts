@@ -6,6 +6,10 @@ import cc from 'kleur'
 // New tab used to parse userData in a sandboxed environment
 const NEW_TAB_PAGE = 'temp-tab.html'
 
+$sessionStorage.setValue('showedDialog', false).then(() => {
+	console.log('showedDialog set to false')
+})
+
 // Listen for keyboard shortcuts
 chrome.commands.onCommand.addListener((command) => {
 	command === 'reload-everything' && reloadEverything()
@@ -67,6 +71,9 @@ async function listenForUserData(msg: ExtMessage) {
 		}
 		// send userData to content script
 		const contentTabId = await $sessionStorage.getValue('contentTabId')
+		if (typeof contentTabId !== 'number') {
+			return
+		}
 		await sendMessageToCs(contentTabId, bgToContentMsg)
 
 		// Remove listener after first message
@@ -74,50 +81,59 @@ async function listenForUserData(msg: ExtMessage) {
 
 		// delete the new tab
 		const newTabId = await $sessionStorage.getValue('newTabId')
+		if (typeof newTabId !== 'number') {
+			return
+		}
 		await chrome.tabs.remove(newTabId)
 	}
 }
 
 // Listen for tab updates, send message to content script when navigating to/from the /following page so it can add/remove the show dialog button.
 chrome.tabs.onUpdated.addListener(handleDialogButton)
+// ... existing code ...
+
+chrome.tabs.onUpdated.addListener(handleDialogButton)
 async function handleDialogButton(
 	tabId: number,
 	changeInfo: chrome.tabs.TabChangeInfo,
 	tab: chrome.tabs.Tab,
 ) {
-	if (!tab?.url?.includes('x.com')) return
-	if (changeInfo.status !== 'complete') {
-		await waitForTabToLoad(tabId)
-	}
-	const tabUrl = new URL(tab.url!)
-	let username = await $userData.getValue('screen_name')
-	console.log(cc.bgMagenta(`username: ${username}`))
+	if (!tab?.url?.includes('x.com') || !tab.url) return
+	if (changeInfo.status !== 'complete') return
+
+	const tabUrl = new URL(tab.url)
+	const username =
+		(await $userData.getValue('screen_name')) ||
+		(await $userData.subscribe('screen_name'))
+
 	if (!username) {
-		console.log('no username found in storage, getting from sync storage')
-		username = await $userData.subscribe('screen_name')
-		console.log('got username from sync storage', username)
+		console.log('No username found in storage')
+		return
 	}
-	if (tabUrl.pathname.includes(`${username}/following`)) {
+
+	const isFollowingPage = tabUrl.pathname.includes(`${username}/following`)
+	const showedDialog = await $sessionStorage.getValue('showedDialog')
+
+	if (isFollowingPage && !showedDialog) {
 		await sendMessageToCs(tabId, {
 			from: 'background',
 			to: 'content',
 			type: 'adjustDialog',
+			data: { url: tab.url, show: true },
 		})
-		return
-	}
-
-	const existingTab = await chrome.tabs.query({
-		url: `https://x.com/${username}/following*`,
-	})
-	console.log(existingTab)
-	if (existingTab.length > 0) {
-		await sendMessageToCs(existingTab[0].id!, {
+		await $sessionStorage.setValue('showedDialog', true)
+	} else if (!isFollowingPage && showedDialog) {
+		await sendMessageToCs(tabId, {
 			from: 'background',
 			to: 'content',
 			type: 'adjustDialog',
+			data: { url: tab.url, show: false },
 		})
+		await $sessionStorage.setValue('showedDialog', false)
 	}
 }
+
+// ... rest of the code ...
 
 // Go to Following Page when extension icon is clicked (no popup)
 chrome.action.onClicked.addListener(reloadEverything)

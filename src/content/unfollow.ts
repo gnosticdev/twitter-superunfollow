@@ -10,8 +10,8 @@ import {
 	isUnfollowing,
 } from '@/content/stores/unfollow-button'
 import {
-	isProcessProfile,
 	type ProcessedProfile,
+	isProcessProfile,
 } from '@/content/ui/checkboxes'
 import { updateTotalFollowingText } from '@/content/ui/metrics'
 import {

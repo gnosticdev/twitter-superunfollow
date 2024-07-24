@@ -48,6 +48,8 @@ export interface FromBgToCsStart extends BaseMessage {
 	from: 'background'
 	to: 'content'
 	type: 'adjustDialog'
+	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+	data?: any
 }
 
 export type FromBgToCs = FromBgToCsData | FromBgToCsStart

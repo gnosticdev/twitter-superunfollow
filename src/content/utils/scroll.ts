@@ -1,18 +1,30 @@
 import { getLastChildHeight, randomDelay } from './ui-elements'
 
 /**
- * Scrolls smooth with a random delay of 1-2 seconds to wait for catchup.
+ * scrolls to a position on the page waits for the scroll to complete. If left blank scrolls to top of page.
  * @param {number} top - the top distance to scroll to
  * @default 0
  */
-export function waitForSmoothScroll(top: number) {
+export async function waitForSmoothScroll(top = 0): Promise<boolean> {
 	return new Promise<boolean>((resolve) => {
 		window.scrollTo({
 			top,
 			behavior: 'smooth',
 		})
-
-		resolve(randomDelay(1000, 2000).then(() => true))
+		const MAX_WAIT = 5000
+		const INTERVAL = 100
+		const THRESHOLD = 100 // Define a threshold
+		let waited = 0
+		const interval = setInterval(() => {
+			if (Math.abs(window.scrollY - top) <= THRESHOLD) {
+				clearInterval(interval)
+				resolve(true)
+			} else if (waited >= MAX_WAIT) {
+				clearInterval(interval)
+				resolve(false)
+			}
+			waited += INTERVAL
+		}, INTERVAL)
 	})
 }
 /**

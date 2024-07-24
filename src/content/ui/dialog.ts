@@ -5,6 +5,7 @@ import { handleSearch, handleViewButtons } from '../views'
 import { createMetrics, createNotice } from './metrics'
 
 export async function addDialogToDom(followingSection: HTMLElement) {
+	console.log('adding dialog to dom')
 	// if already added, remove it
 	const existingDialog = document.getElementById('su-dialog')
 	if (existingDialog) {
@@ -284,19 +285,19 @@ function closeDialog(
 	this: HTMLDialogElement,
 	{ currentTarget, clientX, clientY }: MouseEvent,
 ) {
-	if ($collectFollowingState.get() === 'running') {
-		$collectFollowingState.set('paused')
-	}
-	if ($superUnfollowButtonState.get() === 'running') {
-		$superUnfollowButtonState.set('paused')
-	}
-
 	const { left, right, top, bottom } = (
 		currentTarget as HTMLDialogElement
 	).getBoundingClientRect()
 
 	if (clientX < left || clientX > right || clientY < top || clientY > bottom) {
+		if ($collectFollowingState.get() === 'running') {
+			$collectFollowingState.set('paused')
+		}
+		if ($superUnfollowButtonState.get() === 'running') {
+			$superUnfollowButtonState.set('paused')
+		}
 		this.close()
+		return
 	}
 }
 

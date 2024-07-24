@@ -9,6 +9,10 @@ import { sendMessageToBg } from '@/shared/messaging'
 import { $userData } from '@/shared/storage'
 import type { FromBgToCs, FromCsToBg, ProfileInner } from '@/shared/types'
 import cc from 'kleur'
+import { atom } from 'nanostores'
+
+const $dialogAdded = atom(false)
+const $isObserving = atom(false)
 
 // 1) send message to background.ts -> receive the response and start init()
 // TODO: add this as an option
@@ -63,11 +67,14 @@ async function init() {
 						}`,
 					),
 				)
-
-				// start observer on /following page after getting message from bg script
-				const followingSection = (await getFollowingSection()) as HTMLElement
-				await addDialogToDom(followingSection)
-				await startObserver(followingSection)
+			}
+			if (msg.type === 'adjustDialog') {
+				console.log(cc.cyan('adjustDialog message received'), msg)
+				if (msg.data.show) {
+					await showDialog()
+				} else {
+					await hideDialog()
+				}
 			}
 		} catch (e) {
 			console.log(e)
@@ -75,27 +82,66 @@ async function init() {
 	}
 }
 
-// Start the observer after the userData has been received, and we are on the /following page
-async function startObserver(followingSection: HTMLElement) {
-	const profileObserver = new MutationObserver(async (mutations) => {
-		for (const mutation of mutations) {
-			if (mutation.addedNodes.length === 0) {
-				continue
-			}
-			for (const node of Array.from(mutation.addedNodes)) {
-				if (node instanceof HTMLElement) {
-					const profileInner = node.querySelector<ProfileInner>(
-						Selectors.PROFILE_INNER,
-					)
-					if (node.matches(Selectors.PROFILE_CONTAINER) && profileInner) {
-						await processProfile(profileInner)
-					}
+// New function to handle showing the dialog
+async function showDialog() {
+	if (document.getElementById('su-dialog')) {
+		console.log('dialog already exists')
+		return
+	}
+	const followingSection = await getFollowingSection()
+	if (followingSection) {
+		await addDialogToDom(followingSection)
+		$dialogAdded.set(true)
+		await startObserver(followingSection)
+		$isObserving.set(true)
+	}
+}
+
+// New function to handle hiding the dialog
+async function hideDialog() {
+	console.log('removing dialog')
+	removeDialogFromDom()
+	$dialogAdded.set(false)
+	disconnectObserver()
+	$isObserving.set(false)
+}
+
+function removeDialogFromDom() {
+	const dialog = document.getElementById('su-dialog')
+	if (dialog) {
+		dialog.remove()
+	}
+}
+
+const profileObserver = new MutationObserver(async (mutations) => {
+	for (const mutation of mutations) {
+		if (mutation.addedNodes.length === 0) {
+			continue
+		}
+		for (const node of Array.from(mutation.addedNodes)) {
+			if (node instanceof HTMLElement) {
+				const profileInner = node.querySelector<ProfileInner>(
+					Selectors.PROFILE_INNER,
+				)
+				if (node.matches(Selectors.PROFILE_CONTAINER) && profileInner) {
+					await processProfile(profileInner)
 				}
 			}
 		}
-	})
-	// first make sure the following section is in the DOM, then observe for new profiles added to it
+	}
+})
 
+function disconnectObserver() {
+	profileObserver.disconnect()
+}
+
+// Start the observer after the userData has been received, and we are on the /following page
+async function startObserver(followingSection: HTMLElement) {
+	// first make sure the following section is in the DOM, then observe for new profiles added to it
+	if ($isObserving.get() === true) {
+		console.log('already observing')
+		return
+	}
 	const innerProfiles = getInnerProfiles()
 	for await (const profile of innerProfiles) {
 		await processProfile(profile)
@@ -106,7 +152,8 @@ async function startObserver(followingSection: HTMLElement) {
 	})
 }
 
-async function getFollowingSection() {
+// Update getFollowingSection to return null if section is not found
+async function getFollowingSection(): Promise<HTMLElement | null> {
 	const section = () =>
 		document.querySelector(
 			'[aria-label="Timeline: Following"]',
@@ -119,12 +166,12 @@ async function getFollowingSection() {
 				console.log(`waiting for following section -> ${tries}`)
 				if (tries > 10) {
 					clearInterval(interval)
-					return resolve(null)
+					resolve(null)
 				}
 				const el = section()
 				if (el) {
 					clearInterval(interval)
-					return resolve(el)
+					resolve(el)
 				}
 				tries++
 			}, 1000)
