@@ -66,19 +66,21 @@ if (import.meta.main) {
 	await buildScripts()
 }
 
-const watcher = fs.watch(process.cwd(), { recursive: true })
+if (process.argv.includes('--watch')) {
+	const watcher = fs.watch(process.cwd(), { recursive: true })
 
-watcher.addListener('change', async (_event, filename) => {
-	if (typeof filename !== 'string') return
-	const absolutePath = path.join(process.cwd(), filename)
-	if (absolutePath.includes('dist')) return
-	if (absolutePath.includes('node_modules')) return
-	if (absolutePath.includes('.git')) return
-	if (absolutePath.includes('.vscode')) return
-	await buildScripts()
-})
+	watcher.addListener('change', async (_event, filename) => {
+		if (typeof filename !== 'string') return
+		const absolutePath = path.join(process.cwd(), filename)
+		if (absolutePath.includes('dist')) return
+		if (absolutePath.includes('node_modules')) return
+		if (absolutePath.includes('.git')) return
+		if (absolutePath.includes('.vscode')) return
+		await buildScripts()
+	})
 
-process.on('SIGINT', () => {
-	watcher.close()
-	process.exit(0)
-})
+	process.on('SIGINT', () => {
+		watcher.close()
+		process.exit(0)
+	})
+}

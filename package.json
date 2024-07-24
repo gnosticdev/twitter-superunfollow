@@ -5,9 +5,11 @@
 	"main": "dist/content.js",
 	"type": "module",
 	"scripts": {
-		"dev": "bun run tsc && bun run lint && bun --watch build.config.ts",
+		"dev": "bun run tsc && bun run lint && bun build.config.ts --watch",
+		"build": "bun run tsc && bun run lint && bun build.config.ts",
 		"tsc": "tsc",
-		"lint": "biome check . --write --unsafe"
+		"lint": "biome check . --write --unsafe",
+		"bundle": "bun run build && zip -r dist.zip dist"
 	},
 	"keywords": [
 		"twitter",

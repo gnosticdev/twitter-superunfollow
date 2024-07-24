@@ -36,8 +36,9 @@
 			"matches": ["https://*.twitter.com/*", "https://*.x.com/*"]
 		}
 	],
-	"description": "Unfollow profiles autotmatically, based on keyword.",
-	"host_permissions": ["https://*/*"],
+	"description": "Unfollow Twitter/X profiles in bulk.",
+	"homepage_url": "https://offeragentsai.com/tools/twitter-x-superunfollow",
+	"host_permissions": ["https://*.twitter.com/*", "https://*.x.com/*"],
 	"icons": {
 		"16": "assets/icon16.png",
 		"48": "assets/icon48.png",
@@ -45,21 +46,14 @@
 	},
 	"manifest_version": 3,
 	"name": "Twitter SuperUnfollow",
-	"permissions": [
-		"tabs",
-		"activeTab",
-		"scripting",
-		"storage",
-		"sidePanel",
-		"webNavigation"
-	],
+	"permissions": ["tabs", "activeTab", "storage", "webNavigation"],
 	"sandbox": {
 		"pages": ["sandbox.html"]
 	},
 	"version": "0.10",
 	"web_accessible_resources": [
 		{
-			"matches": ["<all_urls>"],
+			"matches": ["https://*.twitter.com/*", "https://*.x.com/*"],
 			"resources": [
 				"main.js.map",
 				"popup.js.map",
