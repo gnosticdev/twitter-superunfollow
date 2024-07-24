@@ -121,6 +121,10 @@ async function handleDialogButton(
 
 // Go to Following Page when extension icon is clicked (no popup)
 chrome.action.onClicked.addListener(reloadEverything)
+/**
+ * Reload the /following page, or open a new tab if it is not open
+ * @param _tab - the tab that was active when the icon was clicked
+ */
 async function reloadEverything(_tab?: chrome.tabs.Tab) {
 	const username = await $userData.getValue('screen_name')
 

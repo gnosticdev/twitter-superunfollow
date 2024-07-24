@@ -46,17 +46,16 @@
 	},
 	"manifest_version": 3,
 	"name": "Twitter SuperUnfollow",
-	"permissions": ["tabs", "activeTab", "storage", "webNavigation"],
+	"permissions": ["tabs", "storage", "webNavigation"],
 	"sandbox": {
 		"pages": ["sandbox.html"]
 	},
-	"version": "0.10",
+	"version": "1.00",
 	"web_accessible_resources": [
 		{
 			"matches": ["https://*.twitter.com/*", "https://*.x.com/*"],
 			"resources": [
 				"main.js.map",
-				"popup.js.map",
 				"service-worker.js.map",
 				"temp-tab.js.map",
 				"style.css.map",

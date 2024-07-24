@@ -7,8 +7,10 @@ declare global {
 	}
 }
 
-const SANDBOX_RESULT_ID = 'sandbox-result'
-
+/**
+ * Parse the __INITIAL_STATE__ object from the twitter page
+ * @param initialStateObj - the __INITIAL_STATE__ object from the twitter page
+ */
 // biome-ignore lint/suspicious/noExplicitAny: large object
 const parseInititalState = (initialStateObj: any) => {
 	const userData = JSON.parse(JSON.stringify(initialStateObj))
@@ -19,9 +21,9 @@ const parseInititalState = (initialStateObj: any) => {
 	return accountData as TwitterUserData
 }
 
-// 1) recive the userData string from the newTab
+// 1) recive the userData string from temp-tab
 window.addEventListener('message', (event) => {
-	const status = document.getElementById(SANDBOX_RESULT_ID)
+	const status = document.getElementById('sandbox-result')
 	if (!status) {
 		throw 'no status element found'
 	}
@@ -40,7 +42,7 @@ window.addEventListener('message', (event) => {
 			scriptContent.includes('__INITIAL_STATE__')
 		) {
 			// 2) use eval safely within sandbox (while avoiding esbuild eval error)
-			// biome-ignore lint/security/noGlobalEval: <explanation>
+			// biome-ignore lint/security/noGlobalEval: eval is used to parse the script content
 			const evaluate = eval
 			evaluate(scriptContent)
 			// original script content should now be available - including window.__INITIAL_STATE__

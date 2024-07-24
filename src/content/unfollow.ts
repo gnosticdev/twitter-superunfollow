@@ -10,8 +10,8 @@ import {
 	isUnfollowing,
 } from '@/content/stores/unfollow-button'
 import {
-	type ProcessedProfile,
 	isProcessProfile,
+	type ProcessedProfile,
 } from '@/content/ui/checkboxes'
 import { updateTotalFollowingText } from '@/content/ui/metrics'
 import {
@@ -67,6 +67,11 @@ $unfollowedProfiles.listen((value) => {
  * Then scrolls down the page and unfollows the rest
  */
 export async function startSuperUnfollow() {
+	if ($unfollowingList.get().size === 0) {
+		console.log(cc.bgGreen().blue('😎 no accounts to unfollow!'))
+		$superUnfollowButtonState.set('done')
+		return
+	}
 	console.log(cc.yellow('starting super unfollow'))
 	$viewResults.set('unfollowing')
 	await waitForSmoothScroll(0)
@@ -117,6 +122,11 @@ async function scrollAndUnfollow() {
 	console.log(cc.bgGreen().bold('scrolling and unfollowing...'))
 	try {
 		if (isUnfollowing()) {
+			if ($unfollowingList.get().size === 0) {
+				console.log('no more profiles to unfollow')
+				$superUnfollowButtonState.set('done')
+				return
+			}
 			const isAtBottom = await scrollToInfiniteBottom()
 
 			if (isAtBottom) {

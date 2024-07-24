@@ -1,22 +1,15 @@
-import {
-	type ButtonState,
-	isCollecting,
-	shouldCollect,
-} from '@/content/stores/collect-button'
+import { shouldCollect } from '@/content/stores/collect-button'
 import {
 	$collectedFollowing,
 	$followingCount,
 	// $followingCount,
 	$unfollowingList,
 } from '@/content/stores/persistent'
-import { isUnfollowing } from '@/content/stores/unfollow-button'
-import { $unfollowedProfiles } from '@/content/unfollow'
 import {
 	createLoadingSpinner,
 	getNoticeDiv,
 	getSuperUnfollowButton,
 } from '@/content/utils/ui-elements'
-import { $userData } from '@/shared/storage'
 import cc from 'kleur'
 
 export function updateTotalFollowingText(number: number) {
@@ -87,17 +80,21 @@ export async function createNotice() {
 	const notice = document.createElement('div')
 	notice.classList.add('su-notice')
 	notice.id = 'su-notice'
-	setCollectNoticeText('ready', notice)
+	notice.textContent = (await shouldCollect())
+		? 'Run Collect Following to get started'
+		: 'You have no new accounts to collect'
 	return notice
 }
 
-export function setNoticeLoading(notice: HTMLElement) {
+export function setNoticeLoading(state: 'collecting' | 'unfollowing') {
 	console.log('setting loading state for notice')
+	const notice = getNoticeDiv()
 	const loader = createLoadingSpinner()
 	notice.innerHTML = loader.outerHTML
-	if (isCollecting()) {
+	if (state === 'collecting') {
 		notice.innerHTML += 'Collecting accounts you follow...'
-	} else if (isUnfollowing()) {
+	}
+	if (state === 'unfollowing') {
 		notice.innerHTML += 'Unfollowing accounts...'
 	}
 	notice.innerHTML += `<div style="margin-block: 0.5rem;">
@@ -105,77 +102,4 @@ export function setNoticeLoading(notice: HTMLElement) {
                 </div>
                 `
 	return notice
-}
-
-export async function setCollectNoticeText(
-	state: ButtonState,
-	notice: HTMLDivElement | null = null,
-) {
-	// biome-ignore lint: confusing but works
-	notice ??= getNoticeDiv()
-	const followingCount = await $userData.getValue('friends_count')
-	if (!followingCount) {
-		notice.textContent = 'No accounts to collect'
-		return
-	}
-	const followingCollected = $collectedFollowing.get().size
-	switch (state) {
-		case 'ready':
-			// state = ready on page load only, so only need to show collect notice
-			notice.textContent = (await shouldCollect())
-				? 'Run Collect Following to get started'
-				: 'You have no new accounts to collect'
-			break
-		case 'running':
-			setNoticeLoading(notice)
-			break
-		case 'paused':
-			notice.textContent = `${
-				followingCount - followingCollected
-			} profiles left to collect`
-			break
-		case 'done':
-			if (followingCollected === followingCount || followingCount === 0) {
-				notice.classList.add('complete')
-				notice.textContent = 'Collected all accounts you follow!'
-			} else {
-				notice.classList.add('error')
-				notice.textContent = 'Something went wrong... Re-run Collect Following'
-			}
-			break
-		default:
-			break
-	}
-}
-
-export async function setUnfollowNoticeText(state: ButtonState) {
-	const notice = getNoticeDiv()
-	const unfollowingSize = $unfollowingList.get().size
-	const unfollowedSize = $unfollowedProfiles.get().size
-	switch (state) {
-		case 'running':
-			setNoticeLoading(notice)
-			break
-		case 'paused':
-			notice.textContent = `${
-				unfollowingSize - unfollowedSize
-			} profiles left to unfollow`
-			break
-		case 'done': {
-			const followingCount = await $followingCount()
-			if (
-				followingCount === 0 ||
-				$collectedFollowing.get().size === followingCount
-			) {
-				notice.classList.add('complete')
-				notice.textContent = `Unfollowed ${unfollowedSize} accounts!`
-			} else {
-				notice.classList.add('error')
-				notice.textContent = 'Might want to re-run Collect Following'
-			}
-			break
-		}
-		default:
-			break
-	}
 }

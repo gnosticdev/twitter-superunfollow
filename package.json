@@ -5,7 +5,7 @@
 	"main": "dist/content.js",
 	"type": "module",
 	"scripts": {
-		"dev": "bun run tsc && bun run lint && bun build.config.ts --watch",
+		"dev": "bun run build --watch",
 		"build": "bun run tsc && bun run lint && bun build.config.ts",
 		"tsc": "tsc",
 		"lint": "biome check . --write --unsafe",

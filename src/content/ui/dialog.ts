@@ -1,4 +1,5 @@
 import { $collectFollowingState } from '@/content/stores/collect-button'
+import { $unfollowingList } from '@/content/stores/persistent'
 import { $superUnfollowButtonState } from '@/content/stores/unfollow-button'
 import { handleSearch, handleViewButtons } from '../views'
 import { createMetrics, createNotice } from './metrics'
@@ -135,12 +136,17 @@ export function createSuperUnfollowBtn() {
 			case 'paused':
 				$superUnfollowButtonState.set('running')
 				break
-			// 'done' doesnt get set by the button click, use a computed store for that...
 			default:
+				superUnfollowBtn.disabled = $unfollowingList.get().size === 0
 				break
 		}
 	}
 	superUnfollowBtn.addEventListener('click', handleUnfollowButton)
+	superUnfollowBtn.disabled = $unfollowingList.get().size === 0
+	if (superUnfollowBtn.disabled) {
+		superUnfollowBtn.title = 'Add accounts to unfollow'
+	}
+
 	superUnfollowBtn.id = 'superUnfollow-button'
 
 	return superUnfollowBtn
@@ -278,11 +284,13 @@ function closeDialog(
 	this: HTMLDialogElement,
 	{ currentTarget, clientX, clientY }: MouseEvent,
 ) {
-	if (
-		$collectFollowingState.get() === 'running' ||
-		$superUnfollowButtonState.get() === 'running'
-	)
-		return
+	if ($collectFollowingState.get() === 'running') {
+		$collectFollowingState.set('paused')
+	}
+	if ($superUnfollowButtonState.get() === 'running') {
+		$superUnfollowButtonState.set('paused')
+	}
+
 	const { left, right, top, bottom } = (
 		currentTarget as HTMLDialogElement
 	).getBoundingClientRect()

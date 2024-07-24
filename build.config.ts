@@ -4,7 +4,7 @@ import coolConsole from 'kleur'
 
 const entrypoints = [
 	'src/content/main.ts',
-	'src/popup/popup.ts',
+	// 'src/popup/popup.ts',
 	'src/temp-tab/temp-tab.ts',
 	'src/sandbox/sandbox.ts',
 	'src/background/service-worker.ts',
@@ -13,7 +13,7 @@ const entrypoints = [
 const copyFiles = [
 	'manifest.json',
 	'src/sandbox/sandbox.html',
-	'src/popup/popup.html',
+	// 'src/popup/popup.html',
 	'src/temp-tab/temp-tab.html',
 	'src/style.css',
 	'assets',
