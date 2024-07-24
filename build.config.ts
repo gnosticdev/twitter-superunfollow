@@ -1,6 +1,6 @@
-import coolConsole from 'kleur'
 import fs from 'node:fs'
 import path from 'node:path'
+import coolConsole from 'kleur'
 
 const entrypoints = [
 	'src/content/main.ts',
