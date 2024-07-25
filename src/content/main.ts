@@ -7,7 +7,7 @@ import { addDialogToDom } from '@/content/ui/dialog'
 import { Selectors, getInnerProfiles } from '@/content/utils/ui-elements'
 import { sendMessageToBg } from '@/shared/messaging'
 import { $userData } from '@/shared/storage'
-import type { FromBgToCs, FromCsToBg, ProfileInner } from '@/shared/types'
+import type { FromBgToCs, ProfileInner } from '@/shared/types'
 import cc from 'kleur'
 import { atom } from 'nanostores'
 
@@ -17,12 +17,15 @@ const $isObserving = atom(false)
 // 1) send message to background.ts -> receive the response and start init()
 // TODO: add this as an option
 // export const FOLLOWS_YOU = '[data-testid="userFollowIndicator"]'
-init().then(() => {
-	console.log('loaded SuperUnfollow content script')
+loadContentScript().then(() => {
+	console.log(cc.yellow(`loaded content script on ${document.URL}`))
 })
 /*  -------- 1) send message to service worker ----------
     -------- receive the response and start init() ---------- */
-async function init() {
+/**
+ * Only runs on page load, will not load when navigating to new pages bc twitter uses SPA
+ */
+async function loadContentScript() {
 	const scripts = document.querySelectorAll('script')
 	const script = Array.from(scripts).find((script) =>
 		script.innerHTML.includes('__INITIAL_STATE__'),
@@ -31,28 +34,24 @@ async function init() {
 	if (!script) {
 		throw 'script has not loaded yet'
 	}
-	const userDataMessage: FromCsToBg = {
+
+	console.log('$syncStorage: friends_count -> ', await $followingCount())
+
+	// send the userData as a string to the backgrounds cript, which then sends it to the newTab
+	// need to send after we register the storage listeners
+	await sendMessageToBg({
 		from: 'content',
 		to: 'background',
 		type: 'userData',
 		data: script.innerHTML,
+	})
+
+	// only runs on page load
+	const currentUrl = new URL(document.URL)
+	const username = await $userData.getValue('screen_name')
+	if (username && currentUrl.pathname.includes(`${username}/following`)) {
+		await showDialog()
 	}
-
-	console.log('$syncStorage: friends_count -> ', await $followingCount())
-
-	$userData.watch('friends_count', ({ key, newValue, oldValue }) => {
-		console.log(
-			`$$twitterSyncStorage: ${key} changed from ${oldValue} to ${newValue}`,
-		)
-	})
-	$userData.watch('screen_name', ({ key, newValue, oldValue }) => {
-		console.log(
-			`$$twitterSyncStorage: ${key} changed from ${oldValue} to ${newValue}`,
-		)
-	})
-	// send the userData as a string to the backgrounds cript, which then sends it to the newTab
-	// need to send after we register the storage listeners
-	await sendMessageToBg(userDataMessage)
 
 	/*  -------- 2) receive the response from service worker and start init() ----------
         -------- add listener for message from background.ts ---------- */
@@ -82,7 +81,9 @@ async function init() {
 	}
 }
 
-// New function to handle showing the dialog
+/**
+ * adds the dialog to the DOM and initializes the observer.
+ */
 async function showDialog() {
 	if (document.getElementById('su-dialog')) {
 		console.log('dialog already exists')
@@ -97,7 +98,9 @@ async function showDialog() {
 	}
 }
 
-// New function to handle hiding the dialog
+/**
+ * Removes the dialog from the DOM and disconnects the observer.
+ */
 async function hideDialog() {
 	console.log('removing dialog')
 	removeDialogFromDom()
@@ -152,7 +155,9 @@ async function startObserver(followingSection: HTMLElement) {
 	})
 }
 
-// Update getFollowingSection to return null if section is not found
+/**
+ * Waits for the following section to load, then returns it.
+ */
 async function getFollowingSection(): Promise<HTMLElement | null> {
 	const section = () =>
 		document.querySelector(

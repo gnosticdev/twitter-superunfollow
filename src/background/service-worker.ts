@@ -10,6 +10,10 @@ $sessionStorage.setValue('showedDialog', false).then(() => {
 	console.log('showedDialog set to false')
 })
 
+$sessionStorage.watch('showedDialog', (change) => {
+	console.log('showedDialog changed', change)
+})
+
 // Listen for keyboard shortcuts
 chrome.commands.onCommand.addListener((command) => {
 	command === 'reload-everything' && reloadEverything()
@@ -90,18 +94,16 @@ async function listenForUserData(msg: ExtMessage) {
 
 // Listen for tab updates, send message to content script when navigating to/from the /following page so it can add/remove the show dialog button.
 chrome.tabs.onUpdated.addListener(handleDialogButton)
-// ... existing code ...
 
-chrome.tabs.onUpdated.addListener(handleDialogButton)
 async function handleDialogButton(
 	tabId: number,
 	changeInfo: chrome.tabs.TabChangeInfo,
 	tab: chrome.tabs.Tab,
 ) {
-	if (!tab?.url?.includes('x.com') || !tab.url) return
+	if (!tab?.url?.includes('x.com') || !tab?.url || !tab?.id) return
 	if (changeInfo.status !== 'complete') return
-
-	const tabUrl = new URL(tab.url)
+	const loadedTab = await waitForTabToLoad(tab.id)
+	const tabUrl = new URL(loadedTab.url!)
 	const username =
 		(await $userData.getValue('screen_name')) ||
 		(await $userData.subscribe('screen_name'))
@@ -113,15 +115,10 @@ async function handleDialogButton(
 
 	const isFollowingPage = tabUrl.pathname.includes(`${username}/following`)
 	const showedDialog = await $sessionStorage.getValue('showedDialog')
+	console.log(cc.red('tab updated'), { isFollowingPage, showedDialog })
 
 	if (isFollowingPage && !showedDialog) {
-		await sendMessageToCs(tabId, {
-			from: 'background',
-			to: 'content',
-			type: 'adjustDialog',
-			data: { url: tab.url, show: true },
-		})
-		await $sessionStorage.setValue('showedDialog', true)
+		await triggerDialogShow(tabId)
 	} else if (!isFollowingPage && showedDialog) {
 		await sendMessageToCs(tabId, {
 			from: 'background',
@@ -141,6 +138,7 @@ chrome.action.onClicked.addListener(reloadEverything)
  * Reload the /following page, or open a new tab if it is not open
  * @param _tab - the tab that was active when the icon was clicked
  */
+
 async function reloadEverything(_tab?: chrome.tabs.Tab) {
 	const username = await $userData.getValue('screen_name')
 
@@ -148,22 +146,35 @@ async function reloadEverything(_tab?: chrome.tabs.Tab) {
 		? `https://x.com/${username}/following`
 		: 'https://x.com/following'
 
-	const existingTab = await chrome.tabs.query({
+	const [existingTab] = await chrome.tabs.query({
 		url: `${url}*`,
 	})
 
-	console.log('existing tab:', existingTab)
+	console.log('reloaded tabs -> existingTab:', existingTab)
 
-	if (existingTab.length > 0) {
+	// reset showedDialog to false
+	$sessionStorage.setValue('showedDialog', false)
+
+	if (existingTab) {
 		// activate the existing tab and reload
-		await chrome.tabs.update(existingTab[0].id!, { active: true })
-		await chrome.tabs.reload({ bypassCache: true })
-		chrome.runtime.reload()
-		return
+		await chrome.tabs.update(existingTab.id!, { active: true })
+		await chrome.tabs.reload(existingTab.id!, { bypassCache: true })
+	} else {
+		// Create a new tab
+		const newTab = await chrome.tabs.create({ url, active: true })
+		// Wait for the tab to load completely
+		await waitForTabToLoad(newTab.id!)
 	}
+}
 
-	await chrome.tabs.create({ url, active: true })
-	chrome.runtime.reload()
+async function triggerDialogShow(tabId: number) {
+	await sendMessageToCs(tabId, {
+		from: 'background',
+		to: 'content',
+		type: 'adjustDialog',
+		data: { show: true },
+	})
+	await $sessionStorage.setValue('showedDialog', true)
 }
 
 type ListenerCallback = (

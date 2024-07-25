@@ -24,8 +24,6 @@ export async function sendMessageToTab<T extends FromBgToTab>(
 	tabId: number,
 	message: T,
 ) {
-	console.log(cc.magenta('sending message to new tab...'), message)
-
 	const response = await chrome.tabs.sendMessage<
 		T,
 		T extends FromBgToTab ? string : never
@@ -50,3 +48,5 @@ export async function sendMessageToBg<T extends FromCsToBg | FromTabToBg>(
 
 	return response
 }
+
+export const MessageSender = {}

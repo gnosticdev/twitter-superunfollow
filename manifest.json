@@ -32,7 +32,8 @@
 		{
 			"css": ["style.css"],
 			"js": ["main.js"],
-			"matches": ["https://*.twitter.com/*", "https://*.x.com/*"]
+			"matches": ["https://*.twitter.com/*", "https://*.x.com/*"],
+			"run_at": "document_end"
 		}
 	],
 	"description": "Unfollow Twitter/X profiles in bulk.",
@@ -45,7 +46,7 @@
 	},
 	"manifest_version": 3,
 	"name": "Twitter SuperUnfollow",
-	"permissions": ["tabs", "storage", "webNavigation"],
+	"permissions": ["tabs", "storage"],
 	"sandbox": {
 		"pages": ["sandbox.html"]
 	},

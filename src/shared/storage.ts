@@ -92,6 +92,24 @@ class SessionStorage<K extends keyof SessionStorageKV> {
 	async setValue(key: K, value: SessionStorageKV[K]) {
 		return this.storage.set(key, value)
 	}
+	async watch<K extends keyof SessionStorageKV>(
+		key: K,
+		callback: (change: {
+			newValue: SessionStorageKV[K]
+			oldValue: SessionStorageKV[K]
+			key: K
+		}) => void,
+	) {
+		this.storage.watch({
+			[key]: (change) => {
+				callback({
+					newValue: change.newValue as SessionStorageKV[K],
+					oldValue: change.oldValue as SessionStorageKV[K],
+					key: key,
+				})
+			},
+		})
+	}
 }
 /**
  * SyncStorage for TwitterUserData
